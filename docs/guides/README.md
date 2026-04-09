@@ -8,7 +8,9 @@ Guias práticos para trabalhar com o ecossistema de agentes deste laboratório.
 
 | Guia | Descrição | Status |
 |------|-----------|--------|
-| _(em breve)_ | Configurando o ambiente com Pi | Pendente |
+| [recommended-pi-stack.md](./recommended-pi-stack.md) | Stack mínima recomendada para adoção inicial de Pi no laboratório | Inicial |
+| [copilot-to-pi-migration.md](./copilot-to-pi-migration.md) | Guia incremental de transição do Copilot para Pi | Inicial |
+| [pi-platform-compatibility.md](./pi-platform-compatibility.md) | Compatibilidade de plataforma (Windows/Linux/macOS) e decisão sobre devcontainer | Inicial |
 | _(em breve)_ | Criando seu primeiro agente com pi-agent-core | Pendente |
 | _(em breve)_ | Usando ferramentas (tools) com Pi | Pendente |
 | _(em breve)_ | Trabalhando com múltiplos LLM providers | Pendente |

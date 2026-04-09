@@ -18,16 +18,28 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
 **Objetivo:** Organizar o material existente e construir base de conhecimento.
 
 - [ ] Análise aprofundada do ecossistema Pi
+  - [x] Mapa inicial do ecossistema e suas camadas
   - [ ] Mapeamento de todos os pacotes e suas responsabilidades
-  - [ ] Identificação dos padrões de design usados
+  - [x] Identificação inicial dos padrões de design usados
   - [ ] Análise de casos de uso (openclaw e outros)
+  - [x] Scorecard inicial de referências e pacotes prioritários
+  - [x] Avaliação de pi-lens como referência de qualidade de código
+  - [x] Taxonomia inicial por workflow
 - [ ] Catalogar material de referência externo
   - [ ] [tuts-agentic-ai-examples](https://github.com/nilayparikh/tuts-agentic-ai-examples) — padrões de AI Agents
   - [ ] Protocolo A2A (Agent-to-Agent)
 - [ ] Pesquisa sobre estrutura de baixa fricção cognitiva
   - [ ] Avaliação de monorepo vs. repositórios independentes
   - [ ] Análise de projetos similares na comunidade
+  - [x] Blueprint inicial da futura fábrica de extensões Pi
+  - [x] Análise inicial das fricções da factory
 - [ ] Análise de engines alternativas ao Pi (LangChain, AutoGen, CrewAI, etc.)
+- [ ] Preparação para migração controlada de Copilot para Pi
+  - [x] Definição da stack inicial recomendada
+  - [x] Guia inicial de migração incremental
+  - [x] Análise de compatibilidade de plataforma (Windows/Linux/macOS)
+  - [x] Decisão sobre devcontainer (adiado para Fase 2-3)
+  - [ ] Instalar Pi e validar a stack no uso real
 
 ## Fase 2 — Primeiros Experimentos
 
@@ -65,6 +77,7 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
 |---------|----------|-------|
 | Monorepo ou não? | Avaliar estado da arte antes de decidir — alta dependência da estrutura de longo prazo | Fase 1 |
 | Linguagem principal | TypeScript (Pi) vs. Python vs. poliglota | Fase 2 |
+| DevContainer | Pi funciona nativo no Windows, mas devcontainer será criado quando entrarmos em extensões in-house | Fase 2-3 |
 | Estratégia de publicação | npm / PyPI / GitHub Packages | Fase 3 |
 
 ## Notas

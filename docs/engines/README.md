@@ -24,6 +24,7 @@ Pi é um toolkit para construção de agentes de IA e gerenciamento de LLMs. Sua
 | `@mariozechner/pi-pods` | latest | CLI para gerenciar deployments vLLM |
 
 #### Pontos Fortes
+
 - Altamente extensível e modular
 - Ótimo para prototipagem rápida ("mess around and find out")
 - Serve como engine de sistemas maiores (ex.: openclaw)
@@ -32,8 +33,15 @@ Pi é um toolkit para construção de agentes de IA e gerenciamento de LLMs. Sua
 - Streaming de eventos com API clara
 
 #### Pontos de Atenção
+
 - Ecossistema em evolução ativa (breaking changes possíveis)
 - Documentação ainda crescendo
+
+#### Documentos Relacionados
+
+| Documento | Descrição | Status |
+|-----------|-----------|--------|
+| [pi-ecosystem-map.md](./pi-ecosystem-map.md) | Mapa do ecossistema Pi, camadas, extensibilidade e padrões emergentes | Inicial |
 
 ### Alternativas para Avaliação
 

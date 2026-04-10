@@ -89,13 +89,12 @@
     ],
     "themes": [
       "node_modules/@ifi/oh-pi-themes/themes",
-      "node_modules/mitsupi/pi-themes"
+      "node_modules/mitsupi/pi-themes",
+      "./themes"
     ],
     "prompts": [
       "node_modules/@ifi/oh-pi-prompts/prompts",
       "node_modules/mitsupi/commands"
-    "themes": [
-      "./themes"
     ]
   }
 }

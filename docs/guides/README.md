@@ -11,6 +11,7 @@ Guias práticos para trabalhar com o ecossistema de agentes deste laboratório.
 | [recommended-pi-stack.md](./recommended-pi-stack.md) | Stack curada `@aretw0/pi-stack` — o que inclui, como instalar, filosofia |
 | [terminal-setup.md](./terminal-setup.md) | Configuração de terminal por plataforma — Windows Terminal, Ghostty, WezTerm, VS Code |
 | [monitor-overrides.md](./monitor-overrides.md) | Fix para monitors com github-copilot — diagnóstico e overrides |
+| [testing-isolation.md](./testing-isolation.md) | Testando extensões e temas em isolamento — flags `--no-*`, `PI_CODING_AGENT_DIR` |
 | [pi-platform-compatibility.md](./pi-platform-compatibility.md) | Compatibilidade de plataforma (Windows/Linux/macOS) |
 
 ### Contribuição e Release

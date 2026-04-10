@@ -87,6 +87,26 @@ Em outras palavras:
 
 Essa separação é importante para não esperar do ecossistema Pi uma integração nativa que ainda não foi validada neste laboratório.
 
+### Princípio de isolamento de autenticação
+
+Ao introduzir utilitários externos autenticados, como `gh`, o laboratório deve assumir por padrão que:
+
+- credencial de inferência e credencial operacional são coisas diferentes
+- uma não deve ser estendida automaticamente para a outra
+
+Isso vale mesmo quando ambas apontam para o mesmo ecossistema, como GitHub.
+
+Cenários em que a separação importa:
+
+1. quando o operador quer usar uma conta GitHub diferente da conta ligada ao provider
+2. quando as permissões para operação precisam ser menores ou mais específicas que as da sessão principal
+3. quando a extensão futura precisa evitar uso acidental de uma credencial herdada
+
+Diretriz atual do laboratório:
+
+- padrão inicial: autenticação isolada por utilitário
+- conveniência futura: somente via opt-in explícito, com configuração visível e possibilidade clara de reversão
+
 ## Critério de Avanço
 
 Podemos considerar a migração madura quando:
@@ -125,5 +145,6 @@ Resumo do aprendizado:
 - a stack mínima instalou e foi persistida em `~/.pi/agent/settings.json`
 - artefatos gerados no workspace devem ser curados antes de entrar no git
 - a convergência para GitHub no curto prazo provavelmente passa por `gh` como ponte operacional, não por abstração própria imediata
+- qualquer futura integração de autenticação deve começar com isolamento entre credenciais de provider e credenciais operacionais
 
 Ver experimento: [202604-pi-first-validation](../../experiments/202604-pi-first-validation/README.md)

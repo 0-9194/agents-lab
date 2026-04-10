@@ -67,6 +67,7 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
   - [x] Confirmar que a próxima fricção é autenticação do `gh`, não inferência do Pi
   - [ ] Autenticar `gh` e validar leitura de `issues` e `prs`
   - [ ] Medir ergonomia de Pi + `gh` contra o fluxo atual com GitHub Copilot
+  - [ ] Definir política de isolamento entre credenciais de provider e credenciais operacionais de utilitários externos
 - [ ] Experimento com múltiplos providers de LLM
 - [ ] Experimento com A2A protocol
 - [ ] Identificar padrões recorrentes candidatos a primitivas
@@ -106,3 +107,4 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
 - Novas descobertas nas fases iniciais podem reordenar ou reescrever fases futuras.
 - Cada milestone deve ser discutido antes de ser iniciado.
 - Comportamentos opinativos de engines e extensões devem ser entendidos antes de serem limpos, ignorados ou removidos.
+- Integrações futuras com utilitários autenticados devem começar com isolamento de credenciais; qualquer compartilhamento entre autenticação do provider e autenticação operacional deve ser explícito, configurável e reversível.

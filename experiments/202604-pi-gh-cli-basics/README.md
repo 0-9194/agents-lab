@@ -118,6 +118,30 @@ Isso redefine o experimento:
 - integração GitHub: parcialmente destravada
 - autenticação do `gh`: ainda pendente
 
+### 4. Autenticação operacional deve permanecer isolada da inferência
+
+Este experimento também deixou mais claro um princípio importante para o laboratório:
+
+- autenticação do provider de inferência não deve ser automaticamente tratada como autenticação operacional de utilitários externos
+
+No caso atual:
+
+- `github-copilot` autentica o Pi para inferência
+- `gh` autentica operações GitHub concretas
+
+Essas duas camadas até podem convergir no futuro em alguns cenários, mas não devem ser fundidas por padrão.
+
+Razão principal:
+
+1. pode existir necessidade de operar no GitHub com outra conta
+2. pode existir necessidade de escopo diferente de permissão
+3. uma extensão não deve "herdar sem querer" uma credencial operacional mais forte do que o necessário
+
+Leitura provisória do laboratório:
+
+- default seguro: isolamento entre credencial de inferência e credencial operacional
+- extensão futura: só permitir compartilhamento explícito, com opt-in claro e superfície de configuração visível
+
 ## Implicações para o laboratório
 
 Este experimento reforça uma decisão importante:
@@ -127,8 +151,14 @@ Este experimento reforça uma decisão importante:
 
 Também deixa explícito que a convergência para usar o Pi como driver não depende de “esperar o ecossistema maturar sozinho”. Ela depende de compor bem o que já funciona hoje.
 
+Também introduz um princípio transversal para futuras primitivas:
+
+- qualquer utilitário externo com autenticação própria deve começar isolado da credencial do provider
+- qualquer ponte entre credenciais deve ser deliberada, reversível e auditável
+
 ## Próximos passos
 
 1. autenticar o `gh` no ambiente
 2. rodar um primeiro experimento read-only com `gh issue list` e `gh pr list`
 3. medir a clareza do fluxo Pi + `gh` em comparação com o uso atual do GitHub Copilot
+4. discutir em que cenários uma futura integração poderia oferecer extensão opcional de credenciais sem quebrar isolamento entre contas e permissões

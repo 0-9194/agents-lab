@@ -67,8 +67,9 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
   - [x] Confirmar que a próxima fricção é autenticação do `gh`, não inferência do Pi
   - [x] Autenticar `gh` e validar leitura de `issues` e `prs`
   - [x] Definir política de isolamento entre credenciais de provider e credenciais operacionais de utilitários externos
+  - [x] Validar uma primeira operação de escrita controlada via `gh`
   - [ ] Medir ergonomia de Pi + `gh` contra o fluxo atual com GitHub Copilot
-  - [ ] Validar uma primeira operação de escrita controlada via `gh`
+  - [ ] Avançar de issue ops para PR ops com o mesmo modelo controlado e reversível
 - [ ] Experimento com múltiplos providers de LLM
 - [ ] Experimento com A2A protocol
 - [ ] Identificar padrões recorrentes candidatos a primitivas

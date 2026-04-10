@@ -144,6 +144,50 @@ Isso fecha o primeiro ciclo de paridade GitHub em modo read-only:
 3. leitura remota funcional
 4. Pi orquestrando o fluxo em cima do `gh`
 
+### 8. Ergonomia de prompt curto funcionou melhor do que o esperado
+
+Depois da validação inicial com prompts mais explícitos, testamos formulações mais curtas, por exemplo:
+
+- "Com gh, veja se este repositório tem issues abertas e me diga o resultado em uma linha."
+- "Com gh, veja se este repositório tem PRs abertas e me diga o resultado em uma linha."
+
+Resultado observado:
+
+- o Pi entendeu a intenção corretamente
+- usou o `gh` sem precisar de instruções detalhadas sobre o comando
+- respondeu de forma curta e adequada
+
+Isso melhora a leitura sobre ergonomia:
+
+- o fluxo Pi + `gh` ainda não tem a fluidez de uma integração GitHub nativa
+- mas para read paths simples o custo cognitivo já é menor do que parecia no começo do experimento
+
+### 9. Write path validado com operação reversível
+
+Também executamos uma primeira escrita controlada no GitHub usando o Pi em modo núcleo puro com `gh`:
+
+1. criar uma issue de teste
+2. confirmar sua existência
+3. fechá-la em seguida com comentário explícito de experimento
+
+Resultado observado:
+
+- issue criada: `#2` — `[lab] teste controlado pi-gh write path 2026-04-10`
+- issue fechada logo em seguida
+- comentário registrado explicando que a issue existia apenas para validar o write path reversível
+
+Estado final validado:
+
+- issue `#2` em estado `CLOSED`
+- comentário presente no histórico
+
+Isso fecha o primeiro ciclo de escrita controlada:
+
+1. Pi aciona `gh`
+2. GitHub recebe a operação
+3. o laboratório confirma o efeito remoto
+4. a operação é revertida de forma limpa
+
 ## Descobertas
 
 ### 1. O gap atual de paridade com GitHub não está no provider do Pi
@@ -210,6 +254,14 @@ Mesmo sem skill dedicada e sem integração nativa do ecossistema Pi para GitHub
 
 O custo cognitivo ainda existe, porque o prompt precisa ser mais explícito do que em superfícies GitHub mais integradas. Mas a distância até uso real ficou menor do que a hipótese inicial sugeria.
 
+### 6. O write path mínimo também já é plausível
+
+A criação e o fechamento da issue de teste mostram que a composição Pi + `gh` já não está restrita a leitura.
+
+Para ações pequenas, explícitas e reversíveis, o fluxo já é utilizável no laboratório.
+
+Isso não significa que PRs, reviews e checks já tenham a mesma ergonomia, mas reduz outra incerteza importante: a escrita operacional no GitHub também já funciona no modelo atual.
+
 ## Implicações para o laboratório
 
 Este experimento reforça uma decisão importante:
@@ -226,7 +278,7 @@ Também introduz um princípio transversal para futuras primitivas:
 
 ## Próximos passos
 
-1. comparar o mesmo read path com uma formulação de prompt mais enxuta para medir quanto da ergonomia depende do operador
-2. avançar para uma ação de escrita controlada e reversível, como criar uma issue de teste
-3. medir a clareza do fluxo Pi + `gh` em comparação com o uso atual do GitHub Copilot
+1. medir mais explicitamente a diferença de ergonomia entre prompts curtos e prompts detalhados no fluxo Pi + `gh`
+2. comparar a clareza do fluxo Pi + `gh` com o uso atual do GitHub Copilot em tarefas equivalentes
+3. avançar de issue ops para operações de PR read/write com o mesmo cuidado reversível
 4. discutir em que cenários uma futura integração poderia oferecer extensão opcional de credenciais sem quebrar isolamento entre contas e permissões

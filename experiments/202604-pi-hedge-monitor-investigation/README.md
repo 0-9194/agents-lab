@@ -88,7 +88,7 @@ No bundle compilado de `@davidorex/pi-behavior-monitors`, a função `parseModel
 
 ```ts
 if (spec contains "/") {
-	return { provider, modelId }
+  return { provider, modelId }
 }
 return { provider: "anthropic", modelId: spec }
 ```

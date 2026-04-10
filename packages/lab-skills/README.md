@@ -25,3 +25,21 @@ pi install npm:@aretw0/lab-skills
 ## Qualidade e Slop
 
 A skill `evaluate-extension` inclui critérios anti-slop — sinais de alerta para extensões de baixa qualidade. O lab não curadoria extensões automaticamente; toda inclusão na stack passa por avaliação estruturada e review humano.
+
+## Instalação via git
+
+Para a versão mais recente sem esperar publish:
+
+```bash
+pi install https://github.com/aretw0/agents-lab
+```
+
+Isso instala todos os pacotes `@aretw0/*` de uma vez.
+
+## Repositório
+
+[github.com/aretw0/agents-lab](https://github.com/aretw0/agents-lab)
+
+## Licença
+
+MIT

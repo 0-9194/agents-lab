@@ -27,6 +27,9 @@
       "packages/web-skills/skills",
       "packages/pi-skills/skills",
       "packages/lab-skills/skills"
+    ],
+    "themes": [
+      "packages/pi-stack/themes"
     ]
   },
   "engines": {

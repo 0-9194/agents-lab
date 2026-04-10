@@ -18,6 +18,7 @@
   "files": [
     "install.mjs",
     "extensions",
+    "themes",
     "README.md"
   ],
   "dependencies": {
@@ -53,6 +54,7 @@
   "pi": {
     "extensions": [
       "./extensions/monitor-provider-patch.ts",
+      "./extensions/environment-doctor.ts",
       "node_modules/pi-lens/index.ts",
       "node_modules/pi-web-access/index.ts",
       "node_modules/@davidorex/pi-project-workflows/project-extension.ts",
@@ -91,6 +93,8 @@
     "prompts": [
       "node_modules/@ifi/oh-pi-prompts/prompts",
       "node_modules/mitsupi/commands"
+    "themes": [
+      "./themes"
     ]
   }
 }

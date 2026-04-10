@@ -25,3 +25,21 @@ Após instalação, as skills ficam disponíveis como `/skill:terminal-setup`, `
 - Quem está configurando o pi pela primeira vez
 - Quem quer criar extensões, skills ou temas para o ecossistema
 - Quem quer entender quando usar skill vs extension vs prompt template
+
+## Instalação via git
+
+Para a versão mais recente sem esperar publish:
+
+```bash
+pi install https://github.com/aretw0/agents-lab
+```
+
+Isso instala todos os pacotes `@aretw0/*` de uma vez.
+
+## Repositório
+
+[github.com/aretw0/agents-lab](https://github.com/aretw0/agents-lab)
+
+## Licença
+
+MIT

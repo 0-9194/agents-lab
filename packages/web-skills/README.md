@@ -47,3 +47,21 @@ Conforme a curadoria avança, outras abordagens (`@ifi/web-search`, `pi-web-acce
 |---|---|
 | `native-web-search` | `mitsupi/skills/native-web-search` (MIT) |
 | `web-browser` | `mitsupi/skills/web-browser` (MIT) — SKILL.md reescrito, scripts owned |
+
+## Instalação via git
+
+Para a versão mais recente sem esperar publish:
+
+```bash
+pi install https://github.com/aretw0/agents-lab
+```
+
+Isso instala todos os pacotes `@aretw0/*` de uma vez.
+
+## Repositório
+
+[github.com/aretw0/agents-lab](https://github.com/aretw0/agents-lab)
+
+## Licença
+
+MIT

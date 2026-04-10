@@ -41,3 +41,21 @@ Estas são primitivas first-party do agents-lab. As skills de referência (`mits
 | `git-workflow` | `@ifi/oh-pi-skills/git-workflow` (MIT) — seção de commit removida |
 | `github` | `mitsupi/skills/github` (MIT) — expandida com issues e escrita |
 | `glab` | First-party original, modelada a partir de `github` |
+
+## Instalação via git
+
+Para a versão mais recente sem esperar publish:
+
+```bash
+pi install https://github.com/aretw0/agents-lab
+```
+
+Isso instala todos os pacotes `@aretw0/*` de uma vez.
+
+## Repositório
+
+[github.com/aretw0/agents-lab](https://github.com/aretw0/agents-lab)
+
+## Licença
+
+MIT

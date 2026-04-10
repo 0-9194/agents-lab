@@ -1,56 +1,87 @@
 # @aretw0/pi-stack
 
-> Meta-pacote que centraliza a stack curada de extensões pi do agents-lab.
+> Stack curada de extensões pi — um `pi install` que traz tudo.
 
-## O que é
+## Instalação
 
-Um único `pi install` que traz toda a stack de extensões que o agents-lab usa e curadoria. Em vez de instalar 12 pacotes separados, você instala um.
-
-## Uso
+**Via npm:**
 
 ```bash
 pi install npm:@aretw0/pi-stack
 ```
 
-Isso substitui todas as entradas individuais no seu `settings.json`:
+**Via npx (one-click):**
 
-```diff
-- "npm:pi-lens",
-- "npm:pi-web-access",
-- "npm:@davidorex/pi-project-workflows",
-- "npm:@ifi/oh-pi-skills",
-- "npm:@ifi/oh-pi-themes",
-- "npm:@ifi/oh-pi-prompts",
-- "npm:@ifi/oh-pi-extensions",
-- "npm:@ifi/oh-pi-ant-colony",
-- "npm:@ifi/pi-extension-subagents",
-- "npm:@ifi/pi-plan",
-- "npm:@ifi/pi-spec",
-- "npm:@ifi/pi-web-remote"
-+ "npm:@aretw0/pi-stack"
+```bash
+npx @aretw0/pi-stack           # global
+npx @aretw0/pi-stack --local   # projeto atual
+npx @aretw0/pi-stack --remove  # desinstalar
+```
+
+**Via git (sempre atualizado):**
+
+```bash
+pi install https://github.com/aretw0/agents-lab
 ```
 
 ## O que inclui
 
-| Pacote | Tipo | O que faz |
-|--------|------|-----------|
-| `pi-lens` | extension + skills | LSP, ast-grep, linting, code analysis |
-| `pi-web-access` | extension + skills | Web search, fetch, YouTube, PDF |
-| `@davidorex/pi-project-workflows` | extension + skills | Project blocks, workflows, monitors |
-| `@ifi/oh-pi-skills` | skills | Debug, git-workflow, glassmorphism, etc. |
-| `@ifi/oh-pi-themes` | themes | Temas visuais para o TUI |
-| `@ifi/oh-pi-prompts` | prompts | Prompt templates curados |
-| `@ifi/oh-pi-extensions` | extension | Extensões diversas |
-| `@ifi/oh-pi-ant-colony` | extension | Ant colony para tarefas paralelas |
-| `@ifi/pi-extension-subagents` | extension | Sub-agentes delegáveis |
-| `@ifi/pi-plan` | extension | Planejamento de tarefas |
-| `@ifi/pi-spec` | extension | Especificações formais |
-| `@ifi/pi-web-remote` | extension | Controle remoto via web |
+### First-Party (`@aretw0/*`)
+
+| Pacote | O que traz |
+|---|---|
+| [`@aretw0/git-skills`](https://www.npmjs.com/package/@aretw0/git-skills) | `commit`, `git-workflow`, `github` (gh CLI), `glab` |
+| [`@aretw0/web-skills`](https://www.npmjs.com/package/@aretw0/web-skills) | `native-web-search`, `web-browser` (CDP) |
+| [`@aretw0/pi-skills`](https://www.npmjs.com/package/@aretw0/pi-skills) | `terminal-setup`, `create-pi-skill/extension/theme/prompt` |
+| [`@aretw0/lab-skills`](https://www.npmjs.com/package/@aretw0/lab-skills) | `evaluate-extension`, `cultivate-primitive`, `stack-feedback` |
+
+### Extensions Incluídas
+
+| Extension | O que faz |
+|---|---|
+| `monitor-provider-patch` | Fix automático de monitors para github-copilot — cria overrides se necessário |
+| `environment-doctor` | Health check do ambiente na startup + comando `/doctor` |
+
+### Tema
+
+| Tema | Descrição |
+|---|---|
+| `agents-lab` | Tema com realce de código melhorado — cyan/purple para identificadores, contraste alto |
+
+Ativar: `/settings` → selecionar `agents-lab`
+
+### Terceiros Curados
+
+| Pacote | O que traz |
+|---|---|
+| `pi-lens` | LSP, ast-grep, code analysis |
+| `pi-web-access` | Fetch, PDF, YouTube |
+| `@davidorex/pi-project-workflows` | Project blocks, workflows YAML, monitors |
+| `@ifi/oh-pi-extensions` | safe-guard, git-guard, bg-process, e mais |
+| `@ifi/oh-pi-skills` | debug-helper, quick-setup, e mais |
+| `@ifi/oh-pi-themes` | Temas visuais |
+| `@ifi/oh-pi-prompts` | Prompt templates |
+| `@ifi/oh-pi-ant-colony` | Multi-agent swarm |
+| `@ifi/pi-extension-subagents` | Subagentes delegáveis |
+| `@ifi/pi-plan` | Planejamento com `/plan` |
+| `@ifi/pi-spec` | Workflow spec-driven com `/spec` |
+| `@ifi/pi-web-remote` | Sessão via web |
+| `mitsupi` | multi-edit, review, context, files, todos, e mais |
+
+## Comandos
+
+| Comando | O que faz |
+|---|---|
+| `/doctor` | Diagnóstico do ambiente — verifica git, gh, glab, node, npm e autenticações |
 
 ## Filosofia
 
-Este é um **meta-pacote transitório**. Conforme o agents-lab curadoria as primitivas e identifica overlap entre extensões, pacotes first-party vão substituir gradualmente as dependências de terceiros. O objetivo é que `@aretw0/pi-stack` eventualmente dependa mais de pacotes `@aretw0/*` do que de terceiros.
+Este meta-pacote é transitório. Conforme o agents-lab curadoria as primitivas, pacotes first-party vão substituir gradualmente as dependências de terceiros. O objetivo é que `@aretw0/pi-stack` dependa cada vez mais de `@aretw0/*` e menos de terceiros.
 
-## Status
+## Repositório
 
-🧪 **Experimental** — a composição da stack vai mudar conforme a curadoria avança.
+[github.com/aretw0/agents-lab](https://github.com/aretw0/agents-lab)
+
+## Licença
+
+MIT

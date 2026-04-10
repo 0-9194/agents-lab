@@ -47,10 +47,12 @@ Obrigado por querer contribuir! Este laboratório é um espaço colaborativo de 
 - **Segredos:** Nunca commite chaves de API, tokens ou credenciais.
 - **PRs pequenos:** Prefira PRs focados em um único tópico.
 - **Contexto:** Inclua sempre o contexto de por que a contribuição é relevante para o laboratório.
+- **Workspace:** Artefatos gerados por engines e extensões devem ser entendidos antes de serem ignorados, removidos ou promovidos a convenção do projeto.
 
 ## Discussões
 
 Abra uma [Issue](../../issues) para:
+
 - Propor novos temas de pesquisa
 - Sugerir novas primitivas
 - Discutir a estrutura do laboratório

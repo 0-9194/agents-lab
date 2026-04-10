@@ -37,7 +37,7 @@ A engine primária deste laboratório é o **[pi](https://github.com/badlogic/pi
 
 ## Estrutura do Repositório
 
-```
+```text
 agents-lab/
 ├── docs/
 │   ├── research/       # Pesquisas, análises e material de referência
@@ -69,6 +69,21 @@ Um princípio central é minimizar a fricção cognitiva para quem experimenta e
 - Documentação clara e acessível
 - Exemplos autocontidos
 - Abstrações que mapeiam naturalmente para os conceitos do domínio
+
+### Workspace como Superfície de Trabalho
+
+O laboratório trata o workspace como parte da interface de trabalho entre humanos, agentes e ferramentas.
+
+Isso significa que arquivos, diretórios e artefatos projetados por uma engine ou extensão não devem ser vistos apenas como detalhe técnico. Eles podem revelar:
+
+- intenção arquitetural
+- forma de colaboração
+- memória operacional
+- novas convenções de trabalho
+
+Nosso objetivo não é controlar cedo demais o workspace de ninguém, e sim entender como ele passa a estruturar o trabalho conjunto.
+
+Ver também: [docs/guides/workspace-philosophy.md](./docs/guides/workspace-philosophy.md)
 
 ## Começando
 

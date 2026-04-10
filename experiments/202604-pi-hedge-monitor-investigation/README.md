@@ -226,6 +226,31 @@ O `CHANGELOG.md` do pacote registra evoluções de runtime, comandos e integraç
 
 Isso não prova erro, mas reduz nossa capacidade de tratar o comportamento como convenção documentada. Até aqui, a explicação mais sólida continua vindo do schema e do código compilado, não da documentação de superfície.
 
+### 10. A hipótese já foi confirmada em um segundo sensor em execução
+
+Depois da inspeção estática, fizemos uma validação funcional mínima com o comando:
+
+```bash
+pi --provider github-copilot --model gpt-5.4 -p "/work-quality"
+```
+
+Resultado observado:
+
+```text
+[work-quality] classify failed: No tool call in response (stopReason: error, content: [] error: Could not resolve authentication method. Expected either apiKey or authToken to be set. Or for one of the "X-Api-Key" or "Authorization" headers to be explicitly omitted)
+```
+
+Esse resultado importa porque fecha o ciclo de evidência em dois níveis:
+
+1. inspeção estática: todos os classificadores empacotados usam `model: claude-sonnet-4-6` sem provider
+2. validação funcional: outro sensor além do `hedge` falha do mesmo modo em ambiente autenticado apenas com `github-copilot`
+
+Com isso, a leitura mais forte sobe de patamar:
+
+- não estamos diante de um problema local do `hedge`
+- já existe confirmação prática de que a fragilidade alcança pelo menos um segundo sensor (`work-quality`)
+- a questão relevante do laboratório deixa de ser apenas "como corrigir o hedge" e passa a ser "como o ecossistema Pi deveria alinhar sensores auxiliares ao provider principal"
+
 ## O que este experimento ainda não conclui
 
 Ainda não concluímos:
@@ -236,6 +261,7 @@ Ainda não concluímos:
 - se essa solução deve ser tratada como workaround local ou convenção legítima do laboratório
 - se a discrepância entre skill/README e runtime é atraso de documentação ou mudança de arquitetura ainda não consolidada
 - se outros sensores devem receber overrides locais equivalentes quando forem colocados em uso real
+- se vale criar overrides locais apenas sob demanda ou padronizar alinhamento explícito para toda a família de classificadores
 
 ## Implicações para o laboratório
 
@@ -256,4 +282,4 @@ Também é o primeiro caso claro em que um arquivo dentro de `.pi/` deixa de ser
 1. decidir se o comportamento é bug, limitação de design ou convenção deliberada do pacote
 2. decidir se `.pi/agents/hedge-classifier.agent.yaml` deve permanecer como artefato versionado do laboratório
 3. usar o caso como referência para futuras decisões sobre `.pi/` como superfície de projeto
-4. repetir validação funcional em outros sensores da stack para confirmar se o padrão também aparece em execução, não só na inspeção estática
+4. validar pelo menos mais um sensor orientado a tool use, como `fragility` ou `unauthorized-action`, para medir o alcance do problema em eventos diferentes

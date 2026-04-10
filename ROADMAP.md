@@ -55,8 +55,10 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
   - [x] Padronizar overrides locais para todos os classificadores empacotados
   - [x] Separar configuração versionável (`.pi/agents/`) de saída operacional de runtime (`.project/`)
   - [x] Abrir issue upstream com a reprodução consolidada e a hipótese causal
-- [ ] Primeiro experimento com `pi-agent-core`
+- [x] Primeiro experimento com `pi-agent-core`
 - [ ] Experimento com tool calling em Pi
+  - [x] Validar baseline de `read`, `write` e `bash` no núcleo puro do Pi
+  - [ ] Rodar fluxo multi-etapa com tool calling em arquivos reais do projeto
 - [ ] Experimento com múltiplos providers de LLM
 - [ ] Experimento com A2A protocol
 - [ ] Identificar padrões recorrentes candidatos a primitivas

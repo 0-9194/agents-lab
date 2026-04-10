@@ -86,3 +86,4 @@ Primeiros experimentos já começaram a surgir a partir da validação prática 
 | Experimento | Engine | Status | Data |
 |-------------|--------|--------|------|
 | [202604-pi-first-validation](./202604-pi-first-validation/README.md) | Pi | Concluído | 2026-04-09 |
+| [202604-pi-hedge-monitor-investigation](./202604-pi-hedge-monitor-investigation/README.md) | Pi | Em andamento | 2026-04-10 |

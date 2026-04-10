@@ -46,6 +46,7 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
 
 **Objetivo:** Rodar experimentos concretos e começar a identificar primitivas.
 
+- [ ] Investigar monitores comportamentais do Pi stack (`hedge` e similares)
 - [ ] Primeiro experimento com `pi-agent-core`
 - [ ] Experimento com tool calling em Pi
 - [ ] Experimento com múltiplos providers de LLM

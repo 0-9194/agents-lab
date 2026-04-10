@@ -146,6 +146,28 @@ Isso confirma a leitura causal mais forte deste experimento:
 - o monitor não herdava automaticamente o provider do fluxo principal
 - um artefato local em `.pi/agents/` consegue reconfigurar o comportamento de forma limpa
 
+### 6. A documentação interna do pacote parece desatualizada
+
+Durante a investigação, a skill embutida de `pi-behavior-monitors` descreveu um formato de monitor em que o bloco `classify` teria campos como:
+
+- `classify.model`
+- `classify.promptTemplate`
+- `classify.prompt`
+
+Mas o schema e o runtime observados no pacote atual trabalham de outra forma:
+
+- o schema exige `classify.agent`
+- o runtime exige um `.agent.yaml` separado para resolver modelo, prompt e output schema
+- a lógica real de provider/model acontece dentro do carregamento do agent spec
+
+Isso não invalida a utilidade da skill, mas muda sua confiabilidade como fonte única de verdade técnica.
+
+Leitura prática para o laboratório:
+
+1. README/skill do pacote não bastam para entender o comportamento real
+2. schema e código compilado precisam entrar na investigação quando houver discrepância
+3. a diferença entre documentação declarada e runtime efetivo é, por si só, um achado importante do experimento
+
 ## O que este experimento ainda não conclui
 
 Ainda não concluímos:
@@ -154,6 +176,7 @@ Ainda não concluímos:
 - se há fallback automático de provider e ele está escolhendo um backend incompatível
 - se o comportamento é bug, limitação conhecida ou trade-off deliberado do pacote
 - se essa solução deve ser tratada como workaround local ou convenção legítima do laboratório
+- se a discrepância entre skill/README e runtime é atraso de documentação ou mudança de arquitetura ainda não consolidada
 
 ## Implicações para o laboratório
 

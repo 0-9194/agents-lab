@@ -53,6 +53,24 @@ Implicações para o laboratório — primitivas extraíveis, padrões identific
 - **Segredos:** nunca commitar chaves de API — use `.env.example` como template
 - **Dependências:** liste no `README.md` o que precisa ser instalado
 
+## Princípio de Investigação
+
+Quando uma engine, extensão ou pacote introduzir comportamento opinativo, ruído operacional ou artefatos no workspace, o laboratório deve **entender antes de limpar**.
+
+Isso inclui, por exemplo:
+
+- diretórios gerados no projeto
+- arquivos de configuração projetados por extensões
+- monitores, regras, caches e prompts auxiliares
+- warnings e erros secundários que não impedem o fluxo principal
+
+Heurística de trabalho:
+
+1. reproduzir o comportamento
+2. localizar sua origem
+3. entender sua intenção arquitetural
+4. só então decidir entre versionar, reconfigurar, isolar ou remover
+
 ## Ciclo de Vida
 
 ```text

@@ -86,3 +86,4 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
 - O roadmap é orientativo, não prescritivo. A natureza experimental do laboratório exige flexibilidade.
 - Novas descobertas nas fases iniciais podem reordenar ou reescrever fases futuras.
 - Cada milestone deve ser discutido antes de ser iniciado.
+- Comportamentos opinativos de engines e extensões devem ser entendidos antes de serem limpos, ignorados ou removidos.

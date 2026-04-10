@@ -102,16 +102,32 @@ Também apareceu um erro auxiliar de `hedge` quando o Pi foi executado com a sta
 
 Importante: esse erro não impediu a resposta principal do modelo. O problema está em um monitor auxiliar, não no core do Pi nem no login.
 
+### 6. A resposta do laboratório não deve ser limpeza imediata
+
+Esta primeira validação também definiu uma regra metodológica importante para o laboratório:
+
+- comportamento opinativo de extensão deve ser investigado antes de ser removido
+- artefatos inesperados no workspace devem ser tratados como dado de pesquisa
+- erros auxiliares devem ser entendidos na sua origem antes de virar "higiene"
+
+No caso do `hedge`, a próxima ação correta não é desligar o monitor por reflexo. É entender:
+
+- por que ele existe
+- o que ele tenta classificar
+- por que falha neste contexto
+- se ele revela uma expectativa válida do ecossistema Pi ou apenas um acoplamento ruim
+
 ## Conclusões
 
 - O Pi já está validado para uso prático no laboratório.
 - O uso real de extensões Pi pode povoar o repositório com diretórios opinativos e operacionais.
 - O laboratório precisa tratar a pasta `.pi/` como uma superfície de design, não apenas como detalhe técnico.
 - No futuro, faz sentido termos artefatos nossos dentro de `.pi/`, mas isso deve ser uma decisão explícita de arquitetura, não efeito colateral aceito sem curadoria.
+- O laboratório deve investigar comportamento opinativo antes de limpar ou desabilitar componentes.
 
 ## Próximos passos sugeridos
 
 1. validar um workflow real de planejamento com `/spec` ou `pi-project-workflows`
-2. isolar ou configurar melhor o monitor `hedge`
+2. entender o monitor `hedge` antes de decidir se ele deve ser isolado, reconfigurado ou mantido
 3. decidir quais artefatos de projeto do Pi queremos tornar parte estável do repositório
 4. testar uma primeira sessão de pesquisa web com `pi-web-access`

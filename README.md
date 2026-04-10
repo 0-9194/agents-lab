@@ -23,7 +23,19 @@ A engine primária deste laboratório é o **[pi](https://github.com/badlogic/pi
 - **Ecossistema crescente** — [pacotes disponíveis](https://pi.dev/packages) em constante expansão
 - **Multi-provider** — suporta OpenAI, Anthropic, Google e outros via `@mariozechner/pi-ai`
 
-### Pacotes Pi Relevantes
+### Pacotes First-Party (`@aretw0/*`)
+
+Este repositório é a fábrica onde a curadoria nasce. Os pacotes first-party são construídos aqui e distribuídos via npm:
+
+| Pacote | Descrição |
+|--------|----------|
+| `@aretw0/pi-stack` | Meta-pacote da stack curada — instala tudo com `npx @aretw0/pi-stack` |
+| `@aretw0/git-skills` | Skills de git: `commit`, `git-workflow`, `github` (`gh`), `glab` |
+| `@aretw0/web-skills` | Skills de web: `native-web-search`, `web-browser` (CDP) |
+
+Ver [`docs/guides/publishing.md`](./docs/guides/publishing.md) para o workflow de release.
+
+### Pacotes Pi Relevantes (Terceiros)
 
 | Pacote | Descrição |
 |--------|-----------|
@@ -40,15 +52,19 @@ A engine primária deste laboratório é o **[pi](https://github.com/badlogic/pi
 ```text
 agents-lab/
 ├── packages/
-│   └── pi-stack/       # @aretw0/pi-stack — meta-pacote da stack curada
+│   ├── pi-stack/       # @aretw0/pi-stack — meta-pacote da stack curada (npx @aretw0/pi-stack)
+│   ├── git-skills/     # @aretw0/git-skills — commit, git-workflow, github, glab
+│   └── web-skills/     # @aretw0/web-skills — native-web-search, web-browser (CDP)
 ├── docs/
 │   ├── research/       # Pesquisas, análises e material de referência
-│   ├── guides/         # Guias práticos de uso e configuração
+│   ├── guides/         # Guias práticos de uso, configuração e publicação
 │   ├── primitives/     # Conceitos e catálogo de primitivas de agentes
 │   └── engines/        # Comparações e análises de engines (Pi e alternativas)
 ├── experiments/        # Experimentos práticos e provas de conceito
 ├── primitives/         # Código reutilizável de primitivas de agentes
-├── CONTRIBUTING.md     # Como contribuir
+├── .changeset/         # Changesets pendentes para o próximo release
+├── .github/workflows/  # CI (conventional commits) e publish (tag → npm)
+├── CONTRIBUTING.md     # Como contribuir e como fazer releases
 └── ROADMAP.md          # Planejamento e milestones futuros
 ```
 

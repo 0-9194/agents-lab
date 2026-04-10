@@ -2,7 +2,7 @@
 
 Planejamento e milestones do laboratório. Este é um documento vivo — evolui conforme o laboratório cresce.
 
-## Fase 0 — Fundação (atual)
+## Fase 0 — Fundação (concluída)
 
 **Objetivo:** Criar o solo que vai receber o brainstorm e as pesquisas futuras.
 
@@ -10,11 +10,12 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
 - [x] README com missão, visão e filosofia
 - [x] Estrutura de diretórios (`docs/`, `experiments/`, `primitives/`)
 - [x] Documentação de convenções e contribuição
-- [x] Definir estrutura de longo prazo do repositório (monorepo ou não?)
+- [x] Definir estrutura de longo prazo do repositório
   - **Decisão:** monorepo com npm workspaces (`packages/*`)
   - [x] Criar `package.json` raiz com workspaces
-  - [x] Criar primeiro meta-pacote `@aretw0/pi-stack`
+  - [x] Criar meta-pacote `@aretw0/pi-stack` com `npx @aretw0/pi-stack`
   - [x] Configurar `.pi/settings.json` para dogfood local
+  - [x] Bootstrap de changesets, CI e workflow de publish (tag → npm)
 
 ## Fase 1 — Pesquisa e Documentação
 
@@ -77,14 +78,20 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
 - [ ] Experimento com A2A protocol
 - [ ] Identificar padrões recorrentes candidatos a primitivas
 
-## Fase 3 — Primeiras Primitivas
+## Fase 3 — Primeiras Primitivas (atual)
 
-**Objetivo:** Formalizar as primeiras primitivas reutilizáveis.
+**Objetivo:** Formalizar as primeiras primitivas reutilizáveis como pacotes first-party.
 
-- [ ] Definir estrutura padrão de pacote de primitiva
-- [ ] Implementar e documentar primeira primitiva de memória
-- [ ] Implementar e documentar primeira primitiva de ferramentas
-- [ ] Avaliar estratégia de publicação (npm, etc.)
+- [x] Definir estrutura padrão de pacote (`packages/*`, npm workspaces)
+- [x] Definir estratégia de versionamento (lockstep com changesets)
+- [x] Criar `@aretw0/git-skills` — commit, git-workflow, github, glab
+- [x] Criar `@aretw0/web-skills` — native-web-search, web-browser CDP
+- [x] Criar `@aretw0/pi-stack` com `install.mjs` (npx + fallback Windows)
+- [ ] Publicar scope `@aretw0` no npm e configurar `NPM_TOKEN` no repositório
+- [ ] Primeiro release (`v0.1.0`) e validação do workflow de publish
+- [ ] Avaliar e migrar primitivas de monitors (`@davidorex/pi-behavior-monitors`)
+- [ ] Avaliar e migrar primitivas de extensions (`@ifi/oh-pi-extensions`)
+- [ ] Avaliar Adaptive Routing do `@ifi/oh-pi` como primitiva futura de roteamento
 
 ## Fase 4 — Comunidade e Escala
 
@@ -104,7 +111,7 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
 | ~~Monorepo ou não?~~ | **Decidido:** monorepo com npm workspaces | ✅ Fase 0 |
 | Linguagem principal | TypeScript (Pi) vs. Python vs. poliglota | Fase 2 |
 | DevContainer | Pi funciona nativo no Windows, mas devcontainer será criado quando entrarmos em extensões in-house | Fase 2-3 |
-| Estratégia de publicação | npm / PyPI / GitHub Packages | Fase 3 |
+| ~~Estratégia de publicação~~ | **Decidido:** npm com changesets + lockstep + publish on tag | ✅ Fase 3 |
 
 ## Notas
 

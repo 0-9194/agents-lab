@@ -1,120 +1,83 @@
 # Stack Recomendada de Pi para o agents-lab
 
-## Objetivo
+## Estado Atual
 
-Definir uma stack mínima e coerente para começar a usar Pi sem cair em instalação aleatória de pacotes sobrepostos.
-
-## Princípio
-
-Começar com uma composição pequena, validável e reversível.
-
-## Camada 1 — Base operacional
-
-### Opção recomendada
+O agents-lab publica e mantém sua própria stack curada como meta-pacote npm.
+**Esta é a forma recomendada de instalar a stack completa:**
 
 ```bash
-npx @ifi/oh-pi
+npx @aretw0/pi-stack          # instala globalmente
+npx @aretw0/pi-stack --local  # instala no projeto atual
 ```
 
-Razão:
-
-- oferece bootstrap mais rápido do ecossistema
-- resolve utilidades operacionais de alto valor logo de início
-- serve como baseline concreto para comparação futura
-
-Recursos mais relevantes para o laboratório:
-
-- `git-guard`
-- `auto-session-name`
-- `custom-footer`
-- `compact-header`
-- `/spec`
-
-`ant-colony` pode ficar desabilitado no começo, já que multi-agente ainda é área de comparação e não de adoção fechada.
-
-## Camada 2 — Workflow e project state
+Ou diretamente via pi:
 
 ```bash
-pi install npm:@davidorex/pi-project-workflows
+pi install npm:@aretw0/pi-stack
 ```
 
-Razão:
+---
 
-- adiciona estrutura forte para project state, workflows e monitores
-- conversa bem com nossa necessidade de pesquisa organizada e evolução incremental
+## O que está na stack
 
-Uso recomendado inicial:
+### Pacotes First-Party (`@aretw0/*`)
 
-- explorar `pi-project` e `pi-workflows`
-- adotar só o que reduzir atrito real
-- evitar modelar tudo cedo demais
+Desenvolvidos e curados no agents-lab:
 
-## Camada 3 — Qualidade de código inline
+| Pacote | Skills / Extensions incluídas |
+|---|---|
+| `@aretw0/git-skills` | `commit`, `git-workflow`, `github` (gh CLI), `glab` |
+| `@aretw0/web-skills` | `native-web-search`, `web-browser` (CDP) |
+
+### Pacotes de Terceiros (via `@aretw0/pi-stack`)
+
+Curados e incluídos no meta-pacote enquanto equivalentes first-party não estão prontos:
+
+| Pacote | O que traz |
+|---|---|
+| `pi-lens` | LSP, ast-grep, linting, análise de código |
+| `@davidorex/pi-project-workflows` | Project blocks, workflows YAML, monitors comportamentais |
+| `@ifi/oh-pi-extensions` | safe-guard, git-guard, bg-process, auto-session-name e outros |
+| `@ifi/oh-pi-skills` | debug-helper, claymorphism, quick-setup e outros |
+| `@ifi/oh-pi-themes` | Temas visuais para o TUI |
+| `@ifi/oh-pi-prompts` | Prompt templates curados |
+| `@ifi/oh-pi-ant-colony` | Multi-agent swarm |
+| `@ifi/pi-extension-subagents` | Subagentes delegáveis |
+| `@ifi/pi-plan` | Modo de planejamento com `/plan` |
+| `@ifi/pi-spec` | Workflow spec-driven com `/spec` |
+| `@ifi/pi-web-remote` | Compartilhamento de sessão via web |
+| `mitsupi` | Extensions: multi-edit, review, context, files, todos e outros |
+| `pi-web-access` | Fetch, PDF, YouTube — permanece até first-party de web estar maduro |
+
+---
+
+## Filosofia de Curadoria
+
+A stack evolui em dois sentidos:
+
+1. **Substituição gradual** — pacotes de terceiros são substituídos por equivalentes first-party conforme a curadoria os estuda e melhora
+2. **Sem overlap** — skills e extensions sobrepostas são filtradas no `.pi/settings.json` do projeto; apenas a versão first-party fica ativa
+
+O critério de entrada de um pacote de terceiro na stack é: **uso real + valor comprovado + sem overlap não resolvido**.
+
+---
+
+## Instalação Individual
+
+Para instalar apenas um subset da stack:
 
 ```bash
-pi install npm:pi-lens
+pi install npm:@aretw0/git-skills    # só skills de git
+pi install npm:@aretw0/web-skills    # só skills de web
+pi install npm:pi-lens               # só o pi-lens
 ```
 
-Razão:
+---
 
-- feedback em tempo real durante sessões: lint, type-check, formatação, testes e segurança
-- auto-instala dependências de análise baseado no contexto do projeto
-- delta reporting reduz ruído de issues legacy
-- comandos `/lens-booboo` e `/lens-health` para visibilidade
+## Referências Históricas
 
-Sem pi-lens, o agente é cego para erros até que checks manuais sejam executados.
+Esta stack evoluiu a partir de pesquisa documentada em:
 
-## Camada 4 — Pesquisa e utilitários complementares
-
-```bash
-pi install npm:pi-web-access
-```
-
-Razão:
-
-- web search e fetch são centrais para a fase atual do laboratório
-
-Pacotes a avaliar depois, não no primeiro dia:
-
-- `@ifi/pi-extension-subagents`
-- `@0xkobold/pi-orchestration`
-- uma solução de memória entre `memex`, `pi-memory` e `pi-brain`
-
-## Camada 5 — Desenvolvimento de extensões
-
-Quando entrarmos na fase de construção própria:
-
-```bash
-npm install --save-dev @marcfargas/pi-test-harness
-```
-
-Razão:
-
-- permite testar extensões em ambiente Pi real sem depender de LLM real
-
-## Ordem Recomendada de Adoção
-
-1. instalar Pi
-2. instalar `oh-pi`
-3. instalar `pi-lens`
-4. validar fluxo básico de uso
-5. adicionar `pi-project-workflows`
-6. adicionar `pi-web-access`
-7. testar categorias ambíguas uma a uma
-
-## O Que Evitar no Início
-
-- instalar muitos pacotes de multi-agente ao mesmo tempo
-- instalar múltiplas soluções de memória sem critério
-- abrir uma trilha de extensões próprias antes de validar a stack mínima
-
-## Conclusão
-
-Hoje a stack recomendada é:
-
-1. `@mariozechner/pi-coding-agent`
-2. `@ifi/oh-pi`
-3. `pi-lens`
-4. `@davidorex/pi-project-workflows`
-5. `pi-web-access`
-6. `@marcfargas/pi-test-harness` quando a fábrica começar
+- [`docs/research/pi-extension-scorecard.md`](../research/pi-extension-scorecard.md)
+- [`docs/research/extension-factory-blueprint.md`](../research/extension-factory-blueprint.md)
+- [`docs/engines/pi-ecosystem-map.md`](../engines/pi-ecosystem-map.md)

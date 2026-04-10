@@ -25,6 +25,19 @@ Obrigado por querer contribuir! Este laboratório é um espaço colaborativo de 
 3. Nunca commite chaves de API ou segredos — use `.env.example`.
 4. Abra um PR descrevendo o objetivo e os resultados iniciais.
 
+### Desenvolvendo um Pacote First-Party
+
+Os pacotes first-party vivem em `packages/` e são distribuídos como `@aretw0/*` no npm.
+
+1. Crie um diretório em `packages/meu-pacote/` com `package.json` e `README.md`.
+2. Adicione o pacote ao `.pi/settings.json` do projeto para desenvolvimento local:
+   ```json
+   { "packages": ["./packages/pi-stack", "./packages/meu-pacote"] }
+   ```
+3. Faça `/reload` no pi para carregar o pacote.
+4. Quando a mudança estiver pronta, crie um changeset (ver abaixo).
+5. Quando o pacote estiver maduro, adicione-o como dependência do `pi-stack`.
+
 ### Promovendo uma Primitiva
 
 1. O experimento de origem deve estar documentado e com resultados claros.
@@ -33,17 +46,42 @@ Obrigado por querer contribuir! Este laboratório é um espaço colaborativo de 
 4. Atualize o catálogo em [`docs/primitives/README.md`](./docs/primitives/README.md).
 5. Abra um PR referenciando o experimento de origem.
 
-### Atualizando Análises de Engines
+## Workflow de Release
 
-1. Edite ou crie arquivos em [`docs/engines/`](./docs/engines/).
-2. Use os [critérios de avaliação padronizados](./docs/engines/README.md).
-3. Abra um PR com a análise.
+Este monorepo usa [Changesets](https://github.com/changesets/changesets) com versionamento lockstep.
+Todos os pacotes `@aretw0/*` compartilham a mesma versão.
+
+### Documentar uma mudança distribuível
+
+Sempre que alterar algo em `packages/` que merea release:
+
+```bash
+npx changeset
+# Escolha: qual pacote, tipo (patch/minor/major), descrição da mudança
+git add .changeset/
+git commit -m "..."
+```
+
+Mudanças em `docs/`, `experiments/` ou configurações internas não precisam de changeset.
+
+### Fazer um release
+
+Ver guia completo em [`docs/guides/publishing.md`](./docs/guides/publishing.md).
+
+```bash
+npm run release              # bumpa versões + atualiza CHANGELOG.md
+git add .
+git commit -m "chore: release vX.X.X"
+git tag vX.X.X
+git push && git push --tags  # GitHub Actions publica no npm
+```
 
 ## Diretrizes Gerais
 
 - **Idioma:** Documentação principal em **Português (BR)**; código e comentários técnicos podem ser em inglês.
 - **Markdown:** Use Markdown padrão com tabelas e blocos de código quando apropriado.
 - **Nomenclatura de arquivos:** Use **kebab-case** (ex.: `pi-agent-core.md`).
+- **Commits:** Seguir [Conventional Commits](https://www.conventionalcommits.org/) — o CI valida.
 - **Segredos:** Nunca commite chaves de API, tokens ou credenciais.
 - **PRs pequenos:** Prefira PRs focados em um único tópico.
 - **Contexto:** Inclua sempre o contexto de por que a contribuição é relevante para o laboratório.

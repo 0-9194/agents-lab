@@ -80,27 +80,49 @@ Na validação real, o pacote projetou em `.pi/monitors/`:
 
 Isso reforça a hipótese já registrada no laboratório: extensões Pi podem usar o workspace como superfície de configuração e comportamento compartilhado.
 
-### 4. Hipótese técnica atual para a falha
+### 4. Causa técnica atualmente mais forte
 
-Hipótese mais forte, ainda não tratada como conclusão definitiva:
+Aqui a investigação saiu do nível de sintoma e chegou ao código do pacote.
 
-- o fluxo principal do Pi funciona com `github-copilot`
-- o classificador `hedge` declara apenas `model: claude-sonnet-4-6`
-- não há provider explícito na definição observada
-- a falha reportada é de resolução de autenticação, não de geração principal
+No bundle compilado de `@davidorex/pi-behavior-monitors`, a função `parseModelSpec()` faz exatamente isto:
 
-Leitura provável:
+```ts
+if (spec contains "/") {
+	return { provider, modelId }
+}
+return { provider: "anthropic", modelId: spec }
+```
 
-o classificador auxiliar está sendo executado fora do mesmo contexto de autenticação do fluxo principal, ou assume um método de autenticação que não está disponível com a configuração atual.
+Ao mesmo tempo, o `hedge-classifier.agent.yaml` define apenas:
+
+```yaml
+model: claude-sonnet-4-6
+```
+
+Sem provider explícito.
+
+Como o nosso fluxo principal autenticado está em `github-copilot`, a leitura técnica mais forte agora é:
+
+1. o classificador do `hedge` não herda automaticamente o provider do fluxo principal
+2. o pacote interpreta modelos sem prefixo como `anthropic/<model>`
+3. a chamada auxiliar falha porque não há autenticação Anthropic configurada neste ambiente
+
+Isso combina exatamente com o erro observado:
+
+```text
+Could not resolve authentication method. Expected either apiKey or authToken to be set.
+```
+
+Portanto, neste estágio da investigação, a hipótese principal deixou de ser apenas inferência comportamental e passou a ter suporte direto no código do pacote.
 
 ## O que este experimento ainda não conclui
 
 Ainda não concluímos:
 
-- se a ausência de provider explícito é a causa imediata da falha
 - se o pacote espera alguma configuração adicional do usuário
 - se há fallback automático de provider e ele está escolhendo um backend incompatível
 - se o comportamento é bug, limitação conhecida ou trade-off deliberado do pacote
+- se prefixar explicitamente o provider no agente resolve o caso sem efeitos colaterais
 
 ## Implicações para o laboratório
 
@@ -116,7 +138,7 @@ O aprendizado central aqui não é “desabilitar hedge”.
 
 ## Próximos passos
 
-1. localizar no código do pacote onde o agente `hedge-classifier` é resolvido e executado
-2. descobrir como o provider é escolhido para agentes sensores
-3. testar se há configuração explícita para alinhar o monitor ao provider já autenticado
+1. testar uma versão do classificador com provider explícito para validar a hipótese causal
+2. descobrir se existe configuração suportada pelo pacote para alinhar sensores ao provider autenticado principal
+3. decidir se o comportamento é bug, limitação de design ou convenção deliberada do pacote
 4. só então decidir entre manter, reconfigurar, isolar ou desabilitar o monitor

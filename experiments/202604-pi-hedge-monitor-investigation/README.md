@@ -190,6 +190,42 @@ Leitura provisória mais forte neste estágio:
 - o mecanismo suportado que efetivamente existe é a resolução por agent spec
 - portanto, o override local em `.pi/agents/` não parece um hack acidental; parece usar a superfície de customização que o próprio pacote expõe
 
+### 8. O padrão não parece ser exclusivo do hedge
+
+Depois de inspecionar os artefatos embutidos do pacote, vimos que os cinco monitores de exemplo seguem a mesma arquitetura:
+
+- `commit-hygiene.monitor.json` -> `commit-hygiene-classifier`
+- `fragility.monitor.json` -> `fragility-classifier`
+- `hedge.monitor.json` -> `hedge-classifier`
+- `unauthorized-action.monitor.json` -> `unauthorized-action-classifier`
+- `work-quality.monitor.json` -> `work-quality-classifier`
+
+E os cinco agent specs embutidos declaram o mesmo formato de modelo:
+
+```yaml
+model: claude-sonnet-4-6
+```
+
+Sem provider explícito.
+
+Isso muda a leitura do problema:
+
+1. o `hedge` provavelmente não é um outlier acidental
+2. a expectativa de provider implícito parece fazer parte do desenho atual dos classificadores empacotados
+3. em ambientes autenticados apenas com `github-copilot`, outros sensores da mesma família podem apresentar a mesma fragilidade se forem ativados
+
+Em outras palavras, o caso `hedge` abriu a porta para um problema mais estrutural: o acoplamento entre sensores auxiliares e resolução implícita de provider pode atravessar a extensão inteira, não apenas um monitor específico
+
+### 9. O changelog ainda não explica essa escolha
+
+O `CHANGELOG.md` do pacote registra evoluções de runtime, comandos e integração no monorepo, mas não traz uma nota explícita sobre:
+
+- migração de `classify.model` para `classify.agent`
+- política de herança ou não herança de provider
+- interpretação de modelos sem prefixo
+
+Isso não prova erro, mas reduz nossa capacidade de tratar o comportamento como convenção documentada. Até aqui, a explicação mais sólida continua vindo do schema e do código compilado, não da documentação de superfície.
+
 ## O que este experimento ainda não conclui
 
 Ainda não concluímos:
@@ -199,6 +235,7 @@ Ainda não concluímos:
 - se o comportamento é bug, limitação conhecida ou trade-off deliberado do pacote
 - se essa solução deve ser tratada como workaround local ou convenção legítima do laboratório
 - se a discrepância entre skill/README e runtime é atraso de documentação ou mudança de arquitetura ainda não consolidada
+- se outros sensores devem receber overrides locais equivalentes quando forem colocados em uso real
 
 ## Implicações para o laboratório
 
@@ -219,4 +256,4 @@ Também é o primeiro caso claro em que um arquivo dentro de `.pi/` deixa de ser
 1. decidir se o comportamento é bug, limitação de design ou convenção deliberada do pacote
 2. decidir se `.pi/agents/hedge-classifier.agent.yaml` deve permanecer como artefato versionado do laboratório
 3. usar o caso como referência para futuras decisões sobre `.pi/` como superfície de projeto
-4. repetir a mesma análise em outros sensores da stack para ver se o padrão se repete
+4. repetir validação funcional em outros sensores da stack para confirmar se o padrão também aparece em execução, não só na inspeção estática

@@ -47,6 +47,10 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
 **Objetivo:** Rodar experimentos concretos e começar a identificar primitivas.
 
 - [ ] Investigar monitores comportamentais do Pi stack (`hedge` e similares)
+  - [x] Reproduzir a falha do `hedge` em ambiente autenticado com `github-copilot`
+  - [x] Confirmar override local via `.pi/agents/hedge-classifier.agent.yaml`
+  - [x] Verificar que o padrão de modelo sem provider se repete nos classificadores embutidos
+  - [ ] Validar em execução se outros sensores também exigem alinhamento explícito de provider
 - [ ] Primeiro experimento com `pi-agent-core`
 - [ ] Experimento com tool calling em Pi
 - [ ] Experimento com múltiplos providers de LLM

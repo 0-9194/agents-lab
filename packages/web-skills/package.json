@@ -16,6 +16,9 @@
     "skills",
     "README.md"
   ],
+  "scripts": {
+    "postinstall": "npm install --prefix skills/web-browser/scripts --omit=dev"
+  },
   "pi": {
     "skills": [
       "./skills"

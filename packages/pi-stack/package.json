@@ -12,7 +12,11 @@
     "url": "git+https://github.com/aretw0/agents-lab.git",
     "directory": "packages/pi-stack"
   },
+  "bin": {
+    "pi-stack": "./install.mjs"
+  },
   "files": [
+    "install.mjs",
     "README.md"
   ],
   "dependencies": {

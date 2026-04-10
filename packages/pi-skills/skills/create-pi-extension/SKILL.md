@@ -133,3 +133,20 @@ pi.on("session_shutdown", async (event, ctx) => {
 | Diálogo com o usuário | `ctx.ui.select()` / `ctx.ui.confirm()` / `ctx.ui.input()` |
 | Persistir estado na sessão | `pi.appendEntry()` + reconstruir em `session_start` |
 | Reload após mudança | `ctx.reload()` dentro de um command handler |
+
+## Referência Avançada
+
+Para exemplos reais de extensões e padrões arquiteturais:
+
+```bash
+# Ver a extension monitor-provider-patch como referência de extension first-party
+gh api repos/aretw0/agents-lab/contents/packages/pi-stack/extensions --jq '.[].name'
+
+# Ver exemplos oficiais do pi
+gh api repos/badlogic/pi-mono/contents/packages/coding-agent/examples/extensions --jq '.[].name'
+```
+
+Docs relevantes:
+- `docs/research/extension-factory-blueprint.md` — design da fábrica
+- A documentação completa do pi está em `@mariozechner/pi-coding-agent/docs/extensions.md`
+- Para temas, prompts e mais: ver as skills irmãs deste pacote (`/skill:create-pi-theme`, `/skill:create-pi-prompt`)

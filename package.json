@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "list": "npm ls --workspaces --depth=0",
+    "test": "node --test packages/*/test/*.test.mjs",
     "verify": "node scripts/verify-pi-stack.mjs",
     "release": "changeset version",
     "publish:all": "npm run build --workspaces --if-present && changeset publish"

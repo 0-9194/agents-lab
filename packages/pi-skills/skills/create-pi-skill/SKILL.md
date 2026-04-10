@@ -105,3 +105,20 @@ pi install npm:@aretw0/minha-skill
 | Tools customizadas para o LLM | Extension |
 | UI no TUI (widgets, footers) | Extension |
 | Persistência de estado | Extension |
+
+## Referência Avançada
+
+Para padrões arquiteturais e exemplos reais de skills publicadas, consulte o `agents-lab`:
+
+```bash
+# Ver pacotes first-party como referência
+gh api repos/aretw0/agents-lab/contents/packages --jq '.[].name'
+
+# Ver uma skill específica
+gh api repos/aretw0/agents-lab/contents/packages/git-skills/skills --jq '.[].name'
+```
+
+Docs relevantes no repositório:
+- `docs/research/extension-factory-blueprint.md` — design da fábrica
+- `docs/research/extension-factory-friction-analysis.md` — fricções e soluções
+- `packages/` — exemplos vivos de pacotes publicados

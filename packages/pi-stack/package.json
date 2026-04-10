@@ -17,6 +17,7 @@
   },
   "files": [
     "install.mjs",
+    "extensions",
     "README.md"
   ],
   "dependencies": {
@@ -51,6 +52,7 @@
   ],
   "pi": {
     "extensions": [
+      "./extensions/monitor-provider-patch.ts",
       "node_modules/pi-lens/index.ts",
       "node_modules/pi-web-access/index.ts",
       "node_modules/@davidorex/pi-project-workflows/project-extension.ts",

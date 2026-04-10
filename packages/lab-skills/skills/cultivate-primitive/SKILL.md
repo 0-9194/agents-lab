@@ -73,3 +73,20 @@ Se a primitiva é para a stack (`@aretw0/pi-stack`):
 - Abstração prematura — espere pelo terceiro caso
 - Skill gigante que mistura várias preocupações
 - Extensão onde uma skill bastaria
+
+## Referência
+
+Consulte primitivas já cultivadas no `agents-lab` como modelo:
+
+```bash
+# Listar pacotes first-party existentes
+gh api repos/aretw0/agents-lab/contents/packages --jq '.[].name'
+
+# Ver experimentos documentados
+gh api repos/aretw0/agents-lab/contents/experiments --jq '.[].name'
+
+# Ver pesquisas e análises
+gh api repos/aretw0/agents-lab/contents/docs/research --jq '.[].name'
+```
+
+A jornada típica: sessão de trabalho → padrão emerge → experimento documenta → primitiva formaliza → PR com review.

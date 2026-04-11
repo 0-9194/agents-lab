@@ -1,5 +1,18 @@
 # @aretw0/git-skills
 
+## 0.2.1
+
+### Patch Changes
+
+- ### @aretw0/pi-stack
+
+  Sincroniza commits que ficaram fora da tag v0.2.0:
+
+  - Extension `environment-doctor`: detecção e auto-fix de configuração de terminal (shift+enter / alt+enter para Windows Terminal, Ghostty, WezTerm, VS Code)
+  - Extension `read-guard`: proteção de leitura fora do diretório do projeto
+  - Tema `agents-lab` incluído no manifesto pi
+  - Fix: JSON inválido no manifesto pi — duplicata de `themes` removida
+
 ## 0.2.0
 
 ### Minor Changes

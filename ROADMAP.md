@@ -37,6 +37,7 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
   - [ ] Análise de projetos similares na comunidade
   - [x] Blueprint inicial da futura fábrica de extensões Pi
   - [x] Análise inicial das fricções da factory
+  - [ ] Resolver modelo de workspace meta (dogfooding vs. consumo) — [experimento](experiments/202604-pi-meta-workspace/README.md)
 - [ ] Análise de engines alternativas ao Pi (LangChain, AutoGen, CrewAI, etc.)
 - [ ] Preparação para migração controlada de Copilot para Pi
   - [x] Definição da stack inicial recomendada
@@ -117,7 +118,7 @@ Planejamento e milestones do laboratório. Este é um documento vivo — evolui 
 |---------|----------|-------|
 | ~~Monorepo ou não?~~ | **Decidido:** monorepo com npm workspaces | ✅ Fase 0 |
 | Linguagem principal | TypeScript (Pi) vs. Python vs. poliglota | Fase 2 |
-| DevContainer | Pi funciona nativo no Windows, mas devcontainer será criado quando entrarmos em extensões in-house | Fase 2-3 |
+| Modelo de workspace meta | Monorepo unificado vs. separado vs. perfis — como dogfoodar sem poluir | Fase 2-3 |
 | ~~Estratégia de publicação~~ | **Decidido:** npm com changesets + lockstep + publish on tag | ✅ Fase 3 |
 
 ## Notas

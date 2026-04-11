@@ -7,6 +7,9 @@
  * npm workspaces + bundledDependencies), this installer runs `pi install`
  * for each managed package — the same pattern used by @ifi/oh-pi.
  *
+ * After install, applies filter patches to resolve known tool conflicts
+ * (e.g. mitsupi/uv.ts vs oh-pi-extensions/bg-process.ts both register "bash").
+ *
  * Usage:
  *   npx @aretw0/pi-stack                # install all (global)
  *   npx @aretw0/pi-stack --local        # install to project .pi/settings.json
@@ -15,10 +18,27 @@
  */
 
 import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join, dirname } from "node:path";
 import process from "node:process";
 import { FIRST_PARTY, THIRD_PARTY, PACKAGES } from "./package-list.mjs";
 
 const IS_WINDOWS = process.platform === "win32";
+
+/**
+ * Known post-install filter patches.
+ * Applied after pi install to resolve tool/command conflicts between packages.
+ *
+ * Format: { source: "npm:pkg", extensions: ["!path/to/conflicting.ts"] }
+ */
+const FILTER_PATCHES = [
+  {
+    // mitsupi/uv.ts registers tool "bash", conflicts with oh-pi-extensions/bg-process.ts
+    source: "npm:mitsupi",
+    extensions: ["!pi-extensions/uv.ts"],
+  },
+];
 
 function parseArgs(argv) {
 	const args = argv.slice(2);
@@ -89,6 +109,63 @@ function findPi() {
 	process.exit(1);
 }
 
+function getSettingsPath(local) {
+	if (local) {
+		return join(process.cwd(), ".pi", "settings.json");
+	}
+	const agentDir = process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi", "agent");
+	return join(agentDir, "settings.json");
+}
+
+function loadSettings(settingsPath) {
+	if (!existsSync(settingsPath)) return {};
+	try {
+		return JSON.parse(readFileSync(settingsPath, "utf8"));
+	} catch {
+		return {};
+	}
+}
+
+function saveSettings(settingsPath, settings) {
+	mkdirSync(dirname(settingsPath), { recursive: true });
+	writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
+}
+
+function getPackageSource(entry) {
+	return typeof entry === "string" ? entry : entry?.source;
+}
+
+/**
+ * Apply filter patches to settings.json after install.
+ * Converts plain source strings to filter objects for known conflicting packages.
+ */
+function applyFilterPatches(settingsPath) {
+	const settings = loadSettings(settingsPath);
+	if (!Array.isArray(settings.packages)) return;
+
+	let changed = false;
+	settings.packages = settings.packages.map((entry) => {
+		const source = getPackageSource(entry);
+		const patch = FILTER_PATCHES.find((p) => source === p.source);
+		if (!patch) return entry;
+
+		// Already has filters — skip
+		if (typeof entry === "object" && entry.extensions) return entry;
+
+		changed = true;
+		return {
+			source: patch.source,
+			extensions: patch.extensions,
+		};
+	});
+
+	if (changed) {
+		saveSettings(settingsPath, settings);
+	}
+
+	return changed;
+}
+
 function run(pi, command, args, { label }) {
 	process.stdout.write(`  ${label} ... `);
 	try {
@@ -134,6 +211,7 @@ if (opts.help) {
 const pi = findPi();
 const localFlag = opts.local ? ["-l"] : [];
 const scope = opts.local ? "project" : "global";
+const settingsPath = getSettingsPath(opts.local);
 
 if (opts.remove) {
 	console.log(`\n🧹 Removing pi-stack packages from pi (${scope})...\n`);
@@ -161,12 +239,17 @@ console.log(`\n📦 Installing pi-stack packages into pi (${scope})...\n`);
 
 let failures = 0;
 for (const pkg of PACKAGES) {
-	// Pin version only for @aretw0/* packages
 	const suffix =
 		opts.version && pkg.startsWith("@aretw0/") ? `@${opts.version}` : "";
 	const source = `npm:${pkg}${suffix}`;
 	const ok = run(pi, "install", [source, ...localFlag], { label: pkg });
 	if (!ok) failures++;
+}
+
+// Apply filter patches to resolve known conflicts
+const patched = applyFilterPatches(settingsPath);
+if (patched) {
+	console.log("\n🔧 Applied conflict filters (mitsupi/uv.ts excluded — conflicts with bg-process).");
 }
 
 if (failures === 0) {

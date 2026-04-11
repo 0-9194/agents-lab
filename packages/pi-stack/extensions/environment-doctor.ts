@@ -264,9 +264,11 @@ export function detectShell(): ShellId {
   const platform = process.platform;
   if (platform !== "win32") return "native-bash";
 
+  // WSL_DISTRO_NAME and WSL_INTEROP are set by WSL itself.
+  // WSLENV is set by Windows Terminal even in Git Bash sessions -- not a reliable indicator.
   const isWSL =
-    process.env.WSL_DISTRO_NAME !== undefined ||
-    process.env.WSLENV !== undefined ||
+    (process.env.WSL_DISTRO_NAME !== undefined && process.env.WSL_DISTRO_NAME !== "") ||
+    process.env.WSL_INTEROP !== undefined ||
     (process.env.PATH ?? "").includes("/mnt/c/");
 
   if (isWSL) return "wsl";
@@ -388,7 +390,9 @@ async function runAllChecks(
           : undefined
       ),
       checkTool(pi, "node", "node", ["--version"]),
-      checkTool(pi, "npm", "npm", ["--version"]),
+      // On Windows, npm is npm.cmd -- not found via spawn without shell.
+      // Use 'npm.cmd' on win32, 'npm' elsewhere.
+      checkTool(pi, "npm", process.platform === "win32" ? "npm.cmd" : "npm", ["--version"]),
     ]),
     Promise.resolve(detectTerminal()),
     Promise.resolve(detectShell()),

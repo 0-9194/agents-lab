@@ -11,7 +11,8 @@
     "test:smoke": "npx vitest run",
     "verify": "node scripts/verify-pi-stack.mjs",
     "release": "changeset version",
-    "publish:all": "npm run build --workspaces --if-present && changeset publish"
+    "publish:all": "npm run build --workspaces --if-present && changeset publish",
+    "postinstall": "npm install --prefix packages/pi-stack --no-workspaces --silent"
   },
   "devDependencies": {
     "@changesets/cli": "^2.30.0",

@@ -8,12 +8,15 @@
   "scripts": {
     "list": "npm ls --workspaces --depth=0",
     "test": "node --test packages/*/test/*.test.mjs",
+    "test:smoke": "npx vitest run",
     "verify": "node scripts/verify-pi-stack.mjs",
     "release": "changeset version",
     "publish:all": "npm run build --workspaces --if-present && changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.30.0"
+    "@changesets/cli": "^2.30.0",
+    "@marcfargas/pi-test-harness": "^0.5.0",
+    "vitest": "^4.1.4"
   },
   "keywords": [
     "pi-package"

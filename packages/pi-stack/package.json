@@ -105,8 +105,7 @@
       "./themes"
     ],
     "prompts": [
-      "node_modules/@ifi/oh-pi-prompts/prompts",
-      "node_modules/mitsupi/commands"
+      "node_modules/@ifi/oh-pi-prompts/prompts"
     ]
   }
 }

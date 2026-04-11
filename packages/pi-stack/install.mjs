@@ -233,11 +233,6 @@ const settingsPath = getSettingsPath(opts.local);
 if (opts.remove) {
 	console.log(`\n🧹 Removing pi-stack packages from pi (${scope})...\n`);
 
-	// Also remove the old bundled pi-stack if present
-	run(pi, "remove", ["npm:@aretw0/pi-stack", ...localFlag], {
-		label: "@aretw0/pi-stack (legacy bundle)",
-	});
-
 	let failures = 0;
 	for (const pkg of PACKAGES) {
 		const ok = run(pi, "remove", [`npm:${pkg}`, ...localFlag], { label: pkg });

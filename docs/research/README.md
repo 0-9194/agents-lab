@@ -17,6 +17,7 @@ Este diretório armazena pesquisas, análises e material de referência sobre o 
 | [web-runtime-benchmark-plan.md](./web-runtime-benchmark-plan.md) | Plano de benchmark runtime para validar overlap Web em uso real | Draft |
 | [web-runtime-benchmark-run-2026-04-13.md](./web-runtime-benchmark-run-2026-04-13.md) | Resultado completo do benchmark Web (6/6 tarefas) com evidências de roteamento | Draft |
 | [web-routing-ab-protocol.md](./web-routing-ab-protocol.md) | Protocolo A/B com thresholds para decidir hard enforcement de web-browser | Draft |
+| [web-routing-ab-run-2026-04-13.md](./web-routing-ab-run-2026-04-13.md) | Resultado A/B de roteamento web com decisão de sobriedade | Draft |
 | _(em breve)_ | Estado da arte em primitivas de agentes | Pendente |
 | _(em breve)_ | Padrões de design para sistemas multi-agentes | Pendente |
 

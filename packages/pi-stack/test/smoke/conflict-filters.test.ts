@@ -10,6 +10,17 @@ import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import * as path from "node:path";
 
 const PKG = path.resolve(__dirname, "../../");
+const REPO_ROOT = path.resolve(PKG, "../../");
+
+function resolveThirdPartyDir(pkgName: string): string | null {
+  const rootPath = path.join(REPO_ROOT, "node_modules", pkgName);
+  if (existsSync(rootPath)) return rootPath;
+
+  const localPath = path.join(PKG, "node_modules", pkgName);
+  if (existsSync(localPath)) return localPath;
+
+  return null;
+}
 
 // Importar FILTER_PATCHES do installer
 const installerContent = readFileSync(path.join(PKG, "install.mjs"), "utf8");
@@ -19,15 +30,17 @@ const filterPatchesMatch = installerContent.match(
 
 // Pacotes third-party localmente instalados para análise estática
 const THIRD_PARTY_LOCAL = [
-  "node_modules/mitsupi",
-  "node_modules/@ifi/oh-pi-extensions",
-  "node_modules/@ifi/oh-pi-ant-colony",
-  "node_modules/@ifi/pi-extension-subagents",
-  "node_modules/@ifi/pi-plan",
-  "node_modules/@ifi/pi-spec",
-  "node_modules/@ifi/pi-web-remote",
-  "node_modules/@davidorex/pi-project-workflows",
-];
+  "mitsupi",
+  "@ifi/oh-pi-extensions",
+  "@ifi/oh-pi-ant-colony",
+  "@ifi/pi-extension-subagents",
+  "@ifi/pi-plan",
+  "@ifi/pi-spec",
+  "@ifi/pi-web-remote",
+  "@davidorex/pi-project-workflows",
+]
+  .map(resolveThirdPartyDir)
+  .filter((p): p is string => p !== null);
 
 function getExtensionFiles(pkgDir: string): string[] {
   const results: string[] = [];
@@ -77,10 +90,7 @@ describe("conflict filters", () => {
     const toolMap = new Map<string, Array<{ pkg: string; file: string }>>();
 
     for (const pkgPath of THIRD_PARTY_LOCAL) {
-      const resolved = path.join(PKG, pkgPath);
-      if (!existsSync(resolved)) continue;
-
-      for (const extFile of getExtensionFiles(resolved)) {
+      for (const extFile of getExtensionFiles(pkgPath)) {
         for (const toolName of extractToolNames(extFile)) {
           if (!toolMap.has(toolName)) toolMap.set(toolName, []);
           toolMap.get(toolName)!.push({

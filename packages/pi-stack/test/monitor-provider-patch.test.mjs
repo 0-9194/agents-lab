@@ -4,11 +4,11 @@
  * Run: node --test packages/pi-stack/test/monitor-provider-patch.test.mjs
  */
 
-import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, it } from "node:test";
 
 // We test the exported functions directly by re-implementing the pure logic.
 // The extension file is TypeScript, so we extract the testable parts here.

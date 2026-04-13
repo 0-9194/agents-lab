@@ -42,7 +42,7 @@ pi install https://github.com/aretw0/agents-lab
 | `monitor-provider-patch` | Fix automático de monitors para github-copilot — cria overrides se necessário |
 | `environment-doctor` | Health check do ambiente na startup + comando `/doctor` |
 | `guardrails-core` | Guardrail unificado first-party: proteção de paths sensíveis + roteamento web determinístico por escopo (CDP-first em domínios sensíveis) |
-| `colony-pilot` | Primitiva de orquestração/visibilidade: profile de monitores para pilot, ponte com `/remote` e snapshot de colonies em background |
+| `colony-pilot` | Primitiva de orquestração/visibilidade: prepara runbooks manuais para pilot (monitors/remote/colony) e mantém snapshot de colonies em background |
 
 #### Defaults do `monitor-provider-patch`
 
@@ -97,7 +97,7 @@ Ativar: `/settings` → selecionar `agents-lab`
 | Comando | O que faz |
 |---|---|
 | `/doctor` | Diagnóstico do ambiente — verifica git, gh, glab, node, npm e autenticações |
-| `/colony-pilot` | Orquestra pilot de colony (`run/status/stop/web/monitors/tui`) e centraliza visibilidade de sessão web + trabalho em background |
+| `/colony-pilot` | Guia pilot (`run/status/stop/web/monitors/tui`) com execução manual assistida e visibilidade consolidada de sessão web + trabalho em background |
 
 ## Filosofia
 

@@ -1,0 +1,84 @@
+{
+  "runId": "run-2026-04-13",
+  "agentDir": "<default>",
+  "tasks": [
+    {
+      "id": "A1",
+      "category": "quick-lookup",
+      "prompt": "Qual é a versão estável mais recente do TypeScript e a data de release? Responda em até 5 bullets com URLs das fontes.",
+      "elapsedSec": 36.66,
+      "exitCode": 0,
+      "toolCalls": [
+        "web_search"
+      ],
+      "toolCallsUnique": [
+        "web_search"
+      ],
+      "assistantAnswer": "Versão estável mais recente do TypeScript: 6.0.2 (tag oficial de release no repositório microsoft/TypeScript). https://github.com/microsoft/TypeScript/releases/tag/v6.0.2 Data de release (publicação)…"
+    },
+    {
+      "id": "A2",
+      "category": "quick-lookup",
+      "prompt": "Resuma em 5 bullets as principais mudanças do Vite 7 e inclua URLs canônicas.",
+      "elapsedSec": 51.1,
+      "exitCode": 0,
+      "toolCalls": [
+        "web_search",
+        "fetch_content"
+      ],
+      "toolCallsUnique": [
+        "fetch_content",
+        "web_search"
+      ],
+      "assistantAnswer": "Aqui vão as 5 principais mudanças do Vite 7 (com links oficiais/canônicos): Novo requisito de Node.js + distribuição ESM-only: o Vite 7 exige Node 20.19+ ou 22.12+ e remove suporte ao Node 18 (EOL), …"
+    },
+    {
+      "id": "B1",
+      "category": "deep-research",
+      "prompt": "Como o TanStack Query decide stale state internamente? Traga explicação curta com permalink de código (arquivo + linhas).",
+      "elapsedSec": 153.56,
+      "exitCode": 0,
+      "toolCalls": [
+        "read",
+        "fetch_content",
+        "bash",
+        "bash",
+        "bash",
+        "bash",
+        "bash",
+        "bash",
+        "bash",
+        "bash",
+        "read",
+        "read",
+        "bash",
+        "bash",
+        "bash",
+        "bash",
+        "bash",
+        "bash"
+      ],
+      "toolCallsUnique": [
+        "bash",
+        "fetch_content",
+        "read"
+      ],
+      "assistantAnswer": "Internamente, o TanStack Query marca isStale assim: QueryObserver calcula isStale só se a query estiver enabled e então delega para query.isStaleByTime(resolveStaleTime(...)) packages/query-core/src/…"
+    },
+    {
+      "id": "C1",
+      "category": "browser-automation",
+      "prompt": "Abra a página npm do pacote vitest, identifique dependências declaradas e retorne uma lista curta com fonte.",
+      "elapsedSec": 45.23,
+      "exitCode": 0,
+      "toolCalls": [
+        "fetch_content",
+        "fetch_content"
+      ],
+      "toolCallsUnique": [
+        "fetch_content"
+      ],
+      "assistantAnswer": "Abri a página do npm do vitest (aba de dependências) e estas são as dependências declaradas: ### Dependencies (runtime) — 20 Exemplos: @vitest/expect @vitest/runner vite tinybench tinyglobby picomatc…"
+    }
+  ]
+}

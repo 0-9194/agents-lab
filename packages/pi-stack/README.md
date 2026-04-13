@@ -41,6 +41,7 @@ pi install https://github.com/aretw0/agents-lab
 |---|---|
 | `monitor-provider-patch` | Fix automático de monitors para github-copilot — cria overrides se necessário |
 | `environment-doctor` | Health check do ambiente na startup + comando `/doctor` |
+| `web-routing-guard` | Guardrail determinístico por escopo: em intent interativo + domínio sensível, bloqueia scraping `bash` proibido e força caminho CDP-first |
 
 #### Defaults do `monitor-provider-patch`
 

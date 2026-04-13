@@ -15,6 +15,9 @@
  * Upstream issue: https://github.com/davidorex/pi-project-workflows/issues/1
  */
 
+// Hedge monitor note: conversation_history is patched separately by
+// ensureHedgeMonitorContext to keep context windows lean by default.
+
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -31,6 +34,41 @@ const CLASSIFIERS = [
 
 /** Model to use when patching for github-copilot */
 const COPILOT_MODEL = "github-copilot/claude-haiku-4.5";
+
+/**
+ * Settings key that controls whether conversation_history is included in the
+ * hedge monitor context. Defaults to false (excluded).
+ * Set `extensions.monitorProviderPatch.hedgeConversationHistory = true` to opt in.
+ */
+const HEDGE_HISTORY_SETTING_PATH = ["extensions", "monitorProviderPatch", "hedgeConversationHistory"];
+
+/**
+ * Reads a nested boolean setting from pi settings (project → global cascade).
+ * Returns the boolean value, or `undefined` if not set.
+ */
+export function detectBooleanSetting(cwd: string, path: string[]): boolean | undefined {
+  const candidates = [
+    join(cwd, ".pi", "settings.json"),
+    join(homedir(), ".pi", "agent", "settings.json"),
+  ];
+
+  for (const settingsPath of candidates) {
+    if (!existsSync(settingsPath)) continue;
+    try {
+      const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let cursor: any = settings;
+      for (const key of path) {
+        if (cursor == null || typeof cursor !== "object") { cursor = undefined; break; }
+        cursor = cursor[key];
+      }
+      if (typeof cursor === "boolean") return cursor;
+    } catch {
+      // Corrupted settings — skip
+    }
+  }
+  return undefined;
+}
 
 /**
  * Reads defaultProvider from pi settings (project → global).
@@ -106,17 +144,60 @@ export function ensureOverrides(cwd: string, model: string): { created: string[]
   return { created, skipped };
 }
 
+/**
+ * Ensures the hedge monitor context includes or excludes conversation_history.
+ * When `includeConversationHistory` is false (default), the field is removed.
+ * When true, an empty array placeholder is added if the field is absent.
+ * Returns true if the file was modified.
+ */
+export function ensureHedgeMonitorContext(
+  cwd: string,
+  includeConversationHistory: boolean
+): boolean {
+  const monitorPath = join(cwd, ".pi", "monitors", "hedge.monitor.json");
+  if (!existsSync(monitorPath)) return false;
+
+  let monitor: Record<string, unknown>;
+  try {
+    monitor = JSON.parse(readFileSync(monitorPath, "utf8"));
+  } catch {
+    return false;
+  }
+
+  const hasHistory = "conversation_history" in monitor;
+
+  if (!includeConversationHistory && hasHistory) {
+    delete monitor["conversation_history"];
+    writeFileSync(monitorPath, JSON.stringify(monitor, null, 2) + "\n", "utf8");
+    return true;
+  }
+
+  if (includeConversationHistory && !hasHistory) {
+    monitor["conversation_history"] = [];
+    writeFileSync(monitorPath, JSON.stringify(monitor, null, 2) + "\n", "utf8");
+    return true;
+  }
+
+  return false;
+}
+
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
-    const provider = detectDefaultProvider(ctx.cwd);
+    const includeHistory = detectBooleanSetting(ctx.cwd, HEDGE_HISTORY_SETTING_PATH) ?? false;
+    const hedgeChanged = ensureHedgeMonitorContext(ctx.cwd, includeHistory);
 
+    const provider = detectDefaultProvider(ctx.cwd);
     if (provider !== "github-copilot") return;
 
     const { created } = ensureOverrides(ctx.cwd, COPILOT_MODEL);
 
-    if (created.length > 0) {
+    const details: string[] = [];
+    if (created.length > 0) details.push(`criou ${created.length} override(s) para ${provider}`);
+    if (hedgeChanged) details.push(`hedge: conversation_history ${includeHistory ? "habilitado" : "removido"}`);
+
+    if (details.length > 0) {
       ctx.ui?.notify?.(
-        `monitor-provider-patch: criou ${created.length} override(s) para github-copilot`,
+        `monitor-provider-patch: ${details.join(", ")}`,
         "info"
       );
     }

@@ -84,6 +84,55 @@ function ensureOverrides(cwd, model) {
   return { created, skipped };
 }
 
+function detectBooleanSetting(cwd, path) {
+  const candidates = [
+    join(cwd, ".pi", "settings.json"),
+  ];
+  for (const settingsPath of candidates) {
+    if (!existsSync(settingsPath)) continue;
+    try {
+      const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
+      let cursor = settings;
+      for (const key of path) {
+        if (cursor == null || typeof cursor !== "object") { cursor = undefined; break; }
+        cursor = cursor[key];
+      }
+      if (typeof cursor === "boolean") return cursor;
+    } catch {
+      // skip
+    }
+  }
+  return undefined;
+}
+
+function ensureHedgeMonitorContext(cwd, includeConversationHistory) {
+  const monitorPath = join(cwd, ".pi", "monitors", "hedge.monitor.json");
+  if (!existsSync(monitorPath)) return false;
+
+  let monitor;
+  try {
+    monitor = JSON.parse(readFileSync(monitorPath, "utf8"));
+  } catch {
+    return false;
+  }
+
+  const hasHistory = "conversation_history" in monitor;
+
+  if (!includeConversationHistory && hasHistory) {
+    delete monitor["conversation_history"];
+    writeFileSync(monitorPath, JSON.stringify(monitor, null, 2) + "\n", "utf8");
+    return true;
+  }
+
+  if (includeConversationHistory && !hasHistory) {
+    monitor["conversation_history"] = [];
+    writeFileSync(monitorPath, JSON.stringify(monitor, null, 2) + "\n", "utf8");
+    return true;
+  }
+
+  return false;
+}
+
 // --- Tests ---
 
 describe("detectDefaultProvider", () => {
@@ -266,5 +315,54 @@ describe("integration: full flow", () => {
     const provider = detectDefaultProvider(tmpDir);
     assert.equal(provider, undefined);
     // Extension would return early here
+  });
+});
+
+describe("ensureHedgeMonitorContext", () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "mpp-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("removes conversation_history by default", () => {
+    const monitorsDir = join(tmpDir, ".pi", "monitors");
+    mkdirSync(monitorsDir, { recursive: true });
+    const monitorPath = join(monitorsDir, "hedge.monitor.json");
+    writeFileSync(monitorPath, JSON.stringify({
+      last_verdict: "ok",
+      conversation_history: [{ role: "user", content: "hello" }],
+    }, null, 2) + "\n", "utf8");
+
+    const changed = ensureHedgeMonitorContext(tmpDir, false);
+
+    assert.ok(changed, "should report change");
+    const written = JSON.parse(readFileSync(monitorPath, "utf8"));
+    assert.ok(!("conversation_history" in written), "conversation_history should be removed");
+    assert.equal(written.last_verdict, "ok");
+  });
+
+  it("adds conversation_history when explicitly enabled", () => {
+    const monitorsDir = join(tmpDir, ".pi", "monitors");
+    mkdirSync(monitorsDir, { recursive: true });
+    const monitorPath = join(monitorsDir, "hedge.monitor.json");
+    writeFileSync(monitorPath, JSON.stringify({
+      last_verdict: "ok",
+    }, null, 2) + "\n", "utf8");
+
+    const changed = ensureHedgeMonitorContext(tmpDir, true);
+
+    assert.ok(changed, "should report change");
+    const written = JSON.parse(readFileSync(monitorPath, "utf8"));
+    assert.ok("conversation_history" in written, "conversation_history should be added");
+  });
+
+  it("does nothing when monitor file is missing", () => {
+    const changed = ensureHedgeMonitorContext(tmpDir, false);
+    assert.ok(!changed, "should report no change");
   });
 });

@@ -121,6 +121,8 @@ Ou seja: há overlap funcional, mas com níveis diferentes de profundidade.
    - ✅ policy de roteamento documentada nas skills first-party (`source-research` e `web-browser`):
      - intent interativo → `web-browser`
      - search/extract → `web_search`/`fetch_content`
+   - ✅ A/B executado (`web-routing-ab-run-2026-04-13`): melhorou determinismo (CDP-path 100%), mas com +32% de latência e sem ganho de sucesso.
+   - **decisão sóbria atual:** não ativar hard enforcement global; manter soft policy e avaliar hard por escopo.
    - decidir se `web-search`/`web-fetch` da `@ifi/oh-pi-skills` ficam como fallback explícito,
    - ou se serão filtrados em `FILTER_PATCHES` para reduzir ambiguidade.
 

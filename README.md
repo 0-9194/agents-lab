@@ -123,9 +123,20 @@ npm run pi:status
 
 # Voltar para pacotes publicados no npm
 npm run pi:published
+
+# Overlay opcional para pilot de colony (/monitors, /remote, /colony)
+# (escopo user por padrão, sem sujar .pi/settings.json do repositório)
+npm run pi:pilot:on
+npm run pi:pilot:status
+npm run pi:pilot:off
+
+# Se quiser alterar o settings do projeto explicitamente
+npm run pi:pilot:on:project
+npm run pi:pilot:off:project
 ```
 
 O `.pi/settings.json` do projeto já aponta para os pacotes locais automaticamente.
+Para cenários de pilot, use o overlay opcional acima (explícito e reversível).
 
 ### Testando Extensões
 

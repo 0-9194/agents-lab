@@ -164,21 +164,40 @@ export function ensureHedgeMonitorContext(
     return false;
   }
 
-  const hasHistory = "conversation_history" in monitor;
+  let changed = false;
 
-  if (!includeConversationHistory && hasHistory) {
+  // Legacy shape compatibility: remove/add top-level field if present.
+  const hasTopLevelHistory = "conversation_history" in monitor;
+  if (!includeConversationHistory && hasTopLevelHistory) {
     delete monitor["conversation_history"];
-    writeFileSync(monitorPath, JSON.stringify(monitor, null, 2) + "\n", "utf8");
-    return true;
-  }
-
-  if (includeConversationHistory && !hasHistory) {
+    changed = true;
+  } else if (includeConversationHistory && !hasTopLevelHistory) {
     monitor["conversation_history"] = [];
-    writeFileSync(monitorPath, JSON.stringify(monitor, null, 2) + "\n", "utf8");
-    return true;
+    changed = true;
   }
 
-  return false;
+  // Current davidorex monitor shape: classify.context is an array of context keys.
+  const classify = monitor["classify"];
+  if (classify && typeof classify === "object") {
+    const context = (classify as Record<string, unknown>)["context"];
+    if (Array.isArray(context)) {
+      const hasContextHistory = context.includes("conversation_history");
+
+      if (!includeConversationHistory && hasContextHistory) {
+        (classify as Record<string, unknown>)["context"] = context.filter((item) => item !== "conversation_history");
+        changed = true;
+      } else if (includeConversationHistory && !hasContextHistory) {
+        (classify as Record<string, unknown>)["context"] = [...context, "conversation_history"];
+        changed = true;
+      }
+    }
+  }
+
+  if (changed) {
+    writeFileSync(monitorPath, JSON.stringify(monitor, null, 2) + "\n", "utf8");
+  }
+
+  return changed;
 }
 
 export default function (pi: ExtensionAPI) {

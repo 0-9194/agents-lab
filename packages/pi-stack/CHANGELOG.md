@@ -1,5 +1,13 @@
 # @aretw0/pi-stack
 
+## 0.3.10
+
+### Patch Changes
+
+- cobre o cenário de primeiro hatch do hedge monitor no formato davidorex, removendo `conversation_history` de `classify.context` por padrão e adicionando testes de integração para evitar regressão.
+
+  também preserva e organiza a documentação de eficiência de tokens/calibração de monitores em `docs/guides` e `experiments`.
+
 ## 0.3.9
 
 ### Patch Changes

@@ -118,6 +118,9 @@ Ou seja: há overlap funcional, mas com níveis diferentes de profundidade.
    - medir: tempo, qualidade, ruído, previsibilidade.
 
 2. **Transformar direção Web em política de instalação**
+   - ✅ policy de roteamento documentada nas skills first-party (`source-research` e `web-browser`):
+     - intent interativo → `web-browser`
+     - search/extract → `web_search`/`fetch_content`
    - decidir se `web-search`/`web-fetch` da `@ifi/oh-pi-skills` ficam como fallback explícito,
    - ou se serão filtrados em `FILTER_PATCHES` para reduzir ambiguidade.
 

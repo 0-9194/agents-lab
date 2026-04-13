@@ -31,7 +31,7 @@ Definir um gate explícito de quando podemos "soltar colônias" no repositório 
 ## Fase C — Regressão e Não-Alucinação Operacional
 
 - [ ] Suite mínima de regressão por capability crítica:
-  - [ ] web interativo sensível (Cloudflare-like)
+  - [x] web interativo sensível (Cloudflare-like) — estabilidade 3/3 (`guardrails-core` r1/r2/r3)
   - [ ] leitura/escrita de paths sensíveis
   - [ ] operações git de risco
 - [ ] Gate de CI para bloquear merge sem testes de guardrails
@@ -50,8 +50,8 @@ Definir um gate explícito de quando podemos "soltar colônias" no repositório 
 ## Interoperabilidade de Monitores (davidorex × colony)
 
 - [x] Evidência estática: ants do `@ifi/oh-pi-ant-colony` usam `ResourceLoader` mínimo (`getExtensions: []`, `getSkills: []`) e **não carregam monitores do davidorex dentro dos ants**.
-- [ ] Validar impacto dos monitores do davidorex no processo principal durante execução de colônia (monitor ON vs OFF).
-- [ ] Definir profile operacional para pilot: `monitors off` durante colônia ou coexistência controlada por métricas.
+- [x] Validado impacto no processo principal (A/B monitor ON vs OFF) — run `colony-monitor-ab` r1.
+- [x] Profile operacional provisório definido para pilot: `monitors off` durante colônia (reavaliar após mais rodadas).
 - [ ] Registrar decisão final de convivência entre monitor "soldier" da colônia e monitores gerais de sessão.
 
 ## Gate de Liberação (Go/No-Go)
@@ -68,5 +68,6 @@ Liberar colônias por padrão apenas quando:
 - ✅ Policy e evidência A/B em Web já existem
 - ✅ Etapa A determinística de web routing já implementada
 - ✅ Guardrails consolidados em `guardrails-core`
-- ✅ Regressão estável iniciada (rodada 1/3 no taskset cloudflare-recheck)
-- ⏳ Próximo foco: fechar estabilidade 3/3 e pilot de colônia com política de monitores definida
+- ✅ Regressão estável web concluída (3/3 no taskset cloudflare-recheck)
+- ✅ A/B inicial de colônia com monitores (ON vs OFF) executado
+- ⏳ Próximo foco: fechar suíte de regressão (read/git) e iniciar pilot controlado de colônia

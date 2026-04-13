@@ -32,22 +32,27 @@ A extensão de monitores do davidorex roda no processo principal e pode atuar em
 
 Como a colônia injeta mensagens custom (`ant-colony-progress`, `ant-colony-report`) no processo principal, existe risco de **interação indireta** entre monitor de sessão e fluxo da queen.
 
-## Conclusão inicial (sobriedade)
+## Evidência dinâmica (run r1)
+
+Executado A/B em sandbox mínimo:
+
+- relatório: `colony-monitor-interference-run-2026-04-13-r1.md`
+- dataset: `docs/research/data/colony-monitor-ab/run-2026-04-13-r1/results.json`
+
+Resultado resumido:
+
+- sucesso 100% nos dois braços
+- sem `monitor-steer`/`monitor-pending` no run
+- latência média:
+  - monitors-on: `312.23s`
+  - monitors-off: `160.93s`
+  - delta: **+94%** com monitores ON
+
+## Conclusão atual (sobriedade)
 
 - **Não há evidência de mistura dentro dos ants** (soldier/scout/worker/drone).
-- **Há possibilidade de atrito no processo principal** (monitor de sessão observando sinais da colônia).
+- **Há evidência de overhead no processo principal** quando monitores gerais estão ON durante execução da colônia.
 
-## Próximo experimento recomendado
-
-A/B operacional de pilot de colônia:
-
-- Braço A: monitores davidorex ON
-- Braço B: monitores davidorex OFF durante colônia
-
-Métricas:
-- taxa de conclusão da colônia
-- latência total por missão
-- quantidade de steers/blocks externos ao fluxo da colônia
-- ruído no contexto da queen (mensagens de monitor)
-
-Decisão posterior: coexistência por default vs profile "colony mode" com monitorização de sessão reduzida.
+Decisão provisória para pilot:
+- preferir profile **monitors-off during colony**,
+- continuar medindo qualidade e latência para decidir coexistência por default.

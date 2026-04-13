@@ -23,12 +23,13 @@ Checklist vivo para não deixar backlog preso só na conversa.
   - bloqueio hard de comandos `bash` proibidos (`curl`, `wget`, `python requests`, `r.jina.ai`, `npm view`, `registry.npmjs.org`) em modo estrito
 - [x] Teste de regressão dos cenários sensíveis (`packages/pi-stack/test/web-routing-guard.test.mjs`)
 - [x] Run dedicado pós-policy executado (`run-2026-04-13-guardrails-core-r1`) confirmando aderência operacional no taskset `cloudflare-recheck`
+- [x] Estabilidade `cloudflare-recheck` concluída em 3 rodadas (`r1`,`r2`,`r3`) com enforcement técnico estável (CDP-path 100%, fallback 0%, comandos proibidos 0)
 
 ## Próximos experimentos
 
-- [ ] Repetir o taskset `cloudflare-recheck` por 3 rodadas para reduzir variância (**1/3 concluída**)
 - [ ] Criar taskset de autenticação/formulário (login real em ambiente de teste) para medir vantagem estrutural de CDP
 - [ ] Medir custo incremental de setup browser (`start.js`) em sessão fria vs sessão quente
+- [ ] Reduzir variância de latência com sessão pré-aquecida e critérios de timeout por tarefa
 
 ## Tarefas estruturais (antes da Etapa B)
 

@@ -37,7 +37,7 @@ Mapear sobreposição entre pacotes da stack atual para decidir, por capability:
 
 Referência detalhada: [`web-overlap-scorecard.md`](./web-overlap-scorecard.md).
 Validação runtime: [`web-runtime-benchmark-run-2026-04-13.md`](./web-runtime-benchmark-run-2026-04-13.md).
-Validações A/B: [`web-routing-ab-run-2026-04-13.md`](./web-routing-ab-run-2026-04-13.md) e [`web-routing-ab-run-2026-04-13-novpn-cf.md`](./web-routing-ab-run-2026-04-13-novpn-cf.md).
+Validações A/B: [`web-routing-ab-run-2026-04-13.md`](./web-routing-ab-run-2026-04-13.md), [`web-routing-ab-run-2026-04-13-novpn-cf.md`](./web-routing-ab-run-2026-04-13-novpn-cf.md) e estabilidade [`web-routing-ab-stability-2026-04-13.md`](./web-routing-ab-stability-2026-04-13.md).
 
 ---
 
@@ -93,6 +93,7 @@ Ou seja: há overlap funcional, mas com níveis diferentes de profundidade.
    - padrão em `web-browser` (CDP).
    - ⚠️ run geral: C1/C2 convergiram para `bash` sem CDP explícito.
    - ✅ recheck sem VPN (npmjs/Cloudflare): policy-strict melhorou para CDP-path 100% e menor latência média.
+   - ✅ estabilidade guardrails-core (3/3): CDP-path 100%, fallback 0%, comandos proibidos 0 no taskset sensível.
 
 ---
 
@@ -127,7 +128,7 @@ Ou seja: há overlap funcional, mas com níveis diferentes de profundidade.
    - ✅ A/B recheck sem VPN (`web-routing-ab-run-2026-04-13-novpn-cf`): em cenários npmjs/Cloudflare, policy-strict foi melhor (latência e determinismo), sem fallback e sem comandos proibidos.
    - ✅ hard por escopo implementado na policy das skills first-party (`source-research`, `web-browser`) com trigger explícito (intent interativo + domínio sensível/Cloudflare).
    - ✅ Etapa A determinística implementada no runtime (`guardrails-core`): pre-router + bloqueio de comandos `bash` proibidos em modo estrito.
-   - ✅ rodada estável inicial (`run-2026-04-13-guardrails-core-r1`): taskset cloudflare-recheck com CDP-path 100%, fallback 0% e zero comandos proibidos em ambos braços.
+   - ✅ estabilidade concluída em 3 rodadas (`run-2026-04-13-guardrails-core-r1/r2/r3`): taskset cloudflare-recheck com CDP-path 100%, fallback 0% e zero comandos proibidos.
    - **decisão sóbria atual:** manter sem hard enforcement global; aplicar hard por escopo para intents interativas sensíveis (ex.: npmjs/Cloudflare), agora com enforcement técnico.
    - decidir se `web-search`/`web-fetch` da `@ifi/oh-pi-skills` ficam como fallback explícito,
    - ou se serão filtrados em `FILTER_PATCHES` para reduzir ambiguidade.

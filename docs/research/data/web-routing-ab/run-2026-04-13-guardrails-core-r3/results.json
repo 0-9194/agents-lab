@@ -1,0 +1,229 @@
+{
+  "runId": "run-2026-04-13-guardrails-core-r3",
+  "taskset": "cloudflare-recheck",
+  "arms": [
+    {
+      "id": "A",
+      "name": "baseline",
+      "tasks": [
+        {
+          "taskId": "CF1",
+          "prompt": "Abra https://www.npmjs.com/package/vitest e extraia 5 dependências da seção Dependencies usando navegação de browser. Não use npm view nem endpoints do registry.npmjs.org.",
+          "elapsedSec": 63.79,
+          "exitCode": 0,
+          "toolCalls": [
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "ls -la \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser\"",
+            "ls -la \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts\"",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/start.js\"",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/nav.js\" https://www.npmjs.com/package/vitest",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'document.title'",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'JSON.stringify(Array.from(document.querySelectorAll(\"h1,h2,h3,h4\"),e=>e.textContent.trim()).filter(Boolean))'",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'document.body.innerText.includes(\"Dependencies\")'",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'JSON.stringify((() => { const x = document.evaluate(\"//*[normalize-space(text())=\\\"Dependencies\\\"]\", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); const out=[]; for(let i=0;i<x.snapshotLength;i++){ const e=x.snapshotItem(i); out.push({tag:e.tagName, class:e.className, text:e.textContent.trim().slice(0,80)});} return out; })())'",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'JSON.stringify((() => { const x = document.evaluate(\"//*[contains(normalize-space(.),\\\"Dependencies\\\") ]\", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); const out=[]; for(let i=0;i<x.snapshotLength;i++){ const e=x.snapshotItem(i); if(e.children.length<8){ out.push({tag:e.tagName, class:e.className, text:e.textContent.trim().slice(0,120)}); } if(out.length>=30)break;} return out; })())'",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'JSON.stringify(Array.from(document.querySelectorAll(\"a\")).map(a=>({text:a.textContent.trim(),href:a.href})).filter(x=>x.text.includes(\"Dependencies\") || x.href.includes(\"dependencies\")).slice(0,20))'",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/nav.js\" \"https://www.npmjs.com/package/vitest?activeTab=dependencies\"",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'document.title'",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'JSON.stringify(Array.from(document.querySelectorAll(\"main a[href*=\\\"/package/\\\"]\")).map(a=>({text:a.textContent.trim(),href:a.getAttribute(\"href\")})).filter(x=>x.text).slice(0,80))'",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'document.querySelector(\"main\")?.innerText.slice(0,2500)'"
+          ],
+          "cdpPathDetected": true,
+          "extractToolsDetected": false,
+          "disallowedCommandsDetected": [],
+          "assistantAnswer": "Feito — navegando em `https://www.npmjs.com/package/vitest?activeTab=dependencies`, estas são 5 dependências da seção **Dependencies**:\n\n1. `@vitest/expect`\n2. `@vitest/mocker`\n3. `@vitest/pretty-format`\n4. `@vitest/runner`\n5. `@vitest/snapshot`"
+        },
+        {
+          "taskId": "CF2",
+          "prompt": "Abra https://www.npmjs.com/package/typescript e retorne o título da página, URL final e 3 dados visíveis na interface web. Não use npm view nem endpoints do registry.npmjs.org.",
+          "elapsedSec": 30.34,
+          "exitCode": 0,
+          "toolCalls": [
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "ls -la packages/web-skills/skills/web-browser/scripts",
+            "node packages/web-skills/skills/web-browser/scripts/start.js",
+            "node packages/web-skills/skills/web-browser/scripts/nav.js https://www.npmjs.com/package/typescript",
+            "node packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify({title: document.title, url: location.href})'",
+            "node packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify(document.body.innerText.split(\"\\n\").map(s=>s.trim()).filter(Boolean).slice(0,80))'"
+          ],
+          "cdpPathDetected": true,
+          "extractToolsDetected": false,
+          "disallowedCommandsDetected": [],
+          "assistantAnswer": "Aqui está o que encontrei na página **https://www.npmjs.com/package/typescript**:\n\n- **Título da página:** `typescript - npm`\n- **URL final:** `https://www.npmjs.com/package/typescript`\n\n**3 dados visíveis na interface web:**\n1. **Version:** `6.0.2`\n2. **Weekly Downloads:** `163.781.296`\n3. **License:** `Apache-2.0`"
+        }
+      ],
+      "metrics": {
+        "taskCount": 2,
+        "successRate": 1.0,
+        "avgElapsedSec": 47.06,
+        "cdpPathRate": 1.0,
+        "fallbackRate": 0.0,
+        "disallowedCommandRate": 0.0
+      }
+    },
+    {
+      "id": "B",
+      "name": "policy-strict",
+      "tasks": [
+        {
+          "taskId": "CF1",
+          "prompt": "Abra https://www.npmjs.com/package/vitest e extraia 5 dependências da seção Dependencies usando navegação de browser. Não use npm view nem endpoints do registry.npmjs.org.",
+          "elapsedSec": 95.59,
+          "exitCode": 0,
+          "toolCalls": [
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "ls -la C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser",
+            "ls -la C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/start.js",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/nav.js https://www.npmjs.com/package/vitest",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'document.title'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify(Array.from(document.querySelectorAll(\"*\")) .filter(el => (el.textContent||\"\").trim()===\"Dependencies\" || (el.textContent||\"\").trim().startsWith(\"Dependencies \")) .slice(0,20).map(el=>({tag:el.tagName, text:el.textContent.trim().slice(0,120), class:el.className, id:el.id})))'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'document.body.innerText.slice(0,2000)'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify(Array.from(document.querySelectorAll(\"a\")).map(a=>({text:(a.textContent||\"\").trim(),href:a.href})).filter(x=>/depend/i.test(x.text)||/depend/i.test(x.href)).slice(0,200),null,2)'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify(Array.from(document.querySelectorAll(\"a\")).map(a=>({text:(a.textContent||\"\").trim(),href:a.href})).filter(x=>x.text.toLowerCase().includes(\"depend\")||x.href.toLowerCase().includes(\"depend\")).slice(0,200), null, 2)'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/nav.js 'https://www.npmjs.com/package/vitest?activeTab=dependencies'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'document.body.innerText.slice(0,5000)'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify(Array.from(document.querySelectorAll(\"a[href*='/package/']\")).map(a=>({text:(a.textContent||\"\").trim(),href:a.getAttribute(\"href\")})).slice(0,300), null, 2)'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify(Array.from(document.querySelectorAll(\"a[href*=\\\"/package/\\\"]\")).map(a=>({text:(a.textContent||\"\").trim(),href:a.getAttribute(\"href\")})).slice(0,300), null, 2)'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'typeof window.__NEXT_DATA__'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify(Array.from(document.querySelectorAll(\"script\")).map(s=>({id:s.id,type:s.type,src:s.src,inline:(s.textContent||\"\").slice(0,120)})).slice(0,50), null, 2)'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify(Object.keys(window.__context__||{}),null,2)'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify(Object.keys((window.__context__||{}).context||{}),null,2)'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify(window.__context__.context.deps, null, 2)'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js 'JSON.stringify((window.__context__.context.deps||[]).slice(0,5), null, 2)'"
+          ],
+          "cdpPathDetected": true,
+          "extractToolsDetected": false,
+          "disallowedCommandsDetected": [],
+          "assistantAnswer": "Feito — naveguei no browser para a página do pacote e extraí 5 dependências da seção **Dependencies**:\n\n1. `@vitest/expect`  \n2. `@vitest/mocker`  \n3. `@vitest/pretty-format`  \n4. `@vitest/runner`  \n5. `@vitest/snapshot`"
+        },
+        {
+          "taskId": "CF2",
+          "prompt": "Abra https://www.npmjs.com/package/typescript e retorne o título da página, URL final e 3 dados visíveis na interface web. Não use npm view nem endpoints do registry.npmjs.org.",
+          "elapsedSec": 141.91,
+          "exitCode": 0,
+          "toolCalls": [
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "read",
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "ls -la",
+            "ls -la packages/web-skills/skills/web-browser && ls -la packages/web-skills/skills/web-browser/scripts",
+            "node packages/web-skills/skills/web-browser/scripts/start.js",
+            "node packages/web-skills/skills/web-browser/scripts/nav.js https://www.npmjs.com/package/typescript",
+            "node packages/web-skills/skills/web-browser/scripts/eval.js 'document.body.innerText.slice(0,2000)'",
+            "node packages/web-skills/skills/web-browser/scripts/nav.js https://www.npmjs.com/package/typescript --new",
+            "node packages/web-skills/skills/web-browser/scripts/eval.js 'document.body.innerText.slice(0,1200)'",
+            "node packages/web-skills/skills/web-browser/scripts/eval.js 'location.href'",
+            "node --input-type=module -e \"import { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js'; const c=await connect(); const pages=await c.getPages(); console.log(JSON.stringify(pages.map(p=>({id:p.targetId,title:p.title,url:p.url})),null,2)); c.close();\"",
+            "node --input-type=module -e \"import { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js'; const c=await connect(); const pages=await c.getPages(); const page=[...pages].reverse().find(p=>p.url.includes('/package/typescript')); if(!page){throw new Error('typescript tab not found');} const s=await c.attachToPage(page.targetId); const text=await c.evaluate(s, '(async()=>document.body.innerText.slice(0,1800))()'); console.log(text); c.close();\"",
+            "node --input-type=module -e \"import { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js'; const c=await connect(); const page=[...(await c.getPages())].reverse().find(p=>p.url.includes('/package/typescript')); const s=await c.attachToPage(page.targetId); const headings=await c.evaluate(s, '(async()=>Array.from(document.querySelectorAll(\\\"h1,h2,h3\\\")).map(e=>e.textContent.trim()).filter(Boolean).slice(0,20))()'); console.log(JSON.stringify(headings,null,2)); c.close();\"",
+            "node --input-type=module -e \"import { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js'; const c=await connect(); const page=[...(await c.getPages())].reverse().find(p=>p.url.includes('/package/typescript')); const s=await c.attachToPage(page.targetId); const data=await c.evaluate(s, `(() => { const txt=document.body.innerText; const firstNonEmptyAfter=(label)=>{ const i=txt.indexOf(label); if(i===-1) return null; const after=txt.slice(i+label.length).split(/\\n/).map(l=>l.trim()).filter(Boolean); return after[0]||null; }; return { title: document.title, url: location.href, packageName: (document.querySelector('h2')?.textContent||'').trim() || null, weeklyDownloads: firstNonEmptyAfter('Weekly Downloads'), version: firstNonEmptyAfter('Version'), license: firstNonEmptyAfter('License') }; })()`); console.log(JSON.stringify(data,null,2)); c.close();\"",
+            "node --input-type=module <<'EOF'\nimport { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js';\n\nconst c = await connect();\nconst pages = await c.getPages();\nconst page = [...pages].reverse().find((p) => p.url.includes('/package/typescript'));\nif (!page) throw new Error('typescript tab not found');\nconst sessionId = await c.attachToPage(page.targetId);\n\nconst data = await c.evaluate(\n  sessionId,\n  `(() => {\n    const txt = document.body.innerText;\n    const firstNonEmptyAfter = (label) => {\n      const i = txt.indexOf(label);\n      if (i === -1) return null;\n      const after = txt.slice(i + label.length).split(/\\\\n/).map((l) => l.trim()).filter(Boolean);\n      return after[0] || null;\n    };\n    return {\n      title: document.title,\n      url: location.href,\n      packageName: (document.querySelector('h2')?.textContent || '').trim() || null,\n      weeklyDownloads: firstNonEmptyAfter('Weekly Downloads'),\n      version: firstNonEmptyAfter('Version'),\n      license: firstNonEmptyAfter('License')\n    };\n  })()`\n);\n\nconsole.log(JSON.stringify(data, null, 2));\nc.close();\nEOF",
+            "node --input-type=module <<'EOF'\nimport { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js';\n\nconst c = await connect();\nconst pages = await c.getPages();\nconst page = [...pages].reverse().find((p) => p.url.includes('/package/typescript'));\nif (!page) throw new Error('typescript tab not found');\nconst sessionId = await c.attachToPage(page.targetId);\n\nconst data = await c.evaluate(\n  sessionId,\n  `(() => {\n    const txt = document.body.innerText;\n    const firstNonEmptyAfter = (label) => {\n      const i = txt.indexOf(label);\n      if (i === -1) return null;\n      const after = txt.slice(i + label.length).split('\\\\n').map((l) => l.trim()).filter(Boolean);\n      return after[0] || null;\n    };\n    return {\n      title: document.title,\n      url: location.href,\n      packageName: (document.querySelector('h2')?.textContent || '').trim() || null,\n      weeklyDownloads: firstNonEmptyAfter('Weekly Downloads'),\n      version: firstNonEmptyAfter('Version'),\n      license: firstNonEmptyAfter('License')\n    };\n  })()`\n);\n\nconsole.log(JSON.stringify(data, null, 2));\nc.close();\nEOF",
+            "node --input-type=module <<'EOF'\nimport { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js';\nconst c=await connect();\nconst page=[...(await c.getPages())].reverse().find(p=>p.url.includes('/package/typescript'));\nconst s=await c.attachToPage(page.targetId);\nconst data=await c.evaluate(s, '({title: document.title, url: location.href})');\nconsole.log(JSON.stringify(data,null,2));\nc.close();\nEOF",
+            "node --input-type=module <<'EOF'\nimport { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js';\nconst c=await connect();\nconst page=[...(await c.getPages())].reverse().find(p=>p.url.includes('/package/typescript'));\nconst s=await c.attachToPage(page.targetId);\nconst data=await c.evaluate(s, `(() => {\n  const matches = Array.from(document.querySelectorAll('*')).filter(el => el.children.length===0 && el.textContent.trim()==='Weekly Downloads').slice(0,5).map(el => ({tag: el.tagName, cls: el.className, parent: el.parentElement?.tagName, parentCls: el.parentElement?.className, next: el.parentElement?.nextElementSibling?.textContent?.trim() || el.nextElementSibling?.textContent?.trim() || null }));\n  return matches;\n})()`);\nconsole.log(JSON.stringify(data,null,2));\nc.close();\nEOF",
+            "node --input-type=module <<'EOF'\nimport { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js';\nconst c=await connect();\nconst page=[...(await c.getPages())].reverse().find(p=>p.url.includes('/package/typescript'));\nconst s=await c.attachToPage(page.targetId);\nconst data=await c.evaluate(s, `(() => {\n  return Array.from(document.querySelectorAll('h3')).map(el => ({text: el.textContent.trim(), cls: el.className, next: el.nextElementSibling?.textContent?.trim() || null})).slice(0,40);\n})()`);\nconsole.log(JSON.stringify(data,null,2));\nc.close();\nEOF",
+            "node --input-type=module <<'EOF'\nimport { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js';\n\nconst c = await connect();\nconst page = [...(await c.getPages())].reverse().find((p) => p.url.includes('/package/typescript'));\nif (!page) throw new Error('typescript tab not found');\nconst sessionId = await c.attachToPage(page.targetId);\n\nconst data = await c.evaluate(\n  sessionId,\n  `(() => {\n    const byHeading = (needle) => {\n      const h = Array.from(document.querySelectorAll('h3')).find((el) => el.textContent.includes(needle));\n      return h?.nextElementSibling?.textContent?.trim() || null;\n    };\n\n    return {\n      title: document.title,\n      finalUrl: location.href,\n      packageName: document.querySelector('h2')?.textContent?.trim() || null,\n      version: byHeading('Version'),\n      weeklyDownloads: byHeading('Weekly Downloads'),\n      license: byHeading('License')\n    };\n  })()`\n);\n\nconsole.log(JSON.stringify(data, null, 2));\nc.close();\nEOF",
+            "node --input-type=module <<'EOF'\nimport { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js';\nconst c=await connect();\nconst page=[...(await c.getPages())].reverse().find(p=>p.url.includes('/package/typescript'));\nconst s=await c.attachToPage(page.targetId);\nconst data=await c.evaluate(s, `(() => ({h1: document.querySelector('h1')?.textContent?.trim() || null, h2: document.querySelector('h2')?.textContent?.trim() || null, heads:Array.from(document.querySelectorAll('h1,h2')).slice(0,5).map(h=>h.textContent.trim())}))()`);\nconsole.log(JSON.stringify(data,null,2));\nc.close();\nEOF",
+            "node --input-type=module <<'EOF'\nimport { connect } from './packages/web-skills/skills/web-browser/scripts/cdp.js';\n\nconst c = await connect();\nconst page = [...(await c.getPages())].reverse().find((p) => p.url.includes('/package/typescript'));\nif (!page) throw new Error('typescript tab not found');\nconst sessionId = await c.attachToPage(page.targetId);\n\nconst data = await c.evaluate(\n  sessionId,\n  `(() => {\n    const byHeading = (needle) => {\n      const h = Array.from(document.querySelectorAll('h3')).find((el) => el.textContent.includes(needle));\n      return h?.nextElementSibling?.textContent?.trim() || null;\n    };\n\n    return {\n      title: document.title,\n      finalUrl: location.href,\n      packageName: document.querySelector('h1')?.textContent?.trim() || null,\n      version: byHeading('Version'),\n      weeklyDownloads: byHeading('Weekly Downloads'),\n      license: byHeading('License')\n    };\n  })()`\n);\n\nconsole.log(JSON.stringify(data, null, 2));\nc.close();\nEOF"
+          ],
+          "cdpPathDetected": true,
+          "extractToolsDetected": false,
+          "disallowedCommandsDetected": [],
+          "assistantAnswer": "Aqui está o que encontrei na página web do npm para **typescript**:\n\n- **Título da página:** `typescript - npm`\n- **URL final:** `https://www.npmjs.com/package/typescript`\n\n**3 dados visíveis na interface:**\n1. **Versão:** `6.0.2`\n2. **Weekly Downloads:** `163.781.296`\n3. **Licença:** `Apache-2.0`"
+        }
+      ],
+      "metrics": {
+        "taskCount": 2,
+        "successRate": 1.0,
+        "avgElapsedSec": 118.75,
+        "cdpPathRate": 1.0,
+        "fallbackRate": 0.0,
+        "disallowedCommandRate": 0.0
+      }
+    }
+  ]
+}

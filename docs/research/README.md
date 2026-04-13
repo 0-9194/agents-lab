@@ -13,6 +13,7 @@ Este diretório armazena pesquisas, análises e material de referência sobre o 
 | [extension-factory-blueprint.md](./extension-factory-blueprint.md) | Blueprint de como estruturar futura fábrica de extensões Pi | Inicial |
 | [extension-factory-friction-analysis.md](./extension-factory-friction-analysis.md) | Fricções e riscos antes de abrir uma trilha in-house | Inicial |
 | [overlap-matrix.md](./overlap-matrix.md) | Matriz de sobreposição entre pacotes da stack e direção de consolidação first-party | Draft |
+| [web-overlap-scorecard.md](./web-overlap-scorecard.md) | Avaliação específica de overlap Web (oh-pi, pi-web-access, first-party) | Draft |
 | _(em breve)_ | Estado da arte em primitivas de agentes | Pendente |
 | _(em breve)_ | Padrões de design para sistemas multi-agentes | Pendente |
 

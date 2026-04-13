@@ -134,6 +134,12 @@ pi.on("session_shutdown", async (event, ctx) => {
 | Persistir estado na sessão | `pi.appendEntry()` + reconstruir em `session_start` |
 | Reload após mudança | `ctx.reload()` dentro de um command handler |
 
+## Extensões com superfície Web (HTTP/UI)
+
+Se a extensão incluir servidor HTTP, painel web, ou integração browser↔sessão,
+use também `/skill:create-pi-web-extension` para seguir o contrato first-party
+(mode local|lan|public, health endpoint, token auth e e2e via test-harness).
+
 ## Referência Avançada
 
 Para exemplos reais de extensões e padrões arquiteturais:

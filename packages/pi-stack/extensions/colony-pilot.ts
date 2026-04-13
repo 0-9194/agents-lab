@@ -14,7 +14,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { isToolCallEventType } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
@@ -364,6 +364,94 @@ function formatPreflightResult(result: ColonyPilotPreflightResult): string {
   return lines.join("\n");
 }
 
+export type BaselineProfile = "default" | "phase2";
+
+export function resolveBaselineProfile(input?: string): BaselineProfile {
+  return input === "phase2" ? "phase2" : "default";
+}
+
+export function buildProjectBaselineSettings(profile: BaselineProfile = "default") {
+  const base = {
+    extensions: {
+      colonyPilot: {
+        preflight: {
+          enabled: true,
+          enforceOnAntColonyTool: true,
+          requiredExecutables: ["node", "git", "npm"],
+          requireColonyCapabilities: ["colony", "colonyStop"],
+        },
+      },
+      webSessionGateway: {
+        mode: "local",
+        port: 3100,
+      },
+      guardrailsCore: {
+        portConflict: {
+          enabled: true,
+          suggestedTestPort: 4173,
+        },
+      },
+    },
+  };
+
+  if (profile === "default") return base;
+
+  return deepMergeObjects(base, {
+    extensions: {
+      colonyPilot: {
+        preflight: {
+          requiredExecutables: ["node", "git", "npm", "npx"],
+          requireColonyCapabilities: ["colony", "colonyStop", "monitors", "sessionWeb"],
+        },
+      },
+      guardrailsCore: {
+        portConflict: {
+          suggestedTestPort: 4273,
+        },
+      },
+    },
+  });
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+export function deepMergeObjects<T extends Record<string, unknown>>(base: T, patch: Record<string, unknown>): T {
+  const out: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(patch)) {
+    if (isPlainObject(value) && isPlainObject(out[key])) {
+      out[key] = deepMergeObjects(out[key] as Record<string, unknown>, value);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out as T;
+}
+
+export function applyProjectBaselineSettings(existing: unknown, profile: BaselineProfile = "default") {
+  const current = isPlainObject(existing) ? existing : {};
+  const baseline = buildProjectBaselineSettings(profile);
+  return deepMergeObjects(current, baseline as Record<string, unknown>);
+}
+
+function readProjectSettings(cwd: string): Record<string, unknown> {
+  const p = path.join(cwd, ".pi", "settings.json");
+  if (!existsSync(p)) return {};
+  try {
+    const raw = JSON.parse(readFileSync(p, "utf8"));
+    return isPlainObject(raw) ? raw : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeProjectSettings(cwd: string, data: Record<string, unknown>) {
+  const dir = path.join(cwd, ".pi");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(path.join(dir, "settings.json"), `${JSON.stringify(data, null, 2)}\n`);
+}
+
 function extractText(message: unknown): string {
   if (!message || typeof message !== "object") return "";
   const msg = message as { content?: unknown };
@@ -692,6 +780,35 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
+  pi.registerTool({
+    name: "colony_pilot_baseline",
+    label: "Colony Pilot Baseline",
+    description: "Show or apply project baseline settings for colony/web runtime governance.",
+    parameters: Type.Object({
+      apply: Type.Optional(Type.Boolean()),
+      profile: Type.Optional(Type.String({ description: "default | phase2" })),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const p = params as { apply?: boolean; profile?: string };
+      const apply = Boolean(p?.apply);
+      const profile = resolveBaselineProfile(p?.profile);
+      const baseline = buildProjectBaselineSettings(profile);
+      if (!apply) {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ profile, baseline }, null, 2) }],
+          details: { profile, baseline },
+        };
+      }
+
+      const merged = applyProjectBaselineSettings(readProjectSettings(ctx.cwd), profile);
+      writeProjectSettings(ctx.cwd, merged);
+      return {
+        content: [{ type: "text", text: `Applied project baseline (${profile}) to .pi/settings.json` }],
+        details: { applied: true, profile, path: path.join(ctx.cwd, ".pi", "settings.json") },
+      };
+    },
+  });
+
   pi.registerCommand("colony-pilot", {
     description: "Orquestra pilot de colony + web inspect + profile de monitores (run/status/stop/web).",
     handler: async (args, ctx) => {
@@ -715,6 +832,7 @@ export default function (pi: ExtensionAPI) {
             "  status                        Snapshot consolidado",
             "  check                         Diagnóstico de capacidades carregadas (/monitors,/remote,/colony)",
             "  preflight                     Executa gates duros (capabilities + executáveis) antes da colony",
+            "  baseline [show|apply] [default|phase2]  Baseline de .pi/settings.json (phase2 = mais estrito)",
             "  artifacts                     Mostra onde colony guarda states/worktrees para recovery",
             "",
             "Nota: o pi não expõe API confiável para uma extensão invocar slash commands de outra",
@@ -780,6 +898,50 @@ export default function (pi: ExtensionAPI) {
         const result = await runColonyPilotPreflight(pi, caps, preflightConfig);
         preflightCache = { at: Date.now(), result };
         ctx.ui.notify(formatPreflightResult(result), result.ok ? "info" : "warning");
+        return;
+      }
+
+      if (cmd === "baseline") {
+        const parsed = parseCommandInput(body);
+        const maybeAction = parsed.cmd || "show";
+        const isProfileOnly = maybeAction === "default" || maybeAction === "phase2";
+        const act = isProfileOnly ? "show" : maybeAction;
+        const profileSource = isProfileOnly
+          ? maybeAction
+          : (parseCommandInput(parsed.body).cmd || parsed.body || "default");
+        const profile = resolveBaselineProfile(profileSource);
+
+        if (act === "show") {
+          const baseline = buildProjectBaselineSettings(profile);
+          ctx.ui.notify(
+            [
+              `colony-pilot project baseline (${profile}) (.pi/settings.json)`,
+              "",
+              JSON.stringify(baseline, null, 2),
+              "",
+              "Para aplicar automaticamente:",
+              `  /colony-pilot baseline apply ${profile}`,
+            ].join("\n"),
+            "info"
+          );
+          return;
+        }
+
+        if (act === "apply") {
+          const merged = applyProjectBaselineSettings(readProjectSettings(ctx.cwd), profile);
+          writeProjectSettings(ctx.cwd, merged);
+          ctx.ui.notify(
+            [
+              `Baseline (${profile}) aplicada em .pi/settings.json`,
+              "Recomendado: /reload",
+            ].join("\n"),
+            "info"
+          );
+          ctx.ui.setEditorText?.("/reload");
+          return;
+        }
+
+        ctx.ui.notify("Usage: /colony-pilot baseline [show|apply] [default|phase2]", "warning");
         return;
       }
 

@@ -98,8 +98,48 @@ Ativar: `/settings` → selecionar `agents-lab`
 | Comando | O que faz |
 |---|---|
 | `/doctor` | Diagnóstico do ambiente — verifica git, gh, glab, node, npm e autenticações |
-| `/colony-pilot` | Guia pilot (`check/preflight/run/status/stop/web/monitors/tui/artifacts`) com execução manual assistida, diagnóstico de capacidades e preflight hard-gate para `ant_colony` |
+| `/colony-pilot` | Guia pilot (`check/preflight/baseline/run/status/stop/web/monitors/tui/artifacts`) com execução manual assistida, diagnóstico de capacidades e preflight hard-gate para `ant_colony` |
 | `/session-web` | Controla gateway web first-party (`start/status/open/stop`) para inspeção local da sessão sem UI hospedada externa |
+
+## Baseline de projeto (.pi/settings.json)
+
+Para inicializar defaults versionáveis no workspace (sem depender só de prompt):
+
+```text
+/colony-pilot baseline show default
+/colony-pilot baseline apply default
+
+# profile mais estrito para próxima fase/execução paralela
+/colony-pilot baseline show phase2
+/colony-pilot baseline apply phase2
+```
+
+Baseline aplicada (default):
+
+```json
+{
+  "extensions": {
+    "colonyPilot": {
+      "preflight": {
+        "enabled": true,
+        "enforceOnAntColonyTool": true,
+        "requiredExecutables": ["node", "git", "npm"],
+        "requireColonyCapabilities": ["colony", "colonyStop"]
+      }
+    },
+    "webSessionGateway": {
+      "mode": "local",
+      "port": 3100
+    },
+    "guardrailsCore": {
+      "portConflict": {
+        "enabled": true,
+        "suggestedTestPort": 4173
+      }
+    }
+  }
+}
+```
 
 ## Filosofia
 

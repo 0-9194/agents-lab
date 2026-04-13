@@ -13,6 +13,9 @@ import {
   buildAntColonyMirrorCandidates,
   resolveColonyPilotPreflightConfig,
   executableProbe,
+  applyProjectBaselineSettings,
+  buildProjectBaselineSettings,
+  resolveBaselineProfile,
 } from "../../extensions/colony-pilot";
 
 describe("colony-pilot parsers", () => {
@@ -107,5 +110,35 @@ describe("colony-pilot parsers", () => {
   it("executableProbe usa npm.cmd no Windows", () => {
     expect(executableProbe("npm", "win32")).toEqual({ command: "npm.cmd", args: ["--version"], label: "npm" });
     expect(executableProbe("node", "linux")).toEqual({ command: "node", args: ["--version"], label: "node" });
+  });
+
+  it("applyProjectBaselineSettings mescla sem remover config existente", () => {
+    const merged = applyProjectBaselineSettings({
+      model: "github-copilot",
+      extensions: {
+        monitorProviderPatch: { hedgeConversationHistory: true },
+      },
+    }) as any;
+
+    expect(merged.model).toBe("github-copilot");
+    expect(merged.extensions.monitorProviderPatch.hedgeConversationHistory).toBe(true);
+    expect(merged.extensions.colonyPilot.preflight.enabled).toBe(true);
+    expect(merged.extensions.webSessionGateway.port).toBe(3100);
+    expect(merged.extensions.guardrailsCore.portConflict.suggestedTestPort).toBe(4173);
+  });
+
+  it("profile phase2 endurece baseline", () => {
+    expect(resolveBaselineProfile("phase2")).toBe("phase2");
+    expect(resolveBaselineProfile("other")).toBe("default");
+
+    const phase2 = buildProjectBaselineSettings("phase2") as any;
+    expect(phase2.extensions.colonyPilot.preflight.requiredExecutables).toEqual(["node", "git", "npm", "npx"]);
+    expect(phase2.extensions.colonyPilot.preflight.requireColonyCapabilities).toEqual([
+      "colony",
+      "colonyStop",
+      "monitors",
+      "sessionWeb",
+    ]);
+    expect(phase2.extensions.guardrailsCore.portConflict.suggestedTestPort).toBe(4273);
   });
 });

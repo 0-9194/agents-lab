@@ -309,15 +309,40 @@ export function detectPortConflict(command: string, reservedPort?: number): numb
   return ports.includes(reservedPort) ? reservedPort : undefined;
 }
 
+interface GuardrailsPortConflictConfig {
+  enabled: boolean;
+  suggestedTestPort: number;
+}
+
+function resolveGuardrailsPortConflictConfig(cwd: string): GuardrailsPortConflictConfig {
+  const defaults: GuardrailsPortConflictConfig = { enabled: true, suggestedTestPort: 4173 };
+  try {
+    const p = join(cwd, ".pi", "settings.json");
+    if (!existsSync(p)) return defaults;
+    const json = JSON.parse(readFileSync(p, "utf8"));
+    const cfg = json?.extensions?.guardrailsCore?.portConflict ?? {};
+    const enabled = cfg?.enabled !== false;
+    const suggested = Number(cfg?.suggestedTestPort);
+    return {
+      enabled,
+      suggestedTestPort: Number.isNaN(suggested) || suggested <= 0 ? defaults.suggestedTestPort : suggested,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
 // =============================================================================
 // Extension Entry
 // =============================================================================
 
 export default function (pi: ExtensionAPI) {
   let strictInteractiveMode = false;
+  let portConflictConfig: GuardrailsPortConflictConfig = { enabled: true, suggestedTestPort: 4173 };
 
-  pi.on("session_start", () => {
+  pi.on("session_start", (_event, ctx) => {
     strictInteractiveMode = false;
+    portConflictConfig = resolveGuardrailsPortConflictConfig(ctx.cwd);
   });
 
   pi.on("before_agent_start", async (event, ctx) => {
@@ -364,11 +389,13 @@ export default function (pi: ExtensionAPI) {
 
       // Session web port conflict guard
       const reservedPort = readReservedSessionWebPort(ctx.cwd);
-      const conflictPort = detectPortConflict(command, reservedPort);
+      const conflictPort = portConflictConfig.enabled
+        ? detectPortConflict(command, reservedPort)
+        : undefined;
       if (conflictPort) {
         return {
           block: true,
-          reason: `Blocked by guardrails-core (port_conflict): port ${conflictPort} is reserved by session-web. Use a different test port.`,
+          reason: `Blocked by guardrails-core (port_conflict): port ${conflictPort} is reserved by session-web. Try --port ${portConflictConfig.suggestedTestPort}.`,
         };
       }
 

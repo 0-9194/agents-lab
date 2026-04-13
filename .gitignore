@@ -141,6 +141,7 @@ vite.config.ts.timestamp-*
 # Pi workspace runtime artifacts
 .pi-lens/
 .pi/monitors/
+!.pi/monitors/hedge.monitor.json
 .project/
 
 # Pi project settings is versionable

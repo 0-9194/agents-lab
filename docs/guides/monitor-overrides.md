@@ -23,7 +23,7 @@ Issue upstream aberto: [davidorex/pi-project-workflows#1](https://github.com/dav
 Os arquivos em `.pi/agents/` sobrescrevem os agentes do pacote com a spec correta:
 
 ```yaml
-model: github-copilot/claude-sonnet-4.6   # ✅ provider explícito + nome correto
+model: github-copilot/claude-haiku-4.5   # ✅ provider explícito + nome correto
 ```
 
 Os 5 overrides cobrem todos os classificadores do sistema de monitors:
@@ -68,14 +68,34 @@ Devem existir os 5 arquivos `.agent.yaml`. Se ausentes, copiar de outro projeto 
 name: <classifier-name>
 role: sensor
 description: <descrição>
-model: github-copilot/claude-sonnet-4.6
-thinking: "on"
+model: github-copilot/claude-haiku-4.5
+thinking: "off"
 output:
   format: json
   schema: ../schemas/verdict.schema.json
 prompt:
   task:
     template: <monitor-name>/classify.md
+```
+
+## Default do Hedge Sem conversation_history
+
+O `monitor-provider-patch` também aplica sane defaults no arquivo `.pi/monitors/hedge.monitor.json`.
+
+- Padrão: remove `conversation_history` de `classify.context`
+- Objetivo: reduzir contexto desnecessário no classificador hedge desde o primeiro boot
+- Opt-in: é possível reativar por configuração
+
+Configuração em `.pi/settings.json` (ou `~/.pi/agent/settings.json`):
+
+```json
+{
+  "extensions": {
+    "monitorProviderPatch": {
+      "hedgeConversationHistory": true
+    }
+  }
+}
 ```
 
 ---
@@ -86,10 +106,12 @@ Ao iniciar um projeto novo com `@aretw0/pi-stack`:
 
 1. Instalar a stack: `npx @aretw0/pi-stack --local`
 2. Copiar os overrides:
+
    ```bash
    mkdir -p .pi/agents
    cp /path/to/agents-lab/.pi/agents/*.agent.yaml .pi/agents/
    ```
+
 3. Copiar as configs de monitor de referência de `agents-lab/.pi/monitors/` ou criar as suas.
 4. Fazer `/reload`.
 

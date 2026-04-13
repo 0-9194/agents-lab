@@ -42,6 +42,28 @@ pi install https://github.com/aretw0/agents-lab
 | `monitor-provider-patch` | Fix automático de monitors para github-copilot — cria overrides se necessário |
 | `environment-doctor` | Health check do ambiente na startup + comando `/doctor` |
 
+#### Defaults do `monitor-provider-patch`
+
+| Default | Valor | Configurável? |
+|---|---|---|
+| Modelo dos classificadores | `github-copilot/claude-haiku-4.5` | Não (respeita override manual em `.pi/agents/`) |
+| Thinking | `off` | Não (respeita override manual em `.pi/agents/`) |
+| `conversation_history` no hedge monitor | desabilitado | Sim — ver abaixo |
+
+Para reativar `conversation_history` no hedge, adicione em `.pi/settings.json`:
+
+```json
+{
+  "extensions": {
+    "monitorProviderPatch": {
+      "hedgeConversationHistory": true
+    }
+  }
+}
+```
+
+Detalhes: [`docs/guides/monitor-overrides.md`](../../docs/guides/monitor-overrides.md)
+
 ### Tema
 
 | Tema | Descrição |

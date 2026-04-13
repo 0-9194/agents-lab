@@ -125,7 +125,8 @@ Ou seja: há overlap funcional, mas com níveis diferentes de profundidade.
      - search/extract → `web_search`/`fetch_content`
    - ✅ A/B inicial (`web-routing-ab-run-2026-04-13`): melhorou determinismo (CDP-path 100%), mas com +32% de latência e sem ganho de sucesso.
    - ✅ A/B recheck sem VPN (`web-routing-ab-run-2026-04-13-novpn-cf`): em cenários npmjs/Cloudflare, policy-strict foi melhor (latência e determinismo), sem fallback e sem comandos proibidos.
-   - **decisão sóbria atual:** manter sem hard enforcement global; adotar hard por escopo para intents interativas sensíveis (ex.: npmjs/Cloudflare).
+   - ✅ hard por escopo implementado na policy das skills first-party (`source-research`, `web-browser`) com trigger explícito (intent interativo + domínio sensível/Cloudflare).
+   - **decisão sóbria atual:** manter sem hard enforcement global; aplicar hard por escopo para intents interativas sensíveis (ex.: npmjs/Cloudflare).
    - decidir se `web-search`/`web-fetch` da `@ifi/oh-pi-skills` ficam como fallback explícito,
    - ou se serão filtrados em `FILTER_PATCHES` para reduzir ambiguidade.
 

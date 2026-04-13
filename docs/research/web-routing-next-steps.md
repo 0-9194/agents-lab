@@ -15,9 +15,10 @@ Checklist vivo para não deixar backlog preso só na conversa.
 
 ## Em andamento
 
-- [ ] Definir implementação de **hard por escopo** (não global):
-  - triggers: prompts com intent interativo + domínio/npmjs sensível
-  - fallback explícito quando CDP falhar
+- [x] Implementada policy de **hard por escopo** nas skills first-party (`source-research`, `web-browser`):
+  - trigger explícito: intent interativo + domínio sensível (ex.: `npmjs.com`) ou relato de Cloudflare
+  - fallback explícito apenas após evidência de falha CDP
+- [ ] Validar em run dedicado pós-policy (A/B + taskset cloudflare-recheck) para confirmar aderência operacional
 
 ## Próximos experimentos
 

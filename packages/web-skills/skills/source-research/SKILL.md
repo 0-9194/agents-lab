@@ -43,6 +43,29 @@ Use this routing policy to avoid overlap and keep behavior deterministic:
 
 If intent is ambiguous, ask one short clarification question before choosing the path.
 
+### Scoped Hard Guardrail (Interactive + Sensitive Domains)
+
+Apply **hard-by-scope enforcement** when BOTH are true:
+
+- **Interactive trigger** in user intent (open/navigate/click/fill/login/submit/tab/button/form).
+- **Sensitive-domain trigger** (explicit URL/domain known to be anti-bot/challenge-prone, e.g. `npmjs.com`, or user reports Cloudflare/bot blocking).
+
+When triggered, this is mandatory:
+
+1. **Browser-first path only** at start:
+   - `node ./scripts/start.js` (if CDP not ready)
+   - `node ./scripts/nav.js <url>`
+   - `node ./scripts/eval.js ...` / `pick.js` / `dismiss-cookies.js` as needed
+2. **Disallowed as primary path** before CDP attempts:
+   - `curl`, `wget`, `python requests`, `r.jina.ai` mirrors
+   - direct scraping via plain shell pipelines
+   - `web_search` / `fetch_content` for page-state extraction that requires interaction
+3. **Fallback allowed only after CDP failure evidence**:
+   - at least 2 CDP attempts fail (navigation/render/interaction), and
+   - report failure reason in the answer, then use fallback path explicitly.
+
+If URL/domain is missing for a triggered intent, ask one short question to get the target URL before executing tools.
+
 ## Step 2: Research by Type
 
 ### Conceptual Questions

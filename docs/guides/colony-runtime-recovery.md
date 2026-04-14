@@ -2,6 +2,8 @@
 
 Como localizar artefatos da colônia e recuperar contexto quando uma execução termina/parcialmente falha.
 
+Para configuração de provider/model e controle operacional da colônia, veja também: [`colony-provider-model-governance.md`](./colony-provider-model-governance.md).
+
 ## TL;DR
 
 - Runtime ID no chat: `c1`

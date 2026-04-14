@@ -26,6 +26,7 @@ type ColonyPhase =
   | "completed"
   | "failed"
   | "aborted"
+  | "budget_exceeded"
   | "scouting"
   | "running"
   | "unknown";
@@ -75,11 +76,13 @@ export function parseColonySignal(text: string): { phase: ColonyPhase; id: strin
             ? "failed"
             : raw === "aborted"
               ? "aborted"
-              : raw === "scouting"
-                ? "scouting"
-                : raw === "running"
-                  ? "running"
-                  : "unknown";
+              : raw === "budget_exceeded"
+                ? "budget_exceeded"
+                : raw === "scouting"
+                  ? "scouting"
+                  : raw === "running"
+                    ? "running"
+                    : "unknown";
 
   return { phase, id };
 }
@@ -120,6 +123,444 @@ export function detectPilotCapabilities(commandNames: string[]): PilotCapabiliti
     colony: base.has("colony"),
     colonyStop: base.has("colony-stop"),
   };
+}
+
+export type ModelAuthStatus =
+  | "ok"
+  | "missing-auth"
+  | "missing-model"
+  | "invalid-model"
+  | "not-set"
+  | "unavailable";
+
+export interface ColonyModelReadiness {
+  currentModelRef?: string;
+  currentModelStatus: ModelAuthStatus;
+  defaultProvider?: string;
+  defaultModel?: string;
+  defaultModelRef?: string;
+  defaultModelStatus: ModelAuthStatus;
+  antColonyDefaultModelRef?: string;
+}
+
+function settingsCandidates(cwd: string): string[] {
+  return [
+    path.join(cwd, ".pi", "settings.json"),
+    path.join(homedir(), ".pi", "agent", "settings.json"),
+  ];
+}
+
+function readTopLevelStringSetting(cwd: string, key: string): string | undefined {
+  for (const candidate of settingsCandidates(cwd)) {
+    if (!existsSync(candidate)) continue;
+
+    try {
+      const json = JSON.parse(readFileSync(candidate, "utf8"));
+      const value = json?.[key];
+      if (typeof value === "string" && value.trim().length > 0) {
+        return value.trim();
+      }
+    } catch {
+      // ignore malformed settings
+    }
+  }
+
+  return undefined;
+}
+
+export function parseProviderModelRef(modelRef: string): { provider: string; model: string } | undefined {
+  const idx = modelRef.indexOf("/");
+  if (idx <= 0 || idx >= modelRef.length - 1) return undefined;
+  return {
+    provider: modelRef.slice(0, idx),
+    model: modelRef.slice(idx + 1),
+  };
+}
+
+export function resolveModelAuthStatus(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  modelRegistry: any,
+  modelRef?: string
+): ModelAuthStatus {
+  if (!modelRef) return "not-set";
+
+  const parsed = parseProviderModelRef(modelRef);
+  if (!parsed) return "invalid-model";
+
+  if (!modelRegistry || typeof modelRegistry.find !== "function") {
+    return "unavailable";
+  }
+
+  const model = modelRegistry.find(parsed.provider, parsed.model);
+  if (!model) return "missing-model";
+
+  if (typeof modelRegistry.hasConfiguredAuth === "function") {
+    const hasAuth = modelRegistry.hasConfiguredAuth(model);
+    if (!hasAuth) return "missing-auth";
+  }
+
+  return "ok";
+}
+
+export function resolveColonyModelReadiness(
+  cwd: string,
+  currentModelRef: string | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  modelRegistry: any
+): ColonyModelReadiness {
+  const defaultProvider = readTopLevelStringSetting(cwd, "defaultProvider");
+  const defaultModel = readTopLevelStringSetting(cwd, "defaultModel");
+
+  const currentModelStatus = resolveModelAuthStatus(modelRegistry, currentModelRef);
+
+  let defaultModelRef: string | undefined;
+  if (defaultModel) {
+    defaultModelRef = defaultModel.includes("/")
+      ? defaultModel
+      : (defaultProvider ? `${defaultProvider}/${defaultModel}` : undefined);
+  }
+
+  const defaultModelStatus = defaultModelRef
+    ? resolveModelAuthStatus(modelRegistry, defaultModelRef)
+    : (defaultModel ? "invalid-model" : "not-set");
+
+  return {
+    currentModelRef,
+    currentModelStatus,
+    defaultProvider,
+    defaultModel,
+    defaultModelRef,
+    defaultModelStatus,
+    antColonyDefaultModelRef: currentModelRef,
+  };
+}
+
+function formatModelReadiness(readiness: ColonyModelReadiness): string[] {
+  return [
+    "provider/model:",
+    `  ant_colony default model: ${readiness.antColonyDefaultModelRef ?? "(none)"}`,
+    `  current model status: ${readiness.currentModelStatus}`,
+    `  defaultProvider: ${readiness.defaultProvider ?? "(not set)"}`,
+    `  defaultModel: ${readiness.defaultModel ?? "(not set)"}`,
+    `  defaultModelRef: ${readiness.defaultModelRef ?? "(unresolved)"}`,
+    `  default model status: ${readiness.defaultModelStatus}`,
+  ];
+}
+
+const ROLE_ORDER: Array<Exclude<ColonyAgentRole, "queen">> = [
+  "scout",
+  "worker",
+  "soldier",
+  "design",
+  "multimodal",
+  "backend",
+  "review",
+];
+
+const ROLE_TO_INPUT_KEY: Record<Exclude<ColonyAgentRole, "queen">, keyof AntColonyToolInput> = {
+  scout: "scoutModel",
+  worker: "workerModel",
+  soldier: "soldierModel",
+  design: "designWorkerModel",
+  multimodal: "multimodalWorkerModel",
+  backend: "backendWorkerModel",
+  review: "reviewWorkerModel",
+};
+
+const DEFAULT_MODEL_POLICY: ColonyPilotModelPolicyConfig = {
+  enabled: true,
+  autoInjectRoleModels: true,
+  requireHealthyCurrentModel: true,
+  requireExplicitRoleModels: false,
+  requiredRoles: ["scout", "worker", "soldier"],
+  enforceFullModelRef: true,
+  allowMixedProviders: true,
+  allowedProviders: [],
+  roleModels: {},
+};
+
+const DEFAULT_BUDGET_POLICY: ColonyPilotBudgetPolicyConfig = {
+  enabled: false,
+  enforceOnAntColonyTool: true,
+  requireMaxCost: true,
+  autoInjectMaxCost: true,
+  defaultMaxCostUsd: 2,
+  hardCapUsd: 20,
+  minMaxCostUsd: 0.05,
+};
+
+const DEFAULT_PROJECT_TASK_SYNC: ColonyPilotProjectTaskSyncConfig = {
+  enabled: false,
+  createOnLaunch: true,
+  trackProgress: true,
+  markTerminalState: true,
+  taskIdPrefix: "colony",
+  requireHumanClose: true,
+  maxNoteLines: 20,
+};
+
+export interface AntColonyToolInput {
+  goal: string;
+  maxAnts?: number;
+  maxCost?: number;
+  scoutModel?: string;
+  workerModel?: string;
+  soldierModel?: string;
+  designWorkerModel?: string;
+  multimodalWorkerModel?: string;
+  backendWorkerModel?: string;
+  reviewWorkerModel?: string;
+}
+
+function normalizeRoleList(value: unknown): ColonyAgentRole[] {
+  if (!Array.isArray(value)) return [...DEFAULT_MODEL_POLICY.requiredRoles];
+  const allowed: ColonyAgentRole[] = ["queen", ...ROLE_ORDER];
+  const out = value.filter((v): v is ColonyAgentRole => typeof v === "string" && allowed.includes(v as ColonyAgentRole));
+  return out.length > 0 ? out : [...DEFAULT_MODEL_POLICY.requiredRoles];
+}
+
+function normalizeStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === "string" && v.trim().length > 0).map((v) => v.trim());
+}
+
+function normalizeRoleModels(value: unknown): ColonyRoleModelMap {
+  const input = isPlainObject(value) ? (value as Record<string, unknown>) : {};
+  const out: ColonyRoleModelMap = {};
+  for (const role of ROLE_ORDER) {
+    const v = input[role];
+    if (typeof v === "string" && v.trim().length > 0) out[role] = v.trim();
+  }
+  return out;
+}
+
+export function resolveColonyPilotModelPolicy(raw?: Partial<ColonyPilotModelPolicyConfig>): ColonyPilotModelPolicyConfig {
+  return {
+    enabled: raw?.enabled !== false,
+    autoInjectRoleModels: raw?.autoInjectRoleModels !== false,
+    requireHealthyCurrentModel: raw?.requireHealthyCurrentModel !== false,
+    requireExplicitRoleModels: raw?.requireExplicitRoleModels === true,
+    requiredRoles: normalizeRoleList(raw?.requiredRoles),
+    enforceFullModelRef: raw?.enforceFullModelRef !== false,
+    allowMixedProviders: raw?.allowMixedProviders !== false,
+    allowedProviders: normalizeStringList(raw?.allowedProviders),
+    roleModels: normalizeRoleModels(raw?.roleModels),
+  };
+}
+
+function normalizeOptionalBudget(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  if (value <= 0) return undefined;
+  return Number(value.toFixed(4));
+}
+
+export function resolveColonyPilotBudgetPolicy(raw?: Partial<ColonyPilotBudgetPolicyConfig>): ColonyPilotBudgetPolicyConfig {
+  return {
+    enabled: raw?.enabled === true,
+    enforceOnAntColonyTool: raw?.enforceOnAntColonyTool !== false,
+    requireMaxCost: raw?.requireMaxCost !== false,
+    autoInjectMaxCost: raw?.autoInjectMaxCost !== false,
+    defaultMaxCostUsd: normalizeOptionalBudget(raw?.defaultMaxCostUsd) ?? DEFAULT_BUDGET_POLICY.defaultMaxCostUsd,
+    hardCapUsd: normalizeOptionalBudget(raw?.hardCapUsd) ?? DEFAULT_BUDGET_POLICY.hardCapUsd,
+    minMaxCostUsd: normalizeOptionalBudget(raw?.minMaxCostUsd) ?? DEFAULT_BUDGET_POLICY.minMaxCostUsd,
+  };
+}
+
+export function resolveColonyPilotProjectTaskSync(
+  raw?: Partial<ColonyPilotProjectTaskSyncConfig>
+): ColonyPilotProjectTaskSyncConfig {
+  const prefixRaw = typeof raw?.taskIdPrefix === "string" ? raw.taskIdPrefix.trim() : "";
+  const prefix = prefixRaw.length > 0 ? prefixRaw : DEFAULT_PROJECT_TASK_SYNC.taskIdPrefix;
+  const maxNoteLinesRaw = typeof raw?.maxNoteLines === "number" && Number.isFinite(raw.maxNoteLines)
+    ? Math.floor(raw.maxNoteLines)
+    : DEFAULT_PROJECT_TASK_SYNC.maxNoteLines;
+
+  return {
+    enabled: raw?.enabled === true,
+    createOnLaunch: raw?.createOnLaunch !== false,
+    trackProgress: raw?.trackProgress !== false,
+    markTerminalState: raw?.markTerminalState !== false,
+    taskIdPrefix: prefix,
+    requireHumanClose: raw?.requireHumanClose !== false,
+    maxNoteLines: Math.max(5, Math.min(200, maxNoteLinesRaw)),
+  };
+}
+
+export function colonyPhaseToProjectTaskStatus(
+  phase: ColonyPhase,
+  requireHumanClose: boolean
+): "planned" | "in-progress" | "completed" | "blocked" {
+  if (phase === "failed" || phase === "aborted" || phase === "budget_exceeded") return "blocked";
+  if (phase === "completed") return requireHumanClose ? "in-progress" : "completed";
+  return "in-progress";
+}
+
+export function evaluateAntColonyBudgetPolicy(
+  input: AntColonyToolInput,
+  policy: ColonyPilotBudgetPolicyConfig
+): ColonyPilotBudgetPolicyEvaluation {
+  const issues: string[] = [];
+
+  let effectiveMax = typeof input.maxCost === "number" && Number.isFinite(input.maxCost)
+    ? input.maxCost
+    : undefined;
+
+  if ((effectiveMax === undefined || effectiveMax <= 0) && policy.autoInjectMaxCost) {
+    const injected = normalizeOptionalBudget(policy.defaultMaxCostUsd);
+    if (injected !== undefined) {
+      input.maxCost = injected;
+      effectiveMax = injected;
+    }
+  }
+
+  if (policy.requireMaxCost && (effectiveMax === undefined || effectiveMax <= 0)) {
+    issues.push("maxCost is required for ant_colony (set input.maxCost or configure budgetPolicy.defaultMaxCostUsd)");
+  }
+
+  if (effectiveMax !== undefined) {
+    const min = normalizeOptionalBudget(policy.minMaxCostUsd);
+    const cap = normalizeOptionalBudget(policy.hardCapUsd);
+
+    if (min !== undefined && effectiveMax < min) {
+      issues.push(`maxCost (${effectiveMax}) is below minMaxCostUsd (${min})`);
+    }
+
+    if (cap !== undefined && effectiveMax > cap) {
+      issues.push(`maxCost (${effectiveMax}) exceeds hardCapUsd (${cap})`);
+    }
+  }
+
+  return {
+    ok: issues.length === 0,
+    issues,
+    effectiveMaxCostUsd: effectiveMax,
+  };
+}
+
+function formatBudgetPolicyEvaluation(
+  policy: ColonyPilotBudgetPolicyConfig,
+  evaluation: ColonyPilotBudgetPolicyEvaluation
+): string[] {
+  return [
+    "budget-policy:",
+    `  enabled: ${policy.enabled ? "yes" : "no"}`,
+    `  enforceOnAntColonyTool: ${policy.enforceOnAntColonyTool ? "yes" : "no"}`,
+    `  requireMaxCost: ${policy.requireMaxCost ? "yes" : "no"}`,
+    `  autoInjectMaxCost: ${policy.autoInjectMaxCost ? "yes" : "no"}`,
+    `  defaultMaxCostUsd: ${policy.defaultMaxCostUsd ?? "(none)"}`,
+    `  hardCapUsd: ${policy.hardCapUsd ?? "(none)"}`,
+    `  minMaxCostUsd: ${policy.minMaxCostUsd ?? "(none)"}`,
+    `  effectiveMaxCostUsd: ${evaluation.effectiveMaxCostUsd ?? "(none)"}`,
+  ];
+}
+
+export interface ColonyModelPolicyEvaluation {
+  ok: boolean;
+  issues: string[];
+  effectiveModels: Record<ColonyAgentRole, string | undefined>;
+}
+
+function providerOf(modelRef: string | undefined): string | undefined {
+  if (!modelRef) return undefined;
+  return parseProviderModelRef(modelRef)?.provider;
+}
+
+export function evaluateAntColonyModelPolicy(
+  input: AntColonyToolInput,
+  currentModelRef: string | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  modelRegistry: any,
+  policy: ColonyPilotModelPolicyConfig
+): ColonyModelPolicyEvaluation {
+  const issues: string[] = [];
+  const effectiveModels: Record<ColonyAgentRole, string | undefined> = {
+    queen: currentModelRef,
+    scout: undefined,
+    worker: undefined,
+    soldier: undefined,
+    design: undefined,
+    multimodal: undefined,
+    backend: undefined,
+    review: undefined,
+  };
+
+  if (policy.requireHealthyCurrentModel) {
+    const status = resolveModelAuthStatus(modelRegistry, currentModelRef);
+    if (status !== "ok" && status !== "unavailable") {
+      issues.push(`queen model invalid/unavailable for runtime: ${currentModelRef ?? "(none)"} (${status})`);
+    }
+  }
+
+  for (const role of ROLE_ORDER) {
+    const key = ROLE_TO_INPUT_KEY[role];
+    const explicit = typeof input[key] === "string" ? input[key]?.trim() : undefined;
+    const configured = policy.roleModels[role];
+
+    if (!explicit && policy.autoInjectRoleModels && configured) {
+      input[key] = configured;
+    }
+
+    const effective = (typeof input[key] === "string" && input[key]?.trim().length ? input[key]?.trim() : undefined) ?? currentModelRef;
+    effectiveModels[role] = effective;
+
+    if (policy.requireExplicitRoleModels && policy.requiredRoles.includes(role) && !input[key]) {
+      issues.push(`missing explicit model for role '${role}' (${String(key)})`);
+      continue;
+    }
+
+    if (!effective) {
+      issues.push(`role '${role}' has no effective model`);
+      continue;
+    }
+
+    if (policy.enforceFullModelRef && !parseProviderModelRef(effective)) {
+      issues.push(`role '${role}' model must be provider/model: ${effective}`);
+      continue;
+    }
+
+    const status = resolveModelAuthStatus(modelRegistry, effective);
+    if (status !== "ok" && status !== "unavailable") {
+      issues.push(`role '${role}' model not ready: ${effective} (${status})`);
+    }
+
+    const provider = providerOf(effective);
+    if (provider && policy.allowedProviders.length > 0 && !policy.allowedProviders.includes(provider)) {
+      issues.push(`role '${role}' provider '${provider}' is not in allowedProviders`);
+    }
+  }
+
+  if (!policy.allowMixedProviders) {
+    const providers = new Set<string>();
+    for (const role of ["queen", ...ROLE_ORDER] as ColonyAgentRole[]) {
+      const p = providerOf(effectiveModels[role]);
+      if (p) providers.add(p);
+    }
+    if (providers.size > 1) {
+      issues.push(`mixed providers are disabled, found: ${[...providers].join(", ")}`);
+    }
+  }
+
+  return {
+    ok: issues.length === 0,
+    issues,
+    effectiveModels,
+  };
+}
+
+function formatPolicyEvaluation(policy: ColonyPilotModelPolicyConfig, evalResult: ColonyModelPolicyEvaluation): string[] {
+  return [
+    "model-policy:",
+    `  enabled: ${policy.enabled ? "yes" : "no"}`,
+    `  autoInjectRoleModels: ${policy.autoInjectRoleModels ? "yes" : "no"}`,
+    `  requireHealthyCurrentModel: ${policy.requireHealthyCurrentModel ? "yes" : "no"}`,
+    `  requireExplicitRoleModels: ${policy.requireExplicitRoleModels ? "yes" : "no"}`,
+    `  requiredRoles: ${policy.requiredRoles.join(", ") || "(none)"}`,
+    `  allowMixedProviders: ${policy.allowMixedProviders ? "yes" : "no"}`,
+    `  allowedProviders: ${policy.allowedProviders.join(", ") || "(any)"}`,
+    "  effectiveModels:",
+    `    queen: ${evalResult.effectiveModels.queen ?? "(none)"}`,
+    ...ROLE_ORDER.map((role) => `    ${role}: ${evalResult.effectiveModels[role] ?? "(none)"}`),
+  ];
 }
 
 export function buildRuntimeRunSequence(caps: PilotCapabilities, goal: string): string[] {
@@ -270,7 +711,64 @@ const DEFAULT_PREFLIGHT_CONFIG: ColonyPilotPreflightConfig = {
   requireColonyCapabilities: ["colony", "colonyStop"],
 };
 
-function parseColonyPilotSettings(cwd: string): { preflight?: Partial<ColonyPilotPreflightConfig> } {
+export type ColonyAgentRole = "queen" | "scout" | "worker" | "soldier" | "design" | "multimodal" | "backend" | "review";
+
+export interface ColonyRoleModelMap {
+  scout?: string;
+  worker?: string;
+  soldier?: string;
+  design?: string;
+  multimodal?: string;
+  backend?: string;
+  review?: string;
+}
+
+export interface ColonyPilotModelPolicyConfig {
+  enabled: boolean;
+  autoInjectRoleModels: boolean;
+  requireHealthyCurrentModel: boolean;
+  requireExplicitRoleModels: boolean;
+  requiredRoles: ColonyAgentRole[];
+  enforceFullModelRef: boolean;
+  allowMixedProviders: boolean;
+  allowedProviders: string[];
+  roleModels: ColonyRoleModelMap;
+}
+
+export interface ColonyPilotBudgetPolicyConfig {
+  enabled: boolean;
+  enforceOnAntColonyTool: boolean;
+  requireMaxCost: boolean;
+  autoInjectMaxCost: boolean;
+  defaultMaxCostUsd?: number;
+  hardCapUsd?: number;
+  minMaxCostUsd?: number;
+}
+
+export interface ColonyPilotBudgetPolicyEvaluation {
+  ok: boolean;
+  issues: string[];
+  effectiveMaxCostUsd?: number;
+}
+
+export interface ColonyPilotProjectTaskSyncConfig {
+  enabled: boolean;
+  createOnLaunch: boolean;
+  trackProgress: boolean;
+  markTerminalState: boolean;
+  taskIdPrefix: string;
+  requireHumanClose: boolean;
+  maxNoteLines: number;
+}
+
+interface ColonyPilotSettings {
+  preflight?: Partial<ColonyPilotPreflightConfig>;
+  modelPolicy?: Partial<ColonyPilotModelPolicyConfig>;
+  budgetPolicy?: Partial<ColonyPilotBudgetPolicyConfig>;
+  projectTaskSync?: Partial<ColonyPilotProjectTaskSyncConfig>;
+}
+
+function parseColonyPilotSettings(cwd: string): ColonyPilotSettings {
   try {
     const p = path.join(cwd, ".pi", "settings.json");
     if (!existsSync(p)) return {};
@@ -305,7 +803,9 @@ export function executableProbe(name: string, platform = process.platform): { co
   if (!clean) return { command: "", args: [], label: "" };
 
   if (platform === "win32" && clean.toLowerCase() === "npm") {
-    return { command: "npm.cmd", args: ["--version"], label: "npm" };
+    // Em alguns runtimes (ex.: shell híbrido), spawn direto de npm.cmd pode falhar com EINVAL.
+    // cmd /c npm --version é mais portável nesses cenários.
+    return { command: "cmd", args: ["/c", "npm", "--version"], label: "npm" };
   }
 
   return { command: clean, args: ["--version"], label: clean };
@@ -365,9 +865,82 @@ function formatPreflightResult(result: ColonyPilotPreflightResult): string {
 }
 
 export type BaselineProfile = "default" | "phase2";
+export type ModelPolicyProfile = "copilot" | "codex" | "hybrid" | "factory-strict";
 
 export function resolveBaselineProfile(input?: string): BaselineProfile {
   return input === "phase2" ? "phase2" : "default";
+}
+
+export function resolveModelPolicyProfile(input?: string): ModelPolicyProfile {
+  return input === "copilot" || input === "hybrid" || input === "factory-strict" ? input : "codex";
+}
+
+export function buildModelPolicyProfile(profile: ModelPolicyProfile): ColonyPilotModelPolicyConfig {
+  if (profile === "copilot") {
+    return resolveColonyPilotModelPolicy({
+      allowMixedProviders: false,
+      allowedProviders: ["github-copilot"],
+      roleModels: {
+        scout: "github-copilot/claude-haiku-4.5",
+        worker: "github-copilot/claude-sonnet-4.6",
+        soldier: "github-copilot/claude-sonnet-4.6",
+        design: "github-copilot/claude-sonnet-4.6",
+        multimodal: "github-copilot/claude-haiku-4.5",
+        backend: "github-copilot/claude-sonnet-4.6",
+        review: "github-copilot/claude-sonnet-4.6",
+      },
+    });
+  }
+
+  if (profile === "hybrid") {
+    return resolveColonyPilotModelPolicy({
+      allowMixedProviders: true,
+      allowedProviders: ["github-copilot", "openai-codex"],
+      roleModels: {
+        scout: "openai-codex/gpt-5.4-mini",
+        worker: "github-copilot/claude-sonnet-4.6",
+        soldier: "openai-codex/gpt-5.2-codex",
+        design: "github-copilot/claude-sonnet-4.6",
+        multimodal: "openai-codex/gpt-5.4-mini",
+        backend: "openai-codex/gpt-5.3-codex",
+        review: "github-copilot/claude-sonnet-4.6",
+      },
+    });
+  }
+
+  if (profile === "factory-strict") {
+    return resolveColonyPilotModelPolicy({
+      autoInjectRoleModels: true,
+      requireExplicitRoleModels: true,
+      requiredRoles: ["scout", "worker", "soldier", "design", "multimodal", "backend", "review"],
+      enforceFullModelRef: true,
+      allowMixedProviders: false,
+      allowedProviders: ["openai-codex"],
+      roleModels: {
+        scout: "openai-codex/gpt-5.4-mini",
+        worker: "openai-codex/gpt-5.3-codex",
+        soldier: "openai-codex/gpt-5.2-codex",
+        design: "openai-codex/gpt-5.3-codex",
+        multimodal: "openai-codex/gpt-5.4-mini",
+        backend: "openai-codex/gpt-5.3-codex",
+        review: "openai-codex/gpt-5.2-codex",
+      },
+    });
+  }
+
+  return resolveColonyPilotModelPolicy({
+    allowMixedProviders: false,
+    allowedProviders: ["openai-codex"],
+    roleModels: {
+      scout: "openai-codex/gpt-5.4-mini",
+      worker: "openai-codex/gpt-5.3-codex",
+      soldier: "openai-codex/gpt-5.2-codex",
+      design: "openai-codex/gpt-5.3-codex",
+      multimodal: "openai-codex/gpt-5.4-mini",
+      backend: "openai-codex/gpt-5.3-codex",
+      review: "openai-codex/gpt-5.2-codex",
+    },
+  });
 }
 
 export function buildProjectBaselineSettings(profile: BaselineProfile = "default") {
@@ -379,6 +952,35 @@ export function buildProjectBaselineSettings(profile: BaselineProfile = "default
           enforceOnAntColonyTool: true,
           requiredExecutables: ["node", "git", "npm"],
           requireColonyCapabilities: ["colony", "colonyStop"],
+        },
+        modelPolicy: {
+          enabled: true,
+          autoInjectRoleModels: true,
+          requireHealthyCurrentModel: true,
+          requireExplicitRoleModels: false,
+          requiredRoles: ["scout", "worker", "soldier"],
+          enforceFullModelRef: true,
+          allowMixedProviders: true,
+          allowedProviders: [],
+          roleModels: {},
+        },
+        budgetPolicy: {
+          enabled: true,
+          enforceOnAntColonyTool: true,
+          requireMaxCost: true,
+          autoInjectMaxCost: true,
+          defaultMaxCostUsd: 2,
+          hardCapUsd: 20,
+          minMaxCostUsd: 0.05,
+        },
+        projectTaskSync: {
+          enabled: false,
+          createOnLaunch: true,
+          trackProgress: true,
+          markTerminalState: true,
+          taskIdPrefix: "colony",
+          requireHumanClose: true,
+          maxNoteLines: 20,
         },
       },
       webSessionGateway: {
@@ -402,6 +1004,14 @@ export function buildProjectBaselineSettings(profile: BaselineProfile = "default
         preflight: {
           requiredExecutables: ["node", "git", "npm", "npx"],
           requireColonyCapabilities: ["colony", "colonyStop", "monitors", "sessionWeb"],
+        },
+        modelPolicy: {
+          requireExplicitRoleModels: true,
+          allowMixedProviders: false,
+        },
+        budgetPolicy: {
+          defaultMaxCostUsd: 1,
+          hardCapUsd: 10,
         },
       },
       guardrailsCore: {
@@ -463,6 +1073,131 @@ function writeProjectSettings(cwd: string, data: Record<string, unknown>) {
   const dir = path.join(cwd, ".pi");
   mkdirSync(dir, { recursive: true });
   writeFileSync(path.join(dir, "settings.json"), `${JSON.stringify(data, null, 2)}\n`);
+}
+
+interface ProjectTaskItem {
+  id: string;
+  description: string;
+  status: "planned" | "in-progress" | "completed" | "blocked" | "cancelled";
+  files?: string[];
+  acceptance_criteria?: string[];
+  depends_on?: string[];
+  assigned_agent?: string;
+  verification?: string;
+  notes?: string;
+}
+
+interface ProjectTasksBlock {
+  tasks: ProjectTaskItem[];
+}
+
+function readProjectTasksBlock(cwd: string): ProjectTasksBlock {
+  const p = path.join(cwd, ".project", "tasks.json");
+  if (!existsSync(p)) return { tasks: [] };
+
+  try {
+    const raw = JSON.parse(readFileSync(p, "utf8"));
+    if (!raw || typeof raw !== "object") return { tasks: [] };
+    const tasks = Array.isArray((raw as { tasks?: unknown }).tasks)
+      ? ((raw as { tasks: unknown[] }).tasks.filter((t): t is ProjectTaskItem => !!t && typeof t === "object") as ProjectTaskItem[])
+      : [];
+    return { tasks };
+  } catch {
+    return { tasks: [] };
+  }
+}
+
+function writeProjectTasksBlock(cwd: string, block: ProjectTasksBlock) {
+  const dir = path.join(cwd, ".project");
+  mkdirSync(dir, { recursive: true });
+  const p = path.join(dir, "tasks.json");
+  writeFileSync(p, `${JSON.stringify({ tasks: block.tasks }, null, 2)}\n`);
+}
+
+function sanitizeTaskSlug(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
+function appendNote(existing: string | undefined, line: string, maxLines: number): string {
+  const lines = (existing ?? "").split(/\r?\n/).filter((l) => l.trim().length > 0);
+  lines.push(line);
+  const keep = lines.slice(Math.max(0, lines.length - maxLines));
+  return keep.join("\n");
+}
+
+function upsertProjectTaskFromColonySignal(
+  cwd: string,
+  signal: { phase: ColonyPhase; id: string },
+  options: {
+    config: ColonyPilotProjectTaskSyncConfig;
+    goal?: string;
+    taskIdOverride?: string;
+    source?: "ant_colony" | "manual";
+  }
+): { changed: boolean; taskId: string; status: ProjectTaskItem["status"] } {
+  const cfg = options.config;
+  const block = readProjectTasksBlock(cwd);
+
+  const baseTaskId = options.taskIdOverride
+    ? options.taskIdOverride
+    : `${cfg.taskIdPrefix}-${signal.id}`;
+  const taskId = sanitizeTaskSlug(baseTaskId) || `${cfg.taskIdPrefix}-${Date.now()}`;
+  const now = new Date().toISOString();
+
+  const idx = block.tasks.findIndex((t) => t.id === taskId);
+  const nextStatus = colonyPhaseToProjectTaskStatus(signal.phase, cfg.requireHumanClose);
+  const isTerminal = signal.phase === "completed" || signal.phase === "failed" || signal.phase === "aborted" || signal.phase === "budget_exceeded";
+  const origin = options.source ?? "manual";
+  const goalLabel = options.goal?.trim() || `colony ${signal.id}`;
+
+  const line =
+    signal.phase === "completed" && cfg.requireHumanClose
+      ? `[${now}] colony ${signal.id} phase=completed (candidate only, aguardando revisão humana)`
+      : `[${now}] colony ${signal.id} phase=${signal.phase}`;
+
+  if (idx === -1) {
+    if (!cfg.createOnLaunch && signal.phase === "launched") {
+      return { changed: false, taskId, status: nextStatus };
+    }
+
+    block.tasks.push({
+      id: taskId,
+      description: `[COLONY:${origin}] ${goalLabel}`,
+      status: nextStatus,
+      notes: appendNote(undefined, line, cfg.maxNoteLines),
+    });
+    writeProjectTasksBlock(cwd, block);
+    return { changed: true, taskId, status: nextStatus };
+  }
+
+  const current = block.tasks[idx]!;
+  let changed = false;
+
+  if (cfg.trackProgress && current.status !== nextStatus) {
+    if (!isTerminal || cfg.markTerminalState) {
+      current.status = nextStatus;
+      changed = true;
+    }
+  }
+
+  if (cfg.trackProgress) {
+    current.notes = appendNote(current.notes, line, cfg.maxNoteLines);
+    changed = true;
+  }
+
+  if (changed) writeProjectTasksBlock(cwd, block);
+  return { changed, taskId, status: current.status };
+}
+
+function extractColonyGoalFromMessageText(text: string): string | undefined {
+  const m = text.match(/(?:Colony launched[^:]*:|\/colony\s+)([^\n]+)/i);
+  if (!m) return undefined;
+  const goal = m[1].trim();
+  return goal.length > 0 ? goal : undefined;
 }
 
 function extractText(message: unknown): string {
@@ -698,6 +1433,12 @@ export default function (pi: ExtensionAPI) {
 
   let currentCtx: ExtensionContext | undefined;
   let preflightConfig = resolveColonyPilotPreflightConfig();
+  let modelPolicyConfig = resolveColonyPilotModelPolicy();
+  let budgetPolicyConfig = resolveColonyPilotBudgetPolicy();
+  let projectTaskSyncConfig = resolveColonyPilotProjectTaskSync();
+  const pendingColonyGoals: Array<{ goal: string; source: "ant_colony" | "manual"; at: number }> = [];
+  const colonyTaskMap = new Map<string, string>();
+  const colonyGoalMap = new Map<string, string>();
   let preflightCache: { at: number; result: ColonyPilotPreflightResult } | undefined;
 
   pi.on("session_start", (_event, ctx) => {
@@ -708,42 +1449,119 @@ export default function (pi: ExtensionAPI) {
     state.remoteClients = 0;
     state.monitorMode = "unknown";
     state.lastSessionFile = ctx.sessionManager.getSessionFile?.() ?? undefined;
+    pendingColonyGoals.splice(0, pendingColonyGoals.length);
+    colonyTaskMap.clear();
+    colonyGoalMap.clear();
 
     const settings = parseColonyPilotSettings(ctx.cwd);
     preflightConfig = resolveColonyPilotPreflightConfig(settings.preflight);
+    modelPolicyConfig = resolveColonyPilotModelPolicy(settings.modelPolicy);
+    budgetPolicyConfig = resolveColonyPilotBudgetPolicy(settings.budgetPolicy);
+    projectTaskSyncConfig = resolveColonyPilotProjectTaskSync(settings.projectTaskSync);
     preflightCache = undefined;
 
     updateStatusUI(ctx, state);
   });
 
+  function maybeSyncProjectTaskFromTelemetry(text: string, ctx: ExtensionContext) {
+    if (!projectTaskSyncConfig.enabled) return;
+
+    const signal = parseColonySignal(text);
+    if (!signal) return;
+
+    const guessedGoal = colonyGoalMap.get(signal.id)
+      ?? pendingColonyGoals.shift()?.goal
+      ?? extractColonyGoalFromMessageText(text);
+
+    if (guessedGoal) {
+      colonyGoalMap.set(signal.id, guessedGoal);
+    }
+
+    const taskIdOverride = colonyTaskMap.get(signal.id);
+    const syncResult = upsertProjectTaskFromColonySignal(ctx.cwd, signal, {
+      config: projectTaskSyncConfig,
+      goal: guessedGoal,
+      taskIdOverride,
+      source: "ant_colony",
+    });
+
+    colonyTaskMap.set(signal.id, syncResult.taskId);
+  }
+
   pi.on("message_end", (event, ctx) => {
     const text = extractText((event as { message?: unknown }).message);
     if (!text) return;
     if (trackFromText(text, state)) updateStatusUI(ctx, state);
+    maybeSyncProjectTaskFromTelemetry(text, ctx);
   });
 
   pi.on("tool_result", (event, ctx) => {
     const text = extractText(event);
     if (!text) return;
     if (trackFromText(text, state)) updateStatusUI(ctx, state);
+    maybeSyncProjectTaskFromTelemetry(text, ctx);
   });
 
   pi.on("tool_call", async (event, ctx) => {
-    if (!preflightConfig.enabled || !preflightConfig.enforceOnAntColonyTool) return undefined;
-    if (!isToolCallEventType("ant_colony", event)) return undefined;
+    if (!isToolCallEventType<"ant_colony", AntColonyToolInput>("ant_colony", event)) return undefined;
 
-    const now = Date.now();
-    let result = preflightCache?.result;
-    if (!result || now - preflightCache!.at > 30_000) {
-      result = await runColonyPilotPreflight(pi, getCapabilities(pi), preflightConfig);
-      preflightCache = { at: now, result };
+    if (preflightConfig.enabled && preflightConfig.enforceOnAntColonyTool) {
+      const now = Date.now();
+      let result = preflightCache?.result;
+      if (!result || now - preflightCache!.at > 30_000) {
+        result = await runColonyPilotPreflight(pi, getCapabilities(pi), preflightConfig);
+        preflightCache = { at: now, result };
+      }
+
+      if (!result.ok) {
+        const reason = `Blocked by colony-pilot preflight: ${result.failures.join("; ")}`;
+        ctx.ui.notify(["ant_colony bloqueada por preflight", formatPreflightResult(result)].join("\n\n"), "warning");
+        return { block: true, reason };
+      }
     }
 
-    if (result.ok) return undefined;
+    const currentModelRef = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
 
-    const reason = `Blocked by colony-pilot preflight: ${result.failures.join("; ")}`;
-    ctx.ui.notify(["ant_colony bloqueada por preflight", formatPreflightResult(result)].join("\n\n"), "warning");
-    return { block: true, reason };
+    if (modelPolicyConfig.enabled) {
+      const evaluation = evaluateAntColonyModelPolicy(event.input, currentModelRef, ctx.modelRegistry, modelPolicyConfig);
+
+      if (!evaluation.ok) {
+        const reason = `Blocked by colony-pilot model-policy: ${evaluation.issues.join("; ")}`;
+        const msg = [
+          "ant_colony bloqueada por model-policy",
+          ...formatPolicyEvaluation(modelPolicyConfig, evaluation),
+          "",
+          "issues:",
+          ...evaluation.issues.map((i) => `  - ${i}`),
+        ].join("\n");
+        ctx.ui.notify(msg, "warning");
+        return { block: true, reason };
+      }
+    }
+
+    if (budgetPolicyConfig.enabled && budgetPolicyConfig.enforceOnAntColonyTool) {
+      const budgetEval = evaluateAntColonyBudgetPolicy(event.input, budgetPolicyConfig);
+      if (!budgetEval.ok) {
+        const reason = `Blocked by colony-pilot budget-policy: ${budgetEval.issues.join("; ")}`;
+        const msg = [
+          "ant_colony bloqueada por budget-policy",
+          ...formatBudgetPolicyEvaluation(budgetPolicyConfig, budgetEval),
+          "",
+          "issues:",
+          ...budgetEval.issues.map((i) => `  - ${i}`),
+        ].join("\n");
+        ctx.ui.notify(msg, "warning");
+        return { block: true, reason };
+      }
+    }
+
+    const goal = typeof event.input.goal === "string" ? event.input.goal.trim() : "";
+    if (goal.length > 0) {
+      pendingColonyGoals.push({ goal, source: "ant_colony", at: Date.now() });
+      while (pendingColonyGoals.length > 20) pendingColonyGoals.shift();
+    }
+
+    return undefined;
   });
 
   pi.registerTool({
@@ -751,10 +1569,28 @@ export default function (pi: ExtensionAPI) {
     label: "Colony Pilot Status",
     description: "Mostra o estado atual do pilot: monitores, remote web e colonies em background.",
     parameters: Type.Object({}),
-    async execute() {
+    async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
       const snapshot = snapshotPilotState(state);
       const capabilities = getCapabilities(pi);
-      const payload = { ...snapshot, capabilities };
+      const currentModelRef = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
+      const modelReadiness = resolveColonyModelReadiness(ctx.cwd, currentModelRef, ctx.modelRegistry);
+      const modelPolicyEvaluation = evaluateAntColonyModelPolicy(
+        { goal: "status" },
+        currentModelRef,
+        ctx.modelRegistry,
+        modelPolicyConfig
+      );
+      const budgetPolicyEvaluation = evaluateAntColonyBudgetPolicy({ goal: "status" }, budgetPolicyConfig);
+      const payload = {
+        ...snapshot,
+        capabilities,
+        modelReadiness,
+        modelPolicy: modelPolicyConfig,
+        modelPolicyEvaluation,
+        budgetPolicy: budgetPolicyConfig,
+        budgetPolicyEvaluation,
+        projectTaskSync: projectTaskSyncConfig,
+      };
 
       return {
         content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
@@ -837,13 +1673,14 @@ export default function (pi: ExtensionAPI) {
             "",
             "Commands:",
             "  prep                          Mostrar plano recomendado do pilot",
-            "  run <goal>                    Prepara sequência manual: /monitors off -> /remote -> /colony <goal>",
+            "  run <goal>                    Prepara sequência manual: /monitors off -> /remote -> /colony <goal> (sem maxCost no /colony)",
             "  stop [--restore-monitors]     Prepara sequência manual: /colony-stop all -> /remote stop [-> /monitors on]",
             "  monitors <on|off>             Prepara comando de profile de monitores",
             "  web <start|stop|open|status>  Controla/inspeciona sessão web",
             "  tui                           Mostra como entrar/retomar sessão no TUI",
             "  status                        Snapshot consolidado",
-            "  check                         Diagnóstico de capacidades carregadas (/monitors,/remote,/colony)",
+            "  check                         Diagnóstico de capacidades + readiness de provider/model/budget para ant_colony",
+            "  models <status|template|apply> [copilot|codex|hybrid|factory-strict]  Política granular de modelos por classe",
             "  preflight                     Executa gates duros (capabilities + executáveis) antes da colony",
             "  baseline [show|apply] [default|phase2]  Baseline de .pi/settings.json (phase2 = mais estrito)",
             "  artifacts                     Mostra onde colony guarda states/worktrees para recovery",
@@ -875,6 +1712,16 @@ export default function (pi: ExtensionAPI) {
 
       if (cmd === "check") {
         const missing = missingCapabilities(caps, ["monitors", "sessionWeb", "remote", "colony", "colonyStop"]);
+        const currentModelRef = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
+        const readiness = resolveColonyModelReadiness(ctx.cwd, currentModelRef, ctx.modelRegistry);
+        const policyEval = evaluateAntColonyModelPolicy(
+          { goal: "check" },
+          currentModelRef,
+          ctx.modelRegistry,
+          modelPolicyConfig
+        );
+        const budgetEval = evaluateAntColonyBudgetPolicy({ goal: "check" }, budgetPolicyConfig);
+
         const lines = [
           "colony-pilot capabilities",
           `  monitors: ${caps.monitors ? "ok" : "missing"}`,
@@ -882,17 +1729,64 @@ export default function (pi: ExtensionAPI) {
           `  remote: ${caps.remote ? "ok" : "missing"}`,
           `  colony: ${caps.colony ? "ok" : "missing"}`,
           `  colony-stop: ${caps.colonyStop ? "ok" : "missing"}`,
+          "",
+          ...formatModelReadiness(readiness),
+          "",
+          ...formatPolicyEvaluation(modelPolicyConfig, policyEval),
+          "",
+          ...formatBudgetPolicyEvaluation(budgetPolicyConfig, budgetEval),
+          "",
+          "project-task-sync:",
+          `  enabled: ${projectTaskSyncConfig.enabled ? "yes" : "no"}`,
+          `  createOnLaunch: ${projectTaskSyncConfig.createOnLaunch ? "yes" : "no"}`,
+          `  trackProgress: ${projectTaskSyncConfig.trackProgress ? "yes" : "no"}`,
+          `  markTerminalState: ${projectTaskSyncConfig.markTerminalState ? "yes" : "no"}`,
+          `  requireHumanClose: ${projectTaskSyncConfig.requireHumanClose ? "yes" : "no"}`,
+          `  taskIdPrefix: ${projectTaskSyncConfig.taskIdPrefix}`,
         ];
 
         if (missing.length > 0) {
           lines.push("", "Gaps detectados:", ...missing.map((m) => `  - ${capabilityGuidance(m)}`));
         }
 
-        ctx.ui.notify(lines.join("\n"), missing.length > 0 ? "warning" : "info");
+        const modelIssues: string[] = [];
+        if (readiness.currentModelStatus !== "ok" && readiness.currentModelStatus !== "unavailable") {
+          modelIssues.push("Current session model cannot run ant_colony defaults reliably.");
+        }
+        if (
+          readiness.defaultModelStatus !== "ok" &&
+          readiness.defaultModelStatus !== "not-set" &&
+          readiness.defaultModelStatus !== "unavailable"
+        ) {
+          modelIssues.push("defaultProvider/defaultModel appears misconfigured or unauthenticated.");
+        }
+        if (policyEval.issues.length > 0) {
+          modelIssues.push(...policyEval.issues);
+        }
+        if (budgetPolicyConfig.enabled && budgetEval.issues.length > 0) {
+          modelIssues.push(...budgetEval.issues);
+        }
+
+        if (modelIssues.length > 0) {
+          lines.push("", "Provider/model issues:", ...modelIssues.map((m) => `  - ${m}`));
+          lines.push("  - Use /model and/or configure piStack.colonyPilot.modelPolicy/budgetPolicy.");
+        }
+
+        const warn = missing.length > 0 || modelIssues.length > 0;
+        ctx.ui.notify(lines.join("\n"), warn ? "warning" : "info");
         return;
       }
 
       if (cmd === "status") {
+        const currentModelRef = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
+        const readiness = resolveColonyModelReadiness(ctx.cwd, currentModelRef, ctx.modelRegistry);
+        const policyEval = evaluateAntColonyModelPolicy(
+          { goal: "status" },
+          currentModelRef,
+          ctx.modelRegistry,
+          modelPolicyConfig
+        );
+        const budgetEval = evaluateAntColonyBudgetPolicy({ goal: "status" }, budgetPolicyConfig);
         const lines = [
           formatSnapshot(state),
           "",
@@ -902,8 +1796,94 @@ export default function (pi: ExtensionAPI) {
           `  remote=${caps.remote ? "ok" : "missing"}`,
           `  colony=${caps.colony ? "ok" : "missing"}`,
           `  colony-stop=${caps.colonyStop ? "ok" : "missing"}`,
+          "",
+          ...formatModelReadiness(readiness),
+          "",
+          ...formatPolicyEvaluation(modelPolicyConfig, policyEval),
+          "",
+          ...formatBudgetPolicyEvaluation(budgetPolicyConfig, budgetEval),
+          "",
+          "project-task-sync:",
+          `  enabled: ${projectTaskSyncConfig.enabled ? "yes" : "no"}`,
+          `  taskIdPrefix: ${projectTaskSyncConfig.taskIdPrefix}`,
+          `  requireHumanClose: ${projectTaskSyncConfig.requireHumanClose ? "yes" : "no"}`,
         ];
-        ctx.ui.notify(lines.join("\n"), "info");
+        const warn = !policyEval.ok || (budgetPolicyConfig.enabled && !budgetEval.ok);
+        ctx.ui.notify(lines.join("\n"), warn ? "warning" : "info");
+        return;
+      }
+
+      if (cmd === "models") {
+        const parsed = parseCommandInput(body);
+        const action = parsed.cmd || "status";
+        const profile = resolveModelPolicyProfile(parseCommandInput(parsed.body).cmd || parsed.body || "codex");
+
+        if (action === "status") {
+          const currentModelRef = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
+          const evalResult = evaluateAntColonyModelPolicy(
+            { goal: "models-status" },
+            currentModelRef,
+            ctx.modelRegistry,
+            modelPolicyConfig
+          );
+
+          const lines = [
+            "colony-pilot model policy status",
+            ...formatPolicyEvaluation(modelPolicyConfig, evalResult),
+            ...(evalResult.issues.length > 0
+              ? ["", "issues:", ...evalResult.issues.map((i) => `  - ${i}`)]
+              : ["", "issues: (none)"]),
+          ];
+
+          ctx.ui.notify(lines.join("\n"), evalResult.ok ? "info" : "warning");
+          return;
+        }
+
+        if (action === "template") {
+          const template = buildModelPolicyProfile(profile);
+          ctx.ui.notify(
+            [
+              `colony-pilot model policy template (${profile})`,
+              "",
+              JSON.stringify({ piStack: { colonyPilot: { modelPolicy: template } } }, null, 2),
+              "",
+              "Para aplicar automaticamente:",
+              `  /colony-pilot models apply ${profile}`,
+            ].join("\n"),
+            "info"
+          );
+          return;
+        }
+
+        if (action === "apply") {
+          const settings = readProjectSettings(ctx.cwd);
+          const merged = deepMergeObjects(settings, {
+            piStack: { colonyPilot: { modelPolicy: buildModelPolicyProfile(profile) } },
+          });
+          writeProjectSettings(ctx.cwd, merged);
+          const currentModelRef = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
+          modelPolicyConfig = resolveColonyPilotModelPolicy(buildModelPolicyProfile(profile));
+          const evalResult = evaluateAntColonyModelPolicy(
+            { goal: "models-apply" },
+            currentModelRef,
+            ctx.modelRegistry,
+            modelPolicyConfig
+          );
+
+          ctx.ui.notify(
+            [
+              `Model policy (${profile}) aplicada em .pi/settings.json`,
+              "Recomendado: /reload",
+              "",
+              ...formatPolicyEvaluation(modelPolicyConfig, evalResult),
+            ].join("\n"),
+            evalResult.ok ? "info" : "warning"
+          );
+          ctx.ui.setEditorText?.("/reload");
+          return;
+        }
+
+        ctx.ui.notify("Usage: /colony-pilot models <status|template|apply> [copilot|codex|hybrid|factory-strict]", "warning");
         return;
       }
 
@@ -1006,7 +1986,19 @@ export default function (pi: ExtensionAPI) {
         state.monitorMode = "off";
         updateStatusUI(ctx, state);
 
-        primeManualRunbook(ctx, "Pilot run pronto (manual assistido)", sequence);
+        pendingColonyGoals.push({ goal, source: "manual", at: Date.now() });
+        while (pendingColonyGoals.length > 20) pendingColonyGoals.shift();
+
+        const reason = budgetPolicyConfig.enabled && budgetPolicyConfig.requireMaxCost
+          ? [
+            "Auto-dispatch de slash commands entre extensões não é suportado de forma confiável pela API atual do pi.",
+            "",
+            "Aviso de budget: /colony não aceita maxCost via CLI atualmente.",
+            "Se precisar hard-cap de custo, prefira execução via tool ant_colony com { goal, maxCost }.",
+          ].join("\n")
+          : undefined;
+
+        primeManualRunbook(ctx, "Pilot run pronto (manual assistido)", sequence, reason);
         return;
       }
 

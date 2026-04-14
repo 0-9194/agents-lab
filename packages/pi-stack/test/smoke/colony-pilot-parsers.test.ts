@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   parseColonySignal,
   parseRemoteAccessUrl,
@@ -16,12 +19,28 @@ import {
   applyProjectBaselineSettings,
   buildProjectBaselineSettings,
   resolveBaselineProfile,
+  parseProviderModelRef,
+  resolveModelAuthStatus,
+  resolveColonyModelReadiness,
+  resolveColonyPilotModelPolicy,
+  evaluateAntColonyModelPolicy,
+  resolveColonyPilotBudgetPolicy,
+  evaluateAntColonyBudgetPolicy,
+  resolveColonyPilotProjectTaskSync,
+  colonyPhaseToProjectTaskStatus,
+  buildModelPolicyProfile,
+  resolveModelPolicyProfile,
 } from "../../extensions/colony-pilot";
 
 describe("colony-pilot parsers", () => {
   it("parseColonySignal extrai phase/id", () => {
     const parsed = parseColonySignal("[COLONY_SIGNAL:LAUNCHED] [c1]");
     expect(parsed).toEqual({ phase: "launched", id: "c1" });
+  });
+
+  it("parseColonySignal reconhece budget_exceeded", () => {
+    const parsed = parseColonySignal("[COLONY_SIGNAL:BUDGET_EXCEEDED] [c9]");
+    expect(parsed).toEqual({ phase: "budget_exceeded", id: "c9" });
   });
 
   it("parseRemoteAccessUrl extrai URL com token", () => {
@@ -107,8 +126,8 @@ describe("colony-pilot parsers", () => {
     expect(cfg.requireColonyCapabilities).toEqual(["colony", "colonyStop"]);
   });
 
-  it("executableProbe usa npm.cmd no Windows", () => {
-    expect(executableProbe("npm", "win32")).toEqual({ command: "npm.cmd", args: ["--version"], label: "npm" });
+  it("executableProbe usa cmd /c npm no Windows", () => {
+    expect(executableProbe("npm", "win32")).toEqual({ command: "cmd", args: ["/c", "npm", "--version"], label: "npm" });
     expect(executableProbe("node", "linux")).toEqual({ command: "node", args: ["--version"], label: "node" });
   });
 
@@ -127,6 +146,8 @@ describe("colony-pilot parsers", () => {
     expect(merged.piStack.colonyPilot.preflight.enabled).toBe(true);
     expect(merged.piStack.webSessionGateway.port).toBe(3100);
     expect(merged.piStack.guardrailsCore.portConflict.suggestedTestPort).toBe(4173);
+    expect(merged.piStack.colonyPilot.budgetPolicy.enabled).toBe(true);
+    expect(merged.piStack.colonyPilot.budgetPolicy.defaultMaxCostUsd).toBe(2);
   });
 
   it("applyProjectBaselineSettings migra config legado em extensions objeto", () => {
@@ -153,5 +174,174 @@ describe("colony-pilot parsers", () => {
       "sessionWeb",
     ]);
     expect(phase2.piStack.guardrailsCore.portConflict.suggestedTestPort).toBe(4273);
+    expect(phase2.piStack.colonyPilot.budgetPolicy.defaultMaxCostUsd).toBe(1);
+    expect(phase2.piStack.colonyPilot.budgetPolicy.hardCapUsd).toBe(10);
+  });
+
+  it("parseProviderModelRef separa provider/model", () => {
+    expect(parseProviderModelRef("openai-codex/gpt-5.4-mini")).toEqual({
+      provider: "openai-codex",
+      model: "gpt-5.4-mini",
+    });
+    expect(parseProviderModelRef("gpt-5.4-mini")).toBeUndefined();
+  });
+
+  it("resolveModelAuthStatus cobre estados principais", () => {
+    const modelObj = { id: "gpt-5.4-mini" };
+    const registryOk = {
+      find: () => modelObj,
+      hasConfiguredAuth: () => true,
+    };
+    const registryNoAuth = {
+      find: () => modelObj,
+      hasConfiguredAuth: () => false,
+    };
+    const registryMissingModel = {
+      find: () => undefined,
+      hasConfiguredAuth: () => false,
+    };
+
+    expect(resolveModelAuthStatus(undefined, "openai-codex/gpt-5.4-mini")).toBe("unavailable");
+    expect(resolveModelAuthStatus(registryMissingModel, "openai-codex/gpt-5.4-mini")).toBe("missing-model");
+    expect(resolveModelAuthStatus(registryNoAuth, "openai-codex/gpt-5.4-mini")).toBe("missing-auth");
+    expect(resolveModelAuthStatus(registryOk, "openai-codex/gpt-5.4-mini")).toBe("ok");
+    expect(resolveModelAuthStatus(registryOk, "gpt-5.4-mini")).toBe("invalid-model");
+    expect(resolveModelAuthStatus(registryOk, undefined)).toBe("not-set");
+  });
+
+  it("resolveColonyModelReadiness resolve defaultModelRef com defaultProvider", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "colony-pilot-model-readiness-"));
+
+    try {
+      const piDir = join(cwd, ".pi");
+      mkdirSync(piDir, { recursive: true });
+      writeFileSync(
+        join(piDir, "settings.json"),
+        JSON.stringify(
+          {
+            defaultProvider: "openai-codex",
+            defaultModel: "gpt-5.3-codex",
+          },
+          null,
+          2
+        ) + "\n",
+        "utf8"
+      );
+
+      const registry = {
+        find: (provider: string, model: string) => ({ provider, model }),
+        hasConfiguredAuth: () => true,
+      };
+
+      const readiness = resolveColonyModelReadiness(cwd, "openai-codex/gpt-5.4-mini", registry);
+      expect(readiness.defaultProvider).toBe("openai-codex");
+      expect(readiness.defaultModel).toBe("gpt-5.3-codex");
+      expect(readiness.defaultModelRef).toBe("openai-codex/gpt-5.3-codex");
+      expect(readiness.defaultModelStatus).toBe("ok");
+      expect(readiness.currentModelStatus).toBe("ok");
+      expect(readiness.antColonyDefaultModelRef).toBe("openai-codex/gpt-5.4-mini");
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("model policy auto-injecta roleModels e valida providers", () => {
+    const policy = resolveColonyPilotModelPolicy({
+      allowMixedProviders: false,
+      allowedProviders: ["openai-codex"],
+      roleModels: {
+        scout: "openai-codex/gpt-5.4-mini",
+        worker: "openai-codex/gpt-5.3-codex",
+        soldier: "openai-codex/gpt-5.2-codex",
+      },
+    });
+
+    const input: any = { goal: "x" };
+    const registry = {
+      find: () => ({ id: "ok" }),
+      hasConfiguredAuth: () => true,
+    };
+
+    const evalResult = evaluateAntColonyModelPolicy(input, "openai-codex/gpt-5.4-mini", registry, policy);
+    expect(evalResult.ok).toBe(true);
+    expect(input.scoutModel).toBe("openai-codex/gpt-5.4-mini");
+    expect(input.workerModel).toBe("openai-codex/gpt-5.3-codex");
+    expect(input.soldierModel).toBe("openai-codex/gpt-5.2-codex");
+  });
+
+  it("model policy profile codex gera defaults de classes", () => {
+    const policy = buildModelPolicyProfile("codex");
+    expect(policy.allowedProviders).toEqual(["openai-codex"]);
+    expect(policy.roleModels.worker).toBe("openai-codex/gpt-5.3-codex");
+    expect(policy.roleModels.review).toBe("openai-codex/gpt-5.2-codex");
+  });
+
+  it("model policy profile factory-strict endurece regras", () => {
+    expect(resolveModelPolicyProfile("factory-strict")).toBe("factory-strict");
+
+    const policy = buildModelPolicyProfile("factory-strict");
+    expect(policy.requireExplicitRoleModels).toBe(true);
+    expect(policy.allowMixedProviders).toBe(false);
+    expect(policy.allowedProviders).toEqual(["openai-codex"]);
+    expect(policy.requiredRoles).toEqual([
+      "scout",
+      "worker",
+      "soldier",
+      "design",
+      "multimodal",
+      "backend",
+      "review",
+    ]);
+  });
+
+  it("budget policy injeta maxCost padrão quando habilitada", () => {
+    const policy = resolveColonyPilotBudgetPolicy({
+      enabled: true,
+      requireMaxCost: true,
+      autoInjectMaxCost: true,
+      defaultMaxCostUsd: 1.25,
+      hardCapUsd: 5,
+    });
+
+    const input: any = { goal: "x" };
+    const evalResult = evaluateAntColonyBudgetPolicy(input, policy);
+
+    expect(evalResult.ok).toBe(true);
+    expect(input.maxCost).toBe(1.25);
+    expect(evalResult.effectiveMaxCostUsd).toBe(1.25);
+  });
+
+  it("budget policy bloqueia quando maxCost excede hard cap", () => {
+    const policy = resolveColonyPilotBudgetPolicy({
+      enabled: true,
+      requireMaxCost: true,
+      autoInjectMaxCost: false,
+      hardCapUsd: 2,
+    });
+
+    const input: any = { goal: "x", maxCost: 3 };
+    const evalResult = evaluateAntColonyBudgetPolicy(input, policy);
+
+    expect(evalResult.ok).toBe(false);
+    expect(evalResult.issues.some((i) => i.includes("hardCapUsd"))).toBe(true);
+  });
+
+  it("project task sync resolver aplica defaults e clamp", () => {
+    const cfg = resolveColonyPilotProjectTaskSync({
+      enabled: true,
+      taskIdPrefix: "  swarm-main  ",
+      maxNoteLines: 2,
+    });
+
+    expect(cfg.enabled).toBe(true);
+    expect(cfg.taskIdPrefix).toBe("swarm-main");
+    expect(cfg.maxNoteLines).toBe(5);
+  });
+
+  it("colonyPhaseToProjectTaskStatus respeita human close", () => {
+    expect(colonyPhaseToProjectTaskStatus("running", true)).toBe("in-progress");
+    expect(colonyPhaseToProjectTaskStatus("completed", true)).toBe("in-progress");
+    expect(colonyPhaseToProjectTaskStatus("completed", false)).toBe("completed");
+    expect(colonyPhaseToProjectTaskStatus("budget_exceeded", true)).toBe("blocked");
   });
 });

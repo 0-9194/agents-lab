@@ -70,7 +70,7 @@ export function parseColonySignal(text: string): { phase: ColonyPhase; id: strin
       ? "launched"
       : raw === "task_done"
         ? "task_done"
-        : raw === "completed"
+        : raw === "completed" || raw === "complete"
           ? "completed"
           : raw === "failed"
             ? "failed"

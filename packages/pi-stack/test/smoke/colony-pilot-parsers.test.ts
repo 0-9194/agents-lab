@@ -43,6 +43,11 @@ describe("colony-pilot parsers", () => {
     expect(parsed).toEqual({ phase: "budget_exceeded", id: "c9" });
   });
 
+  it("parseColonySignal normaliza COMPLETE para completed", () => {
+    const parsed = parseColonySignal("[COLONY_SIGNAL:COMPLETE] [c1|stable]");
+    expect(parsed).toEqual({ phase: "completed", id: "c1|stable" });
+  });
+
   it("parseRemoteAccessUrl extrai URL com token", () => {
     const url = parseRemoteAccessUrl(
       "🌐 Remote active · inst-abc\nhttp://192.168.0.10:3100?t=token-123"

@@ -20,6 +20,8 @@
     "pi:pilot:off": "node scripts/pi-pilot-profile.mjs off",
     "pi:pilot:on:project": "node scripts/pi-pilot-profile.mjs on --project",
     "pi:pilot:off:project": "node scripts/pi-pilot-profile.mjs off --project",
+    "pi:parity": "node scripts/pi-parity.mjs --scope user --profile stack-full",
+    "pi:parity:project": "node scripts/pi-parity.mjs --scope project --profile first-party",
     "colony:inspect": "node scripts/colony-runtime-inspect.mjs"
   },
   "devDependencies": {

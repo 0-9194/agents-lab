@@ -121,6 +121,10 @@ npm run pi:local
 # Verificar configuração atual
 npm run pi:status
 
+# Checar paridade user-like vs laboratório (consumo/quota/superfícies)
+npm run pi:parity
+npm run pi:parity:project
+
 # Voltar para pacotes publicados no npm
 npm run pi:published
 

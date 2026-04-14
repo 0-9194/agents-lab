@@ -44,6 +44,7 @@ pi install https://github.com/aretw0/agents-lab
 | `guardrails-core` | Guardrail unificado first-party: proteção de paths sensíveis + roteamento web determinístico por escopo + bloqueio de conflito de porta reservada pelo session-web |
 | `colony-pilot` | Primitiva de orquestração/visibilidade: prepara runbooks manuais para pilot (monitors/remote/colony) e mantém snapshot de colonies em background |
 | `web-session-gateway` | Gateway web first-party para observabilidade local da sessão (URL determinística, `/api/health` e painel web local) |
+| `quota-visibility` | Observabilidade de consumo/cota a partir de `~/.pi/agent/sessions` (burn rate, janelas de 5h/peak hours por provider, export de evidências) |
 
 #### Defaults do `monitor-provider-patch`
 
@@ -111,11 +112,14 @@ Ativar: `/settings` → selecionar `agents-lab`
 | Comando | O que faz |
 |---|---|
 | `/doctor` | Diagnóstico do ambiente — verifica git, gh, glab, node, npm e autenticações |
-| `/colony-pilot` | Guia pilot (`check/preflight/baseline/run/status/stop/web/monitors/tui/artifacts`) com execução manual assistida, diagnóstico de capacidades e preflight hard-gate para `ant_colony` |
+| `/colony-pilot` | Guia pilot (`check/models/preflight/baseline/run/status/stop/web/monitors/tui/artifacts`) com execução manual assistida, diagnóstico de capacidades + readiness de provider/model/budget, policy granular por classe e hard-gates para `ant_colony` |
 | `/session-web` | Controla gateway web first-party (`start/status/open/stop`) para inspeção local da sessão sem UI hospedada externa |
 | `/monitor-provider` | Diagnostica e sincroniza modelos dos classifiers dos monitors por provider (`status/apply/template`) |
+| `/quota-visibility` | Mostra consumo estimado da janela, projeção semanal, visão de janelas/peak hours por provider e exporta relatório em `.pi/reports` |
 
-> Convenção: `/doctor` permanece o diagnóstico global de ambiente/runtime. Comandos como `/monitor-provider` fazem diagnóstico apenas do seu domínio (monitors/providers).
+> Convenção: `/doctor` permanece o diagnóstico global de ambiente/runtime. Comandos como `/monitor-provider` e `/colony-pilot` fazem diagnóstico apenas do seu domínio.
+>
+> Guia de governança provider/model para colônia e multi-agentes: [`docs/guides/colony-provider-model-governance.md`](../../docs/guides/colony-provider-model-governance.md)
 
 ## Baseline de projeto (.pi/settings.json)
 
@@ -141,6 +145,15 @@ Baseline aplicada (default):
         "enforceOnAntColonyTool": true,
         "requiredExecutables": ["node", "git", "npm"],
         "requireColonyCapabilities": ["colony", "colonyStop"]
+      },
+      "budgetPolicy": {
+        "enabled": true,
+        "enforceOnAntColonyTool": true,
+        "requireMaxCost": true,
+        "autoInjectMaxCost": true,
+        "defaultMaxCostUsd": 2,
+        "hardCapUsd": 20,
+        "minMaxCostUsd": 0.05
       }
     },
     "webSessionGateway": {

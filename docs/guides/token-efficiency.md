@@ -97,3 +97,4 @@ Revisar padrões `"source": "learned"` em arquivos `*.patterns.json` de monitor,
 2. Remova `conversation_history` do hedge por padrão.
 3. Leia menos, localize antes, edite cirurgicamente.
 4. Mantenha segurança: sem `sudo` por padrão.
+5. Audite consumo real com [`quota-visibility.md`](./quota-visibility.md) para validar impacto das otimizações na cota.

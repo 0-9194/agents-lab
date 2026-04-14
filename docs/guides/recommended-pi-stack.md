@@ -61,6 +61,23 @@ Curados e incluídos no meta-pacote enquanto equivalentes first-party não estã
 
 ---
 
+## Superfícies de visibilidade de consumo/quota (stack completa)
+
+Quando a stack está completa (user-like), já existem múltiplas superfícies:
+
+- `/usage`, `/usage-refresh`, `/usage-toggle` (`@ifi/oh-pi-extensions`)
+- `/session-breakdown`, `/context` (`mitsupi`)
+- `/quota-visibility` (`@aretw0/pi-stack`, first-party)
+
+Use o mapa consolidado em [`consumption-visibility-surfaces.md`](./consumption-visibility-surfaces.md).
+
+Para validar paridade sem confundir ambiente local com user-like:
+
+```bash
+npm run pi:parity
+npm run pi:parity:project
+```
+
 ## Baseline operacional de projeto
 
 Para usuários do `@aretw0/pi-stack`, a baseline de governança pode ser aplicada direto pelo comando distribuído na stack:

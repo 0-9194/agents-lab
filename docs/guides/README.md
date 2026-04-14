@@ -25,8 +25,12 @@ Guias práticos para trabalhar com o ecossistema de agentes deste laboratório.
 | Guia | Descrição |
 |------|-----------|
 | [token-efficiency.md](./token-efficiency.md) | Diretivas de eficiência de tokens (T1–T11), segurança (S1–S3) e calibração de monitores |
+| [consumption-visibility-surfaces.md](./consumption-visibility-surfaces.md) | Mapa das superfícies reais de consumo/quota na stack completa (usage, session-breakdown, quota-visibility) |
+| [budget-governance.md](./budget-governance.md) | Budget envelope por execução, governança de colônia com `maxCost`, paridade e isolamento |
+| [quota-visibility.md](./quota-visibility.md) | Como auditar consumo/cota local, projetar burn semanal e exportar evidência para contestação |
 | [web-session-gateway.md](./web-session-gateway.md) | Gateway web first-party para observabilidade local da sessão (health/state/prompt) |
 | [colony-runtime-recovery.md](./colony-runtime-recovery.md) | Como localizar artefatos de colony (state/worktree/branch) e recuperar contexto após parada |
+| [colony-provider-model-governance.md](./colony-provider-model-governance.md) | Governança de provider/model para colony e multi-agentes (usuário + dev) |
 
 ### Migração e Filosofia
 

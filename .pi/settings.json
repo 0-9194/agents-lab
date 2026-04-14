@@ -5,5 +5,15 @@
     "../packages/web-skills",
     "../packages/pi-skills",
     "../packages/lab-skills"
-  ]
+  ],
+  "piStack": {
+    "monitorProviderPatch": {
+      "classifierThinking": "off",
+      "classifierModelByProvider": {
+        "github-copilot": "github-copilot/claude-haiku-4.5",
+        "openai-codex": "openai-codex/gpt-5.4-mini"
+      },
+      "hedgeConversationHistory": false
+    }
+  }
 }

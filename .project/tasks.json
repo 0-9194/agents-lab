@@ -226,6 +226,25 @@
       "description": "[COLONY:ant_colony] Recovery pass pós-colônia c1 para garantir injeção no branch principal e fechar lacunas remanescentes.\n\nContexto:\n- c1 reportou várias entregas, mas no main só parte do resultado apareceu.\n- Já corrigimos parsing de COMPLETE e consolidamos baseline tracker-agnostic no .project.\n\nObjetivo desta execução:\n1) Verificar diff real entre intenção de c1 e estado atual do main.\n2) Aplicar somente mudanças faltantes e úteis para:\n   - Swarm Launch Policy canônica (manual único + links sem duplicação)\n   - hardening deterministic sync colony->.project/tasks (single-writer/lock/atomic) caso ainda haja gaps\n   - testes de regressão no-auto-close/concorrência determinística se faltarem\n3) Produzir inventário final obrigatório de arquivos alterados e comandos de validação executados.\n4) Atualizar .project/tasks com status candidato (sem auto-close).\n\nRestrições:\n- Não fechar tasks automaticamente.\n- Mudanças incrementais, reversíveis, e com testes.\n- Sem credenciais/sessões.\n\nEntregável obrigatório:\n- Resumo final objetivo contendo: arquivos alterados, testes rodados (comandos), riscos residuais.",
       "status": "in-progress",
       "notes": "[2026-04-14T20:41:30.990Z] colony c2 phase=launched\n[2026-04-14T20:41:31.003Z] colony c2 phase=launched\n[2026-04-14T20:49:11.602Z] colony c2|colony-mnz3749j-1lk3t phase=complete (candidate only, aguardando revisão humana)"
+    },
+    {
+      "id": "TASK-BUD-013",
+      "description": "[P1] Tornar entrega de colônia auditável no branch principal (injeção confiável de diffs + inventário obrigatório de arquivos alterados).",
+      "status": "planned",
+      "depends_on": [
+        "TASK-BUD-010"
+      ],
+      "files": [
+        "packages/pi-stack/extensions/colony-pilot.ts",
+        "docs/research/colony-project-task-bridge.md",
+        "docs/guides/budget-governance.md"
+      ],
+      "acceptance_criteria": [
+        "Ao final da colônia, existe evidência determinística do que foi aplicado no main (ou motivo explícito de não aplicação).",
+        "Inventário final lista arquivos alterados + comandos de validação executados.",
+        "Falhas de injeção/worktree geram tarefa de recuperação automática sem perder patch proposto."
+      ],
+      "notes": "Criada após c1/c2 reportarem entregas extensas sem materialização integral no branch principal."
     }
   ]
 }

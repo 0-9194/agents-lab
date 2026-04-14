@@ -193,6 +193,33 @@
         "Guia documenta migração e impacto para colaboração entre agentes."
       ],
       "notes": "Alinha soberania de contexto com single-board clock."
+    },
+    {
+      "id": "colony-c1",
+      "description": "[COLONY:ant_colony] Self-improvement do agents-lab/pi-stack com foco em soberania e coordenação de agentes usando single-board clock.\n\nContexto já pronto:\n- .project agora é versionado no git e é o board oficial.\n- Budget policy e projectTaskSync do colony-pilot já existem.\n\nObjetivos desta execução:\n1) Consolidar Swarm Launch Policy v1 (manual único)\n   - Criar/atualizar guia único em docs/guides com checklist obrigatório (budget envelope, escopo, evidência, validação, revisão humana).\n   - Unificar links/referências para evitar duplicação/confusão.\n\n2) Fortalecer clock unificado em runtime\n   - Evoluir adapter colony->.project/tasks para comportamento mais determinístico em cenários concorrentes/worktrees (single-writer/reconciler simples e reversível).\n   - Manter sem auto-close; apenas status candidato para revisão humana.\n\n3) Aprendizado contínuo humano+agêntico (registro híbrido)\n   - Registrar aprendizado em formato narrativo (docs) e estruturado (.project: decisions/requirements/tasks/verification, quando aplicável).\n   - Produzir evidência executável (testes/comandos) para auditoria.\n\nCritérios de qualidade:\n- Mudanças incrementais, reversíveis e com testes.\n- Sem mexer em credenciais/sessões.\n- Não fechar tasks automaticamente.\n\nEntregáveis esperados:\n- Código + testes + docs atualizados.\n- Resumo final com riscos remanescentes, decisões e próximos passos.",
+      "status": "in-progress",
+      "notes": "[2026-04-14T20:19:13.352Z] colony c1 phase=launched\n[2026-04-14T20:19:13.373Z] colony c1 phase=launched\n[2026-04-14T20:28:27.196Z] colony c1|colony-mnz2eg46-hw9a4 phase=complete (candidate only, aguardando revisão humana)"
+    },
+    {
+      "id": "TASK-BUD-012",
+      "description": "[P1] Definir contrato backend-agnostic para clock de trabalho (task/event model + adapters) com piloto em `.project` e trilha para GitHub/Gitea/SQLite.",
+      "status": "planned",
+      "depends_on": [
+        "TASK-BUD-007",
+        "TASK-BUD-010"
+      ],
+      "files": [
+        "docs/primitives/budget-envelope.md",
+        "docs/research/colony-project-task-bridge.md",
+        ".project/requirements.json",
+        ".project/decisions.json"
+      ],
+      "acceptance_criteria": [
+        "Contrato canônico de task/evento documentado (campos obrigatórios, status transitions, invariantes).",
+        "Mapa de adapters alvo com capacidades mínimas e gaps (GitHub/Gitea/SQLite/local).",
+        "Semântica de governança preservada: budget envelope, no auto-close, revisão humana."
+      ],
+      "notes": "Derivado de REQ-BUD-007 e DEC-BUD-007."
     }
   ]
 }

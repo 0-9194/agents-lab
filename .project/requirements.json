@@ -72,6 +72,19 @@
         "Bridge colony→project atualiza lifecycle (start/progress/end) sem fechamento automático.",
         "Representações TUI/WEB refletem esse board consolidado."
       ]
+    },
+    {
+      "id": "REQ-BUD-007",
+      "description": "A arquitetura de coordenação deve ser tracker-agnostic: o relógio oficial precisa poder sincronizar com backends alternativos (ex.: GitHub Issues/Projects, Gitea, SQLite/local app) sem acoplamento rígido a um único provedor.",
+      "type": "integration",
+      "status": "accepted",
+      "priority": "should",
+      "source": "human",
+      "acceptance_criteria": [
+        "Modelo canônico de estado de task independe do backend de persistência.",
+        "Existe estratégia de adapter para export/import/sync entre .project e trackers externos.",
+        "Semântica de governança (budget envelope, no auto-close, revisão humana) é preservada em qualquer backend."
+      ]
     }
   ]
 }

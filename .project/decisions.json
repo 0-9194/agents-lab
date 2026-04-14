@@ -41,6 +41,13 @@
       "rationale": "Evita múltiplos sistemas concorrentes de tracking e preserva contexto coletivo entre agentes e sessões, mantendo humano no centro das decisões de fechamento.",
       "status": "decided",
       "context": "Diretriz de governança pedida pelo usuário para centralização de status e contexto."
+    },
+    {
+      "id": "DEC-BUD-007",
+      "decision": "Manter `.project/tasks` como clock oficial local no curto prazo, mas definir o modelo de task/evento como backend-agnostic para sincronização futura com GitHub/Gitea/SQLite e outras superfícies humanas.",
+      "rationale": "Consolida governança e aprendizado no laboratório agora, sem bloquear evolução para trackers práticos do dia a dia dos usuários e do próprio time.",
+      "status": "decided",
+      "context": "Diretriz de endgame: coordenação avançada com liberdade de backend e sem lock-in operacional."
     }
   ]
 }

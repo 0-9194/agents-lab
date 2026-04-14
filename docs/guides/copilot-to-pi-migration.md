@@ -35,10 +35,26 @@ pi --version
 
 ## Passo 2 — Configurar provider
 
-Exemplo com Anthropic no PowerShell:
+Você pode começar com qualquer provider disponível na sua assinatura/conta.
+
+Exemplos:
 
 ```powershell
+# API key (Anthropic)
 $env:ANTHROPIC_API_KEY = "sua-chave-aqui"
+
+# API key (OpenAI Platform)
+$env:OPENAI_API_KEY = "sua-chave-aqui"
+```
+
+Para providers por assinatura OAuth (Copilot/Codex), use `/login` dentro do pi.
+
+Depois de definir `defaultProvider`, alinhe os classifiers dos monitors (via `piStack.monitorProviderPatch`):
+
+```text
+/monitor-provider status
+/monitor-provider apply
+/reload
 ```
 
 Persistência pode ser configurada depois conforme o provider escolhido.

@@ -1,98 +1,73 @@
-# Monitor Overrides — Configuração Local dos Classificadores
+# Monitor Overrides — Classifiers sem lock-in de provider
 
-Este guia explica os overrides em `.pi/agents/` e quando re-aplicá-los em projetos novos.
+Este guia cobre como manter os classifiers dos monitors funcionando ao alternar entre providers (ex.: GitHub Copilot ↔ OpenAI Codex) sem atrito.
 
-## O Problema Original
+## Problema original
 
-O `@davidorex/pi-behavior-monitors` define os classificadores (hedge, fragility, etc.) com modelo bare:
+O `@davidorex/pi-behavior-monitors` publica classifiers com modelo bare:
 
 ```yaml
-model: claude-sonnet-4-6   # ❌ sem provider, hífen em vez de ponto
+model: claude-sonnet-4-6
 ```
 
-Sem o provider explícito, o pi tenta resolver o modelo via Anthropic diretamente e falha em ambientes que usam só `github-copilot`. O resultado é **falha silenciosa** — os monitors ficam inativos sem nenhum erro visível.
+Sem prefixo de provider, o runtime pode resolver para backend errado e os monitors podem ficar inativos sem erro visível.
 
-Investigação documentada em: [`experiments/202604-pi-hedge-monitor-investigation/`](../../experiments/202604-pi-hedge-monitor-investigation/README.md)
-
-Issue upstream aberto: [davidorex/pi-project-workflows#1](https://github.com/davidorex/pi-project-workflows/issues/1)
+Investigação: [`experiments/202604-pi-hedge-monitor-investigation`](../../experiments/202604-pi-hedge-monitor-investigation/README.md)  
+Issue upstream: [davidorex/pi-project-workflows#1](https://github.com/davidorex/pi-project-workflows/issues/1)
 
 ---
 
-## A Solução: Overrides Locais
+## Solução no `@aretw0/pi-stack`
 
-Os arquivos em `.pi/agents/` sobrescrevem os agentes do pacote com a spec correta:
+A extensão `monitor-provider-patch` agora:
 
-```yaml
-model: github-copilot/claude-haiku-4.5   # ✅ provider explícito + nome correto
+1. mantém `hedge.monitor.json` com `conversation_history` desabilitado por padrão (opt-in);
+2. resolve modelo de classifier por provider (`defaultProvider` + mapa configurável);
+3. garante overrides em `.pi/agents/` para os 5 classifiers;
+4. avisa quando overrides existentes divergem do provider/modelo atual;
+5. fornece comando `/monitor-provider` para diagnosticar e sincronizar.
+
+### Comando principal
+
+> Convenção do laboratório: não criar “doctor” paralelo por domínio.  
+> Use `/doctor` para saúde global do runtime e `/monitor-provider` para calibragem dos classifiers.
+
+```text
+/monitor-provider status
+/monitor-provider apply
+/monitor-provider template
 ```
 
-Os 5 overrides cobrem todos os classificadores do sistema de monitors:
-
-| Arquivo | Classifier |
-|---|---|
-| `commit-hygiene-classifier.agent.yaml` | Higiene de commits |
-| `fragility-classifier.agent.yaml` | Fragilidades não endereçadas |
-| `hedge-classifier.agent.yaml` | Desvio do intent do usuário |
-| `unauthorized-action-classifier.agent.yaml` | Ações não autorizadas |
-| `work-quality-classifier.agent.yaml` | Qualidade geral do trabalho |
+- `status`: mostra provider ativo, modelo resolvido, saúde do modelo e overrides atuais.
+- `apply`: sincroniza os 5 arquivos `.agent.yaml` para o modelo alvo.
+- `template`: mostra snippet de configuração para `.pi/settings.json`.
 
 ---
 
-## Sintoma de Monitors Inativos
+## Defaults provider-aware
 
-Se os monitors pararem de aparecer no chat sem aviso:
+Defaults embutidos no patch:
 
-**1. Verificar se o pi-stack está populado:**
+- `github-copilot -> github-copilot/claude-haiku-4.5`
+- `openai-codex -> openai-codex/gpt-5.4-mini`
+- `classifierThinking -> off`
 
-```bash
-npm run verify
-```
+Você pode sobrescrever via settings.
 
-Se falhar, re-instalar:
+## Configuração recomendada
 
-```bash
-npm install --prefix packages/pi-stack --no-workspaces
-```
-
-Depois fazer `/reload` no pi.
-
-**2. Verificar se os overrides existem:**
-
-```bash
-ls .pi/agents/
-```
-
-Devem existir os 5 arquivos `.agent.yaml`. Se ausentes, copiar de outro projeto `@aretw0` ou recriar seguindo o padrão:
-
-```yaml
-name: <classifier-name>
-role: sensor
-description: <descrição>
-model: github-copilot/claude-haiku-4.5
-thinking: "off"
-output:
-  format: json
-  schema: ../schemas/verdict.schema.json
-prompt:
-  task:
-    template: <monitor-name>/classify.md
-```
-
-## Default do Hedge Sem conversation_history
-
-O `monitor-provider-patch` também aplica sane defaults no arquivo `.pi/monitors/hedge.monitor.json`.
-
-- Padrão: remove `conversation_history` de `classify.context`
-- Objetivo: reduzir contexto desnecessário no classificador hedge desde o primeiro boot
-- Opt-in: é possível reativar por configuração
-
-Configuração em `.pi/settings.json` (ou `~/.pi/agent/settings.json`):
+Em `.pi/settings.json` (ou `~/.pi/agent/settings.json`):
 
 ```json
 {
-  "extensions": {
+  "piStack": {
     "monitorProviderPatch": {
-      "hedgeConversationHistory": true
+      "classifierThinking": "off",
+      "classifierModelByProvider": {
+        "github-copilot": "github-copilot/claude-haiku-4.5",
+        "openai-codex": "openai-codex/gpt-5.4-mini"
+      },
+      "hedgeConversationHistory": false
     }
   }
 }
@@ -100,26 +75,52 @@ Configuração em `.pi/settings.json` (ou `~/.pi/agent/settings.json`):
 
 ---
 
-## Aplicando em um Projeto Novo
+## Mapeamento prático (Claude → Codex)
 
-Ao iniciar um projeto novo com `@aretw0/pi-stack`:
+Para manter classifiers no mesmo “tier” operacional:
 
-1. Instalar a stack: `npx @aretw0/pi-stack --local`
-2. Copiar os overrides:
+| Perfil anterior (Copilot/Claude) | Perfil sugerido (Codex) | Intenção |
+|---|---|---|
+| `github-copilot/claude-haiku-4.5` | `openai-codex/gpt-5.4-mini` | sensor leve e barato |
+| `github-copilot/claude-sonnet-4.6` | `openai-codex/gpt-5.2-codex` (ou `gpt-5.4`) | sensor mais estrito |
 
-   ```bash
-   mkdir -p .pi/agents
-   cp /path/to/agents-lab/.pi/agents/*.agent.yaml .pi/agents/
-   ```
-
-3. Copiar as configs de monitor de referência de `agents-lab/.pi/monitors/` ou criar as suas.
-4. Fazer `/reload`.
+> Regra simples: classifiers de monitor tendem a performar melhor com modelo “mini/leve” + `thinking: off`.
 
 ---
 
-## Nota sobre o `.gitignore`
+## Diagnóstico rápido de drift
 
-Por padrão, `.pi/monitors/` está no `.gitignore` deste projeto (saída operacional de runtime).  
-Os `.pi/agents/` **são versionados** — são configuração intencional, não runtime.
+Se você trocou provider e os monitors “sumiram”:
 
-Ao criar um projeto derivado, decida conscientemente o que versionar.
+1. Rode:
+
+   ```text
+   /monitor-provider status
+   ```
+
+2. Se houver divergência entre modelo resolvido e overrides atuais, rode:
+
+   ```text
+   /monitor-provider apply
+   /reload
+   ```
+
+3. Confirme estado dos monitores:
+
+   ```text
+   /monitors status
+   ```
+
+---
+
+## Projeto novo
+
+Ao iniciar projeto novo com `@aretw0/pi-stack`:
+
+1. instalar stack (`npx @aretw0/pi-stack --local`);
+2. definir `defaultProvider`;
+3. configurar `piStack.monitorProviderPatch.classifierModelByProvider`;
+4. rodar `/monitor-provider apply`;
+5. `/reload`.
+
+Assim você evita copiar `.pi/agents` entre repositórios e reduz lock-in de provider.

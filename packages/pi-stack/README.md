@@ -39,7 +39,7 @@ pi install https://github.com/aretw0/agents-lab
 
 | Extension | O que faz |
 |---|---|
-| `monitor-provider-patch` | Fix automático de monitors para github-copilot — cria overrides se necessário |
+| `monitor-provider-patch` | Patch provider-aware para classifiers de monitor (Copilot/Codex + mapa custom) com comando `/monitor-provider` |
 | `environment-doctor` | Health check do ambiente na startup + comando `/doctor` |
 | `guardrails-core` | Guardrail unificado first-party: proteção de paths sensíveis + roteamento web determinístico por escopo + bloqueio de conflito de porta reservada pelo session-web |
 | `colony-pilot` | Primitiva de orquestração/visibilidade: prepara runbooks manuais para pilot (monitors/remote/colony) e mantém snapshot de colonies em background |
@@ -49,20 +49,33 @@ pi install https://github.com/aretw0/agents-lab
 
 | Default | Valor | Configurável? |
 |---|---|---|
-| Modelo dos classificadores | `github-copilot/claude-haiku-4.5` | Não (respeita override manual em `.pi/agents/`) |
-| Thinking | `off` | Não (respeita override manual em `.pi/agents/`) |
-| `conversation_history` no hedge monitor | desabilitado | Sim — ver abaixo |
+| Modelo dos classificadores (provider-aware) | `github-copilot -> github-copilot/claude-haiku-4.5`<br>`openai-codex -> openai-codex/gpt-5.4-mini` | Sim (`classifierModel` / `classifierModelByProvider`) |
+| Thinking | `off` | Sim (`classifierThinking`) |
+| `conversation_history` no hedge monitor | desabilitado | Sim (`hedgeConversationHistory`) |
 
-Para reativar `conversation_history` no hedge, adicione em `.pi/settings.json`:
+Exemplo em `.pi/settings.json`:
 
 ```json
 {
-  "extensions": {
+  "piStack": {
     "monitorProviderPatch": {
+      "classifierThinking": "off",
+      "classifierModelByProvider": {
+        "github-copilot": "github-copilot/claude-haiku-4.5",
+        "openai-codex": "openai-codex/gpt-5.4-mini"
+      },
       "hedgeConversationHistory": true
     }
   }
 }
+```
+
+Diagnóstico/aplicação rápida:
+
+```text
+/monitor-provider status
+/monitor-provider apply
+/monitor-provider template
 ```
 
 Detalhes: [`docs/guides/monitor-overrides.md`](../../docs/guides/monitor-overrides.md)
@@ -100,6 +113,9 @@ Ativar: `/settings` → selecionar `agents-lab`
 | `/doctor` | Diagnóstico do ambiente — verifica git, gh, glab, node, npm e autenticações |
 | `/colony-pilot` | Guia pilot (`check/preflight/baseline/run/status/stop/web/monitors/tui/artifacts`) com execução manual assistida, diagnóstico de capacidades e preflight hard-gate para `ant_colony` |
 | `/session-web` | Controla gateway web first-party (`start/status/open/stop`) para inspeção local da sessão sem UI hospedada externa |
+| `/monitor-provider` | Diagnostica e sincroniza modelos dos classifiers dos monitors por provider (`status/apply/template`) |
+
+> Convenção: `/doctor` permanece o diagnóstico global de ambiente/runtime. Comandos como `/monitor-provider` fazem diagnóstico apenas do seu domínio (monitors/providers).
 
 ## Baseline de projeto (.pi/settings.json)
 

@@ -48,6 +48,13 @@
       "rationale": "Consolida governança e aprendizado no laboratório agora, sem bloquear evolução para trackers práticos do dia a dia dos usuários e do próprio time.",
       "status": "decided",
       "context": "Diretriz de endgame: coordenação avançada com liberdade de backend e sem lock-in operacional."
+    },
+    {
+      "id": "DEC-BUD-008",
+      "decision": "Adotar governança hard-first para colônias: requisitos de entrega e evidência devem ser verificáveis por configuração, sem depender de instruções textuais no goal.",
+      "rationale": "Goals são soft e não garantem comportamento determinístico. Controles hard reduzem lacunas entre 'reportado' e 'materializado' no branch principal.",
+      "status": "decided",
+      "context": "Após c1/c2 com reports ricos e baixa materialização automática no main."
     }
   ]
 }

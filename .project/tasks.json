@@ -245,6 +245,31 @@
         "Falhas de injeção/worktree geram tarefa de recuperação automática sem perder patch proposto."
       ],
       "notes": "Criada após c1/c2 reportarem entregas extensas sem materialização integral no branch principal."
+    },
+    {
+      "id": "colony-colonyidentity-colony",
+      "description": "[COLONY:ant_colony] colony ${colonyIdentity(colony)}",
+      "status": "blocked",
+      "notes": "[2026-04-14T20:52:59.566Z] colony ${colonyIdentity(colony)} phase=failed\n[2026-04-14T20:52:59.584Z] colony ${colonyIdentity(colony)} phase=failed\n[2026-04-14T20:53:05.527Z] colony ${colonyIdentity(colony)} phase=failed\n[2026-04-14T20:53:05.541Z] colony ${colonyIdentity(colony)} phase=failed"
+    },
+    {
+      "id": "TASK-BUD-014",
+      "description": "[P0] Implementar delivery policy hard no colony-pilot (report-only | patch-artifact | apply-to-branch + gates obrigatórios de evidência).",
+      "status": "planned",
+      "depends_on": [
+        "TASK-BUD-013"
+      ],
+      "files": [
+        "packages/pi-stack/extensions/colony-pilot.ts",
+        "docs/guides/budget-governance.md",
+        "docs/research/colony-project-task-bridge.md"
+      ],
+      "acceptance_criteria": [
+        "Config suporta modo de entrega explícito e default seguro.",
+        "Gate hard bloqueia marcação de entrega sem inventário de arquivos + comandos de validação.",
+        "Fluxo de recovery preserva patch/artefato quando apply não ocorre."
+      ],
+      "notes": "Derivado de REQ-BUD-008 e DEC-BUD-008."
     }
   ]
 }

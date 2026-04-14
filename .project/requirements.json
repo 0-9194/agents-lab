@@ -85,6 +85,19 @@
         "Existe estratégia de adapter para export/import/sync entre .project e trackers externos.",
         "Semântica de governança (budget envelope, no auto-close, revisão humana) é preservada em qualquer backend."
       ]
+    },
+    {
+      "id": "REQ-BUD-008",
+      "description": "Execuções de colônia devem expor controles hard de entrega (delivery mode) com política configurável: bloquear conclusão sem evidência mínima de aplicação/materialização no branch-alvo.",
+      "type": "constraint",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe modo explícito de entrega (report-only | patch-artifact | apply-to-branch).",
+        "Política pode exigir inventário de arquivos alterados e comandos de validação antes de marcar execução como entregue.",
+        "Quando política hard falha, execução vira 'candidate/recovery required' com artefato preservado."
+      ]
     }
   ]
 }

@@ -176,6 +176,45 @@
         "Orçamento e bloqueio podem ser aplicados por conta sem quebrar compatibilidade com provider-only.",
         "Documentação explicita limitações e fallback quando a origem não fornece identidade de conta."
       ]
+    },
+    {
+      "id": "REQ-BUD-015",
+      "description": "A experiência padrão deve ter perfil seguro de boot/recovery para evitar lockout do usuário, incluindo fallback de inicialização, checklist de conflito de extensões e caminho de recuperação sem depender de comandos potencialmente bloqueados.",
+      "type": "constraint",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe perfil mínimo estável de extensões ativas (safe-core) e comando/documentação para alternar.",
+        "Existe snapshot de inicialização/configuração para rollback rápido.",
+        "Fluxo de recovery mantém pelo menos um canal de ajuda operacional acessível mesmo sob bloqueios de budget/guardrails."
+      ]
+    },
+    {
+      "id": "REQ-BUD-016",
+      "description": "O sistema deve suportar rodízio de providers com política configurável de custo/confiabilidade/capacidade e execução opt-in, incluindo suporte a runtimes externos via adapter (ex.: Claude Code CLI).",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe modo advisory determinístico com justificativa auditável por decisão.",
+        "Existe modo execute opt-in com guardrails, sem auto-switch silencioso.",
+        "Adapters externos podem ser registrados como targets de roteamento sem quebrar governança existente."
+      ]
+    },
+    {
+      "id": "REQ-BUD-017",
+      "description": "Fluxos de autenticação para adapters externos devem ser first-class e recovery-safe, preferindo login oficial do provider; automação browser (puppeteer/CDP) só em modo local opt-in e sem armazenamento de credenciais sensíveis.",
+      "type": "constraint",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Auth adapter expõe status/login/logout de forma equivalente a provider login UX.",
+        "Não há persistência de senha/token em texto no repo ou logs.",
+        "Existe fallback manual quando automação de browser falhar."
+      ]
     }
   ]
 }

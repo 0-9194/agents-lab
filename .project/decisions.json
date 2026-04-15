@@ -90,6 +90,20 @@
       "rationale": "Controle apenas por swarm é insuficiente para operação real com múltiplos providers e contas emprestadas. Separar enforcement de roteamento permite segurança forte agora e otimização contínua depois.",
       "status": "decided",
       "context": "Escalonamento do agents-lab para malabarismo de custo multi-provider e multi-conta."
+    },
+    {
+      "id": "DEC-BUD-014",
+      "decision": "Manter capacidades críticas como extensões/tools first-party (não apenas bash/skills), e usar skills para operação guiada, migração e resolução de conflito em ambientes com stack heterogênea.",
+      "rationale": "Tools têm contratos estáveis, observabilidade e podem ser validadas automaticamente; bash puro e skills sozinhas não oferecem o mesmo nível de governança/runtime gating. Skills continuam essenciais para educação e remediação em campo.",
+      "status": "decided",
+      "context": "Trade-off solicitado pelo usuário entre tools vs bash/skills para usuários finais."
+    },
+    {
+      "id": "DEC-BUD-015",
+      "decision": "Iniciar rodízio de providers em duas etapas: (1) advisory determinístico com política explícita de custo/confiabilidade e (2) executor opt-in de roteamento, mantendo override humano e trilha auditável.",
+      "rationale": "Evita auto-switch opaco e permite amadurecer heurísticas antes de automatizar execução multi-provider em produção.",
+      "status": "decided",
+      "context": "Pedido do usuário para começar imediatamente o malabarismo de providers com segurança."
     }
   ]
 }

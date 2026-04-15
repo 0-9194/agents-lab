@@ -34,6 +34,8 @@ Sem envelope explícito, não há controle operacional real.
 
 Não é "ou/ou"; é **camadas de observabilidade**.
 
+> Runtime externo experimental: o `@aretw0/pi-stack` inclui scaffold `claude-code-adapter` (`/claude-code status|login|auth-status`) para operar Claude Code como target de roteamento com login oficial-first e fallback manual, sem persistir credenciais no repositório.
+
 ### Budget compartilhado por provider (cota emprestada/time)
 
 Quando você opera com chaves de colegas/time, configure orçamento por provider com percentual/cap acordado:
@@ -75,6 +77,11 @@ Para hard cap explícito, use o caminho com `ant_colony` e `maxCost`.
 - bloqueia prompts normais quando provider atual está em `BLOCK`;
 - mantém allowlist de recovery commands (`/doctor`, `/quota-visibility`, `/model`, `/login`);
 - aceita override auditável com token configurável.
+
+Diagnóstico operacional recomendado em ambiente com plugins extras:
+- `/colony-pilot hatch doctor` (agrega readiness + environment + sovereignty)
+- `/doctor`
+- `/stack-status`
 
 `piStack.colonyPilot.projectTaskSync` (opt-in) permite sincronizar eventos de colônia para `.project/tasks`:
 - criar task no launch;

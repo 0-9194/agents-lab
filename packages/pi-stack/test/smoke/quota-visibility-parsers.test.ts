@@ -6,6 +6,7 @@ import {
   computeWindowStartScores,
   buildProviderWindowInsight,
   buildProviderBudgetStatuses,
+  buildRouteAdvisory,
   type QuotaUsageEvent,
 } from "../../extensions/quota-visibility";
 
@@ -240,6 +241,146 @@ describe("quota-visibility parsers", () => {
     expect(evalResult.budgets[0]?.periodRequestsCap).toBe(0);
     expect(evalResult.budgets[0]?.usedPctRequests).toBe(100);
     expect(evalResult.budgets[0]?.state).toBe("blocked");
+  });
+
+  it("buildRouteAdvisory escolhe provider OK e nunca auto-switch", () => {
+    const advisory = buildRouteAdvisory(
+      {
+        source: {
+          sessionsRoot: "x",
+          scannedFiles: 1,
+          parsedSessions: 1,
+          parsedEvents: 1,
+          windowDays: 30,
+          generatedAtIso: "2026-04-15T00:00:00.000Z",
+        },
+        totals: { sessions: 1, userMessages: 1, assistantMessages: 1, toolResultMessages: 0, tokens: 100, costUsd: 0 },
+        burn: {
+          activeDays: 1,
+          avgTokensPerActiveDay: 100,
+          avgTokensPerCalendarDay: 100,
+          projectedTokensNext7d: 700,
+          avgCostPerCalendarDay: 0,
+          projectedCostNext7dUsd: 0,
+        },
+        quota: {},
+        providerBudgetPolicy: { configuredProviders: 2, allocationWarnings: [] },
+        providerBudgets: [
+          {
+            provider: "github-copilot",
+            period: "monthly",
+            unit: "requests",
+            periodDays: 30,
+            periodStartIso: "2026-04-01T00:00:00.000Z",
+            periodEndIso: "2026-04-30T23:59:59.999Z",
+            observedMessages: 10,
+            observedTokens: 100,
+            observedCostUsd: 0,
+            observedRequests: 10,
+            projectedTokensEndOfPeriod: 300,
+            projectedCostUsdEndOfPeriod: 0,
+            projectedRequestsEndOfPeriod: 30,
+            periodRequestsCap: 100,
+            usedPctRequests: 10,
+            projectedPctRequests: 30,
+            warnPct: 80,
+            hardPct: 100,
+            state: "ok",
+            notes: [],
+          },
+          {
+            provider: "openai-codex",
+            period: "monthly",
+            unit: "tokens-cost",
+            periodDays: 30,
+            periodStartIso: "2026-04-01T00:00:00.000Z",
+            periodEndIso: "2026-04-30T23:59:59.999Z",
+            observedMessages: 10,
+            observedTokens: 800,
+            observedCostUsd: 3,
+            observedRequests: 0,
+            projectedTokensEndOfPeriod: 1200,
+            projectedCostUsdEndOfPeriod: 4,
+            periodTokensCap: 1000,
+            usedPctTokens: 80,
+            projectedPctTokens: 120,
+            warnPct: 80,
+            hardPct: 100,
+            state: "warning",
+            notes: [],
+          },
+        ],
+        daily: [],
+        models: [],
+        providerWindows: [],
+        topSessionsByTokens: [],
+        topSessionsByCost: [],
+      },
+      "balanced"
+    );
+
+    expect(advisory.recommendedProvider).toBe("github-copilot");
+    expect(advisory.noAutoSwitch).toBe(true);
+    expect(advisory.state).toBe("ok");
+  });
+
+  it("buildRouteAdvisory retorna BLOCKER quando todos estão bloqueados", () => {
+    const advisory = buildRouteAdvisory(
+      {
+        source: {
+          sessionsRoot: "x",
+          scannedFiles: 1,
+          parsedSessions: 1,
+          parsedEvents: 1,
+          windowDays: 30,
+          generatedAtIso: "2026-04-15T00:00:00.000Z",
+        },
+        totals: { sessions: 1, userMessages: 1, assistantMessages: 1, toolResultMessages: 0, tokens: 100, costUsd: 0 },
+        burn: {
+          activeDays: 1,
+          avgTokensPerActiveDay: 100,
+          avgTokensPerCalendarDay: 100,
+          projectedTokensNext7d: 700,
+          avgCostPerCalendarDay: 0,
+          projectedCostNext7dUsd: 0,
+        },
+        quota: {},
+        providerBudgetPolicy: { configuredProviders: 1, allocationWarnings: [] },
+        providerBudgets: [
+          {
+            provider: "openai-codex",
+            period: "weekly",
+            unit: "tokens-cost",
+            periodDays: 7,
+            periodStartIso: "2026-04-10T00:00:00.000Z",
+            periodEndIso: "2026-04-16T23:59:59.999Z",
+            observedMessages: 10,
+            observedTokens: 1200,
+            observedCostUsd: 5,
+            observedRequests: 0,
+            projectedTokensEndOfPeriod: 1400,
+            projectedCostUsdEndOfPeriod: 6,
+            periodTokensCap: 1000,
+            usedPctTokens: 120,
+            projectedPctTokens: 140,
+            warnPct: 80,
+            hardPct: 100,
+            state: "blocked",
+            notes: [],
+          },
+        ],
+        daily: [],
+        models: [],
+        providerWindows: [],
+        topSessionsByTokens: [],
+        topSessionsByCost: [],
+      },
+      "reliable"
+    );
+
+    expect(advisory.recommendedProvider).toBeUndefined();
+    expect(advisory.state).toBe("blocked");
+    expect(advisory.reason).toContain("BLOCKER");
   });
 
   it("buildProviderWindowInsight destaca pico e início antes do pico", () => {

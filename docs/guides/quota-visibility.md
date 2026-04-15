@@ -29,11 +29,12 @@ npm run pi:parity
 
 A extensão `quota-visibility` adiciona:
 
-- comando: `/quota-visibility <status|windows|budget|export> [provider] [days]`
+- comando: `/quota-visibility <status|windows|budget|route|export> [provider|profile] [days] [--execute]`
 - tools:
   - `quota_visibility_status`
   - `quota_visibility_windows`
   - `quota_visibility_provider_budgets`
+  - `quota_visibility_route`
   - `quota_visibility_export`
 
 ### 1) Status rápido (janela padrão)
@@ -93,7 +94,37 @@ Mostra, por provider configurado em `providerBudgets`:
 
 > Observação importante: hoje a medição é por **provider**. Se você usar múltiplas chaves no mesmo provider, o runtime local não separa automaticamente por chave/conta sem tagging adicional.
 
-### 5) Export para evidência
+### 5) Route advisory (rodízio determinístico, sem auto-switch silencioso)
+
+```text
+/quota-visibility route
+/quota-visibility route cheap 30
+/quota-visibility route reliable 30 --execute
+```
+
+Perfis suportados:
+- `cheap`: prioriza headroom com viés para budgets em `requests` (ex.: Copilot premium requests)
+- `balanced`: equilíbrio entre estado (`OK/WARN/BLOCK`) e pressão projetada
+- `reliable`: prioriza providers em `OK` com maior folga
+
+`--execute` é **opt-in explícito**. Sem `--execute`, sempre advisory-only.
+
+Para execução, configure mapeamento provider->model em `.pi/settings.json`:
+
+```json
+{
+  "piStack": {
+    "quotaVisibility": {
+      "routeModelRefs": {
+        "openai-codex": "openai-codex/gpt-5.3-codex",
+        "github-copilot": "github-copilot/claude-sonnet-4.6"
+      }
+    }
+  }
+}
+```
+
+### 6) Export para evidência
 
 ```text
 /quota-visibility export 7

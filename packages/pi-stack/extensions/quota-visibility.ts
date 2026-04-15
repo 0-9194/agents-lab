@@ -149,6 +149,24 @@ export interface ProviderBudgetStatus {
   notes: string[];
 }
 
+export type RoutingProfile = "cheap" | "balanced" | "reliable";
+
+export interface RouteAdvisory {
+  profile: RoutingProfile;
+  generatedAtIso: string;
+  recommendedProvider?: string;
+  state: "ok" | "warning" | "blocked";
+  reason: string;
+  blockedProviders: string[];
+  consideredProviders: Array<{
+    provider: string;
+    state: "ok" | "warning" | "blocked";
+    unit: "tokens-cost" | "requests";
+    projectedPressurePct: number;
+  }>;
+  noAutoSwitch: true;
+}
+
 export interface QuotaStatus {
   source: {
     sessionsRoot: string;
@@ -204,6 +222,7 @@ interface QuotaVisibilitySettings {
   monthlyQuotaRequests?: number;
   providerWindowHours?: ProviderWindowHours;
   providerBudgets?: ProviderBudgetMap;
+  routeModelRefs?: Record<string, string>;
 }
 
 const SETTINGS_PATH = ["piStack", "quotaVisibility"];
@@ -344,6 +363,20 @@ function startOfRollingWeekLocal(now = new Date()): Date {
   s.setHours(0, 0, 0, 0);
   s.setDate(s.getDate() - 6);
   return s;
+}
+
+export function parseRouteModelRefs(input: unknown): Record<string, string> {
+  if (!input || typeof input !== "object") return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+    const provider = normalizeProvider(k);
+    if (!provider || provider === "unknown") continue;
+    if (typeof v !== "string") continue;
+    const modelRef = v.trim();
+    if (!modelRef.includes("/")) continue;
+    out[provider] = modelRef;
+  }
+  return out;
 }
 
 export function parseProviderBudgets(input: unknown): ProviderBudgetMap {
@@ -881,6 +914,7 @@ function readSettings(cwd: string): QuotaVisibilitySettings {
       monthlyQuotaRequests: safeNum(cfg.monthlyQuotaRequests) || undefined,
       providerWindowHours: parseProviderWindowHours(cfg.providerWindowHours),
       providerBudgets: parseProviderBudgets(cfg.providerBudgets),
+      routeModelRefs: parseRouteModelRefs(cfg.routeModelRefs),
     };
   } catch {
     return {};
@@ -1260,6 +1294,80 @@ function formatProviderBudgetsReport(s: QuotaStatus, provider?: string): string 
   return lines.join("\n");
 }
 
+function maxPressurePct(status: ProviderBudgetStatus): number {
+  return Math.max(
+    safeNum(status.usedPctTokens),
+    safeNum(status.projectedPctTokens),
+    safeNum(status.usedPctCost),
+    safeNum(status.projectedPctCost),
+    safeNum(status.usedPctRequests),
+    safeNum(status.projectedPctRequests)
+  );
+}
+
+function routePriority(status: ProviderBudgetStatus, profile: RoutingProfile): number {
+  const pressure = maxPressurePct(status);
+  const stateScore = status.state === "ok" ? 0 : status.state === "warning" ? 1000 : 5000;
+  const requestsBonus = status.unit === "requests" ? -20 : 0;
+  const reliableBonus = profile === "reliable" ? (status.state === "ok" ? -50 : 0) : 0;
+  const cheapBonus = profile === "cheap" ? requestsBonus : 0;
+  const balancedBonus = profile === "balanced" ? (status.state === "ok" ? -10 : 0) : 0;
+
+  return stateScore + pressure + reliableBonus + cheapBonus + balancedBonus;
+}
+
+export function buildRouteAdvisory(status: QuotaStatus, profile: RoutingProfile = "balanced"): RouteAdvisory {
+  const considered = status.providerBudgets
+    .map((b) => ({
+      provider: b.provider,
+      state: b.state,
+      unit: b.unit,
+      projectedPressurePct: maxPressurePct(b),
+      _sortScore: routePriority(b, profile),
+    }))
+    .sort((a, b) => a._sortScore - b._sortScore || a.provider.localeCompare(b.provider));
+
+  const blockedProviders = considered.filter((c) => c.state === "blocked").map((c) => c.provider);
+  const winner = considered.find((c) => c.state !== "blocked");
+
+  const reason = !winner
+    ? "BLOCKER: todos os providers avaliados estão em BLOCK; use recovery/override auditável e ajuste orçamento."
+    : winner.state === "warning"
+      ? `WARN: ${winner.provider} é a melhor opção disponível no momento, porém já está em WARNING.`
+      : `OK: ${winner.provider} apresenta melhor headroom para o perfil '${profile}'.`;
+
+  return {
+    profile,
+    generatedAtIso: status.source.generatedAtIso,
+    recommendedProvider: winner?.provider,
+    state: !winner ? "blocked" : winner.state,
+    reason,
+    blockedProviders,
+    consideredProviders: considered.map(({ _sortScore, ...row }) => row),
+    noAutoSwitch: true,
+  };
+}
+
+function formatRouteAdvisory(advisory: RouteAdvisory): string {
+  const lines: string[] = [];
+  lines.push("quota-visibility route");
+  lines.push(`profile: ${advisory.profile}`);
+  lines.push(`state: ${advisory.state.toUpperCase()}`);
+  lines.push(`recommendedProvider: ${advisory.recommendedProvider ?? "(none)"}`);
+  lines.push(`policy: no-auto-switch=${advisory.noAutoSwitch ? "true" : "false"}`);
+  lines.push(`reason: ${advisory.reason}`);
+  if (advisory.blockedProviders.length > 0) {
+    lines.push(`blockedProviders: ${advisory.blockedProviders.join(", ")}`);
+  }
+  lines.push("candidates:");
+  for (const row of advisory.consideredProviders) {
+    lines.push(
+      `  - ${row.provider} state=${row.state} unit=${row.unit} projectedPressure=${row.projectedPressurePct.toFixed(1)}%`
+    );
+  }
+  return lines.join("\n");
+}
+
 function formatStatusReport(s: QuotaStatus): string {
   const lines: string[] = [];
   lines.push("quota-visibility");
@@ -1336,6 +1444,17 @@ function parseDays(raw?: string): number | undefined {
   const n = Math.floor(safeNum(raw));
   if (n <= 0) return undefined;
   return n;
+}
+
+function parseRoutingProfile(raw?: string): RoutingProfile {
+  const v = (raw ?? "").trim().toLowerCase();
+  if (v === "cheap" || v === "reliable") return v;
+  return "balanced";
+}
+
+function parseBooleanFlag(tokens: string[], ...flags: string[]): boolean {
+  const set = new Set(tokens.map((t) => t.trim().toLowerCase()));
+  return flags.some((f) => set.has(f.toLowerCase()));
 }
 
 export default function quotaVisibilityExtension(pi: ExtensionAPI) {
@@ -1503,6 +1622,53 @@ export default function quotaVisibilityExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "quota_visibility_route",
+    label: "Quota Visibility Route Advisory",
+    description: "Deterministic provider routing advisory (cheap|balanced|reliable) with optional explicit execute path.",
+    parameters: Type.Object({
+      days: Type.Optional(Type.Number({ minimum: 1, maximum: 90 })),
+      profile: Type.Optional(Type.String({ description: "cheap | balanced | reliable" })),
+      execute: Type.Optional(Type.Boolean()),
+      reason: Type.Optional(Type.String()),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const p = params as { days?: number; profile?: string; execute?: boolean; reason?: string };
+      const status = await getStatus(ctx, { days: p.days });
+      const advisory = buildRouteAdvisory(status, parseRoutingProfile(p.profile));
+
+      let executed = false;
+      let executedModelRef: string | undefined;
+      if (p.execute === true && advisory.recommendedProvider) {
+        const settings = readSettings(ctx.cwd);
+        const modelRef = settings.routeModelRefs?.[advisory.recommendedProvider];
+        if (modelRef) {
+          const [provider, modelId] = modelRef.split("/");
+          const model = ctx.modelRegistry.find(provider, modelId);
+          if (model) {
+            executed = await pi.setModel(model);
+            if (executed) executedModelRef = modelRef;
+          }
+        }
+
+        pi.appendEntry("quota-visibility.route-execution", {
+          atIso: new Date().toISOString(),
+          profile: advisory.profile,
+          recommendedProvider: advisory.recommendedProvider,
+          executed,
+          executedModelRef,
+          reason: p.reason,
+          advisory,
+        });
+      }
+
+      return {
+        content: [{ type: "text", text: JSON.stringify({ advisory, executed, executedModelRef }, null, 2) }],
+        details: { advisory, executed, executedModelRef },
+      };
+    },
+  });
+
+  pi.registerTool({
     name: "quota_visibility_export",
     label: "Quota Visibility Export",
     description: "Export a quota evidence JSON report under .pi/reports for provider dispute/audit.",
@@ -1585,6 +1751,74 @@ export default function quotaVisibilityExtension(pi: ExtensionAPI) {
         return;
       }
 
+      if (cmd === "route") {
+        const maybeProfile = tokens[1];
+        const profile = maybeProfile && parseDays(maybeProfile) === undefined
+          ? parseRoutingProfile(maybeProfile)
+          : "balanced";
+        const days = maybeProfile && parseDays(maybeProfile) !== undefined
+          ? parseDays(maybeProfile)
+          : parseDays(tokens[2]);
+        const execute = parseBooleanFlag(tokens, "--execute", "--apply");
+        const status = await getStatus(ctx, { days });
+        const advisory = buildRouteAdvisory(status, profile);
+
+        let executed = false;
+        let executedModelRef: string | undefined;
+
+        if (execute && advisory.recommendedProvider) {
+          const settings = readSettings(ctx.cwd);
+          const modelRef = settings.routeModelRefs?.[advisory.recommendedProvider];
+          if (!modelRef) {
+            ctx.ui.notify(
+              [
+                formatRouteAdvisory(advisory),
+                "",
+                `execute solicitado, mas routeModelRefs.${advisory.recommendedProvider} não está configurado em .pi/settings.json`,
+                "Exemplo: piStack.quotaVisibility.routeModelRefs.{\"openai-codex\":\"openai-codex/gpt-5.3-codex\"}",
+              ].join("\n"),
+              "warning"
+            );
+            return;
+          }
+
+          const [provider, modelId] = modelRef.split("/");
+          const model = ctx.modelRegistry.find(provider, modelId);
+          if (!model) {
+            ctx.ui.notify(
+              [
+                formatRouteAdvisory(advisory),
+                "",
+                `execute solicitado, mas modelRef '${modelRef}' não foi encontrado no modelRegistry.`,
+              ].join("\n"),
+              "warning"
+            );
+            return;
+          }
+
+          executed = await pi.setModel(model);
+          if (executed) executedModelRef = modelRef;
+
+          pi.appendEntry("quota-visibility.route-execution", {
+            atIso: new Date().toISOString(),
+            profile,
+            advisory,
+            executed,
+            executedModelRef,
+            trigger: "slash-command",
+          });
+        }
+
+        const lines = [formatRouteAdvisory(advisory)];
+        if (execute) {
+          lines.push("", `execute: ${executed ? `applied ${executedModelRef}` : "requested but not applied"}`);
+        } else {
+          lines.push("", "ação opcional: /quota-visibility route <cheap|balanced|reliable> [days] --execute");
+        }
+        ctx.ui.notify(lines.join("\n"), advisory.state === "blocked" ? "warning" : "info");
+        return;
+      }
+
       if (cmd === "export") {
         const days = parseDays(tokens[1]);
         const status = await getStatus(ctx, { days });
@@ -1593,7 +1827,7 @@ export default function quotaVisibilityExtension(pi: ExtensionAPI) {
         return;
       }
 
-      ctx.ui.notify("Usage: /quota-visibility <status|windows|budget|export> [provider] [days]", "warning");
+      ctx.ui.notify("Usage: /quota-visibility <status|windows|budget|route|export> [provider|profile] [days] [--execute]", "warning");
     },
   });
 }

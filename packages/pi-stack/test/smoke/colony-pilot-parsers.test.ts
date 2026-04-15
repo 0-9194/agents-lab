@@ -40,6 +40,8 @@ import {
   resolveModelPolicyProfile,
   evaluateHatchReadiness,
   formatHatchReadiness,
+  buildHatchDoctorSnapshot,
+  formatHatchDoctorSnapshot,
 } from "../../extensions/colony-pilot";
 
 describe("colony-pilot parsers", () => {
@@ -535,6 +537,35 @@ describe("colony-pilot parsers", () => {
       "  - [WARN] provider budgets: desativado",
       "ready: yes",
     ]);
+  });
+
+  it("buildHatchDoctorSnapshot agrega blockers e fixes determinísticos", () => {
+    const readiness = evaluateHatchReadiness({
+      capabilitiesMissing: ["colony"],
+      preflightOk: false,
+      modelPolicyOk: true,
+      budgetPolicyOk: true,
+      budgetPolicy: resolveColonyPilotBudgetPolicy({ enabled: true, enforceProviderBudgetBlock: true }),
+      providerBudgetsConfigured: 1,
+    });
+
+    const snapshot = buildHatchDoctorSnapshot({
+      readiness,
+      capabilitiesMissing: ["colony"],
+      shellStatus: "warn",
+      terminalStatus: "warn",
+      schedulerStatus: "ok",
+      sovereigntyOwnerMissing: 1,
+      sovereigntyCoexisting: 0,
+      sovereigntyHighRisk: 1,
+    });
+
+    expect(snapshot.issues.some((i) => i.severity === "blocker")).toBe(true);
+    expect(snapshot.issues.some((i) => i.label.includes("capability missing"))).toBe(true);
+
+    const lines = formatHatchDoctorSnapshot(snapshot);
+    expect(lines.join("\n")).toContain("BLOCKER language");
+    expect(lines.join("\n")).toContain("fix:");
   });
 
   it("project task sync resolver aplica defaults e clamp", () => {

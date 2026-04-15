@@ -40,7 +40,8 @@ pi install https://github.com/aretw0/agents-lab
 | Extension | O que faz |
 |---|---|
 | `monitor-provider-patch` | Patch provider-aware para classifiers de monitor (Copilot/Codex + mapa custom) com comando `/monitor-provider` |
-| `environment-doctor` | Health check do ambiente na startup + comando `/doctor` |
+| `environment-doctor` | Health check do ambiente na startup + comando `/doctor` + tool `environment_doctor_status` |
+| `claude-code-adapter` | Scaffold experimental para runtime externo Claude Code (`/claude-code status|login|auth-status`, sem persistência de credenciais) |
 | `guardrails-core` | Guardrail unificado first-party: proteção de paths sensíveis + roteamento web determinístico por escopo + bloqueio de conflito de porta reservada pelo session-web |
 | `colony-pilot` | Primitiva de orquestração/visibilidade: prepara runbooks manuais para pilot (monitors/remote/colony) e mantém snapshot de colonies em background |
 | `web-session-gateway` | Gateway web first-party para observabilidade local da sessão (URL determinística, `/api/health` e painel web local) |
@@ -112,12 +113,13 @@ Ativar: `/settings` → selecionar `agents-lab`
 | Comando | O que faz |
 |---|---|
 | `/doctor` | Diagnóstico do ambiente — verifica git, gh, glab, node, npm e autenticações |
-| `/colony-pilot` | Guia pilot (`hatch/check/models/preflight/baseline/run/status/stop/web/monitors/tui/artifacts`) com execução manual assistida, diagnóstico de capacidades + readiness de provider/model/budget, onboarding guiado e hard-gates para `ant_colony` |
+| `/colony-pilot` | Guia pilot (`hatch/check/models/preflight/baseline/run/status/stop/web/monitors/tui/artifacts`), incluindo `hatch doctor` plugin-aware com quick-recovery e hard-gates para `ant_colony` |
 | `/session-web` | Controla gateway web first-party (`start/status/open/stop`) para inspeção local da sessão sem UI hospedada externa |
 | `/monitor-provider` | Diagnostica e sincroniza modelos dos classifiers dos monitors por provider (`status/apply/template`) |
-| `/quota-visibility` | Mostra consumo estimado da janela, projeção semanal, visão de janelas/peak hours por provider e exporta relatório em `.pi/reports` |
+| `/quota-visibility` | Mostra consumo estimado da janela, projeção semanal, janelas/peak hours, budgets por provider e `route` advisory determinístico (`cheap|balanced|reliable`, `--execute` opt-in) |
 | `/scheduler-governance` | Governança de scheduler lease/ownership (`status/policy/apply`) com confirmações fortes para ações destrutivas |
 | `/stack-status` | Diagnóstico de soberania da stack: owners por capability, risco de overlap e postura de governança em runtime |
+| `/claude-code` | Bridge experimental para Claude Code CLI (status/login/auth-status) |
 
 > Convenção: `/doctor` permanece o diagnóstico global de ambiente/runtime. Comandos verticais como `/monitor-provider`, `/colony-pilot` e `/scheduler-governance` fazem diagnóstico/controle de domínio.
 >

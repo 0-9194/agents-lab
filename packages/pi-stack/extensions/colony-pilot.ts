@@ -26,6 +26,12 @@ import {
   type ProviderBudgetMap,
   type ProviderBudgetStatus,
 } from "./quota-visibility";
+import { checkSchedulerGovernance, checkShell, checkTerminal, detectTerminal } from "./environment-doctor";
+import {
+  evaluateCapabilityOwnership,
+  normalizeInstalledPackagesFromSettings,
+  readCapabilityRegistry,
+} from "./stack-sovereignty";
 
 type MonitorMode = "on" | "off" | "unknown";
 
@@ -1980,6 +1986,128 @@ export function formatHatchReadiness(readiness: HatchReadiness): string[] {
   ];
 }
 
+export interface HatchDoctorIssue {
+  severity: "info" | "warn" | "blocker";
+  source: "runtime" | "environment" | "sovereignty";
+  label: string;
+  detail: string;
+  fix: string;
+}
+
+export interface HatchDoctorSnapshot {
+  readiness: HatchReadiness;
+  issues: HatchDoctorIssue[];
+}
+
+export function buildHatchDoctorSnapshot(input: {
+  readiness: HatchReadiness;
+  capabilitiesMissing: Array<keyof PilotCapabilities>;
+  shellStatus: "ok" | "warn" | "error";
+  terminalStatus: "ok" | "warn" | "error" | "unknown";
+  schedulerStatus: "ok" | "warn" | "error";
+  sovereigntyOwnerMissing: number;
+  sovereigntyCoexisting: number;
+  sovereigntyHighRisk: number;
+}): HatchDoctorSnapshot {
+  const issues: HatchDoctorIssue[] = [];
+
+  for (const cap of input.capabilitiesMissing) {
+    issues.push({
+      severity: "blocker",
+      source: "runtime",
+      label: `capability missing: ${cap}`,
+      detail: capabilityGuidance(cap),
+      fix: "Revisar stack instalada e executar /reload 3 após ajuste.",
+    });
+  }
+
+  if (input.shellStatus !== "ok") {
+    issues.push({
+      severity: "warn",
+      source: "environment",
+      label: "shell",
+      detail: "shell não está em estado ideal para automações previsíveis.",
+      fix: "Padronize shell (PowerShell/Git Bash) e valide com /doctor.",
+    });
+  }
+
+  if (input.terminalStatus !== "ok" && input.terminalStatus !== "unknown") {
+    issues.push({
+      severity: "warn",
+      source: "environment",
+      label: "terminal keybindings",
+      detail: "terminal pode ter keybindings incompletos para o fluxo do pi.",
+      fix: "Rode /doctor e aplique remappings recomendados.",
+    });
+  }
+
+  if (input.schedulerStatus !== "ok") {
+    issues.push({
+      severity: "warn",
+      source: "environment",
+      label: "scheduler governance",
+      detail: "scheduler lease/governance requer atenção antes de swarm paralelo.",
+      fix: "Inspecione /scheduler-governance status e mantenha policy=observe/review.",
+    });
+  }
+
+  if (input.sovereigntyHighRisk > 0 || input.sovereigntyOwnerMissing > 0) {
+    issues.push({
+      severity: "blocker",
+      source: "sovereignty",
+      label: "stack ownership",
+      detail: `ownerMissing=${input.sovereigntyOwnerMissing}, highRisk=${input.sovereigntyHighRisk}`,
+      fix: "Convergir ownership para a stack curada e reduzir extensões concorrentes.",
+    });
+  } else if (input.sovereigntyCoexisting > 0) {
+    issues.push({
+      severity: "warn",
+      source: "sovereignty",
+      label: "coexisting capabilities",
+      detail: `coexisting=${input.sovereigntyCoexisting}`,
+      fix: "Auditar coexistência com /stack-status e remover sobreposição não essencial.",
+    });
+  }
+
+  if (input.readiness.ready && issues.length === 0) {
+    issues.push({
+      severity: "info",
+      source: "runtime",
+      label: "hatch",
+      detail: "runtime pronto para operação swarm-first.",
+      fix: "Rotina recomendada: /monitors off -> /colony ... -> /colony-pilot stop --restore-monitors",
+    });
+  }
+
+  return { readiness: input.readiness, issues };
+}
+
+export function formatHatchDoctorSnapshot(snapshot: HatchDoctorSnapshot): string[] {
+  const lines = ["hatch doctor", ...formatHatchReadiness(snapshot.readiness)];
+  const blockers = snapshot.issues.filter((i) => i.severity === "blocker");
+  if (blockers.length > 0) {
+    lines.push("", "BLOCKER language:");
+    for (const i of blockers) {
+      lines.push(`  - BLOCKER (${i.source}) ${i.label}: ${i.detail}`);
+      lines.push(`    fix: ${i.fix}`);
+    }
+  }
+
+  const warns = snapshot.issues.filter((i) => i.severity === "warn");
+  if (warns.length > 0) {
+    lines.push("", "warnings:");
+    for (const i of warns) lines.push(`  - (${i.source}) ${i.label}: ${i.detail} | fix: ${i.fix}`);
+  }
+
+  const infos = snapshot.issues.filter((i) => i.severity === "info");
+  if (infos.length > 0) {
+    lines.push("", "notes:");
+    for (const i of infos) lines.push(`  - ${i.detail}`);
+  }
+
+  return lines;
+}
+
 export function normalizeQuotedText(text: string): string {
   const trimmed = text.trim();
   if (!trimmed) return "";
@@ -2541,7 +2669,7 @@ export default function (pi: ExtensionAPI) {
             "  tui                           Mostra como entrar/retomar sessão no TUI",
             "  status                        Snapshot consolidado",
             "  check                         Diagnóstico de capacidades + readiness de provider/model/budget para ant_colony",
-            "  hatch [check|apply] [default|phase2]  Onboarding guiado para deixar runtime pronto para swarm",
+            "  hatch [check|doctor|apply] [default|phase2]  Onboarding guiado para deixar runtime pronto para swarm",
             "  models <status|template|apply> [copilot|codex|hybrid|factory-strict|factory-strict-copilot|factory-strict-hybrid]  Política granular de modelos por classe",
             "  preflight                     Executa gates duros (capabilities + executáveis) antes da colony",
             "  baseline [show|apply] [default|phase2]  Baseline de .pi/settings.json (phase2 = mais estrito)",
@@ -2649,6 +2777,61 @@ export default function (pi: ExtensionAPI) {
         const action = (tokens[0] ?? "check").toLowerCase();
         const profile = resolveBaselineProfile(tokens[1] ?? "default");
 
+        if (action === "doctor") {
+          const missing = missingCapabilities(caps, ["monitors", "colony", "colonyStop"]);
+          const preflight = await runColonyPilotPreflight(pi, caps, preflightConfig);
+          preflightCache = { at: Date.now(), result: preflight };
+
+          const currentModelRef = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
+          const modelEval = evaluateAntColonyModelPolicy({ goal: "hatch-doctor" }, currentModelRef, ctx.modelRegistry, modelPolicyConfig);
+          const budgetEval = evaluateAntColonyBudgetPolicy({ goal: "hatch-doctor" }, budgetPolicyConfig);
+          const quotaCfg = parseQuotaVisibilityBudgetSettings(ctx.cwd);
+
+          const readiness = evaluateHatchReadiness({
+            capabilitiesMissing: missing,
+            preflightOk: preflight.ok,
+            modelPolicyOk: modelEval.ok,
+            budgetPolicyOk: budgetEval.ok,
+            budgetPolicy: budgetPolicyConfig,
+            providerBudgetsConfigured: Object.keys(quotaCfg.providerBudgets).length,
+          });
+
+          const terminalCheck = checkTerminal(detectTerminal());
+          const shellCheck = checkShell();
+          const schedulerCheck = checkSchedulerGovernance(ctx.cwd);
+
+          const installed = new Set(normalizeInstalledPackagesFromSettings(readProjectSettings(ctx.cwd)));
+          const ownership = evaluateCapabilityOwnership(readCapabilityRegistry(), installed);
+          const sovereigntyOwnerMissing = ownership.filter((x) => x.status === "owner-missing").length;
+          const sovereigntyCoexisting = ownership.filter((x) => x.status === "coexisting").length;
+          const sovereigntyHighRisk = ownership.filter((x) => x.risk === "high").length;
+
+          const snapshot = buildHatchDoctorSnapshot({
+            readiness,
+            capabilitiesMissing: missing,
+            shellStatus: shellCheck.status,
+            terminalStatus: terminalCheck?.status ?? "unknown",
+            schedulerStatus: schedulerCheck.status,
+            sovereigntyOwnerMissing,
+            sovereigntyCoexisting,
+            sovereigntyHighRisk,
+          });
+
+          const lines = [
+            ...formatHatchDoctorSnapshot(snapshot),
+            "",
+            "quick recovery:",
+            "  - /doctor",
+            "  - /stack-status",
+            "  - /quota-visibility budget 30",
+            "  - /colony-pilot hatch apply default",
+          ];
+
+          const hasBlocker = snapshot.issues.some((i) => i.severity === "blocker");
+          ctx.ui.notify(lines.join("\n"), hasBlocker ? "warning" : "info");
+          return;
+        }
+
         if (action === "apply") {
           const existing = readProjectSettings(ctx.cwd);
           const merged = applyProjectBaselineSettings(existing, profile);
@@ -2681,7 +2864,7 @@ export default function (pi: ExtensionAPI) {
         }
 
         if (action !== "check") {
-          ctx.ui.notify("Usage: /colony-pilot hatch [check|apply] [default|phase2]", "warning");
+          ctx.ui.notify("Usage: /colony-pilot hatch [check|doctor|apply] [default|phase2]", "warning");
           return;
         }
 

@@ -114,6 +114,23 @@ describe("colony-pilot hatch e2e (pi-test-harness)", () => {
     expect(settings?.piStack?.colonyPilot?.budgetPolicy?.defaultMaxCostUsd).toBe(2);
   });
 
+  it("hatch doctor agrega diagnóstico plugin-aware com quick recovery", async () => {
+    const cwd = tempCwdWithHatchSettings();
+
+    t = await createTestSession({
+      cwd,
+      extensionFactories: [colonyPilot, fakePilotDepsExtension()],
+    });
+    patchHarnessAgentCompat(t);
+
+    await t.session.prompt("/colony-pilot hatch doctor");
+
+    const msg = lastNotifyMessage(t);
+    expect(msg).toContain("hatch doctor");
+    expect(msg).toContain("quick recovery:");
+    expect(msg).toContain("/doctor");
+  });
+
   it("hatch check reporta ready=yes para first-run mínimo", async () => {
     const cwd = tempCwdWithHatchSettings();
 

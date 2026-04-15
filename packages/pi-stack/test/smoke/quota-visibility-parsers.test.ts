@@ -205,6 +205,43 @@ describe("quota-visibility parsers", () => {
     expect(evalResult.budgets[0]?.unit).toBe("requests");
   });
 
+  it("remaining requests policy bloqueia quando saldo global já zerou", () => {
+    const now = Date.now();
+    const events: QuotaUsageEvent[] = [
+      {
+        timestampIso: new Date(now - 1 * 24 * 3600_000).toISOString(),
+        timestampMs: now - 1 * 24 * 3600_000,
+        dayLocal: "2026-04-14",
+        hourLocal: 11,
+        provider: "github-copilot",
+        model: "claude-sonnet-4.6",
+        tokens: 100,
+        costUsd: 0,
+        requests: 120,
+        sessionFile: "s1.jsonl",
+      },
+    ];
+
+    const evalResult = buildProviderBudgetStatuses(events, {
+      days: 30,
+      monthlyQuotaRequests: 100,
+      providerBudgets: {
+        "github-copilot": {
+          unit: "requests",
+          period: "monthly",
+          requestSharePolicy: "remaining",
+          shareMonthlyRequestsPct: 50,
+          warnPct: 80,
+          hardPct: 100,
+        },
+      },
+    });
+
+    expect(evalResult.budgets[0]?.periodRequestsCap).toBe(0);
+    expect(evalResult.budgets[0]?.usedPctRequests).toBe(100);
+    expect(evalResult.budgets[0]?.state).toBe("blocked");
+  });
+
   it("buildProviderWindowInsight destaca pico e início antes do pico", () => {
     const base = Date.UTC(2026, 3, 14, 0, 0, 0);
     const events: QuotaUsageEvent[] = [

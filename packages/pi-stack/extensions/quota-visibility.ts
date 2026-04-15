@@ -749,7 +749,7 @@ export function buildProviderBudgetStatuses(
         );
       }
 
-      if (!periodTokensCap && !periodCostUsdCap && !periodRequestsCap) {
+      if (periodTokensCap === undefined && periodCostUsdCap === undefined && periodRequestsCap === undefined) {
         notes.push(
           inferredPeriod === "monthly"
             ? "Sem limite mensal resolvido (tokens/custo/requests) para este provider."
@@ -766,12 +766,24 @@ export function buildProviderBudgetStatuses(
       const projectedCostUsdEndOfPeriod = (observedCostUsd / elapsedDays) * periodDays;
       const projectedRequestsEndOfPeriod = (observedRequests / elapsedDays) * periodDays;
 
-      const usedPctTokens = periodTokensCap ? (observedTokens / periodTokensCap) * 100 : undefined;
-      const projectedPctTokens = periodTokensCap ? (projectedTokensEndOfPeriod / periodTokensCap) * 100 : undefined;
-      const usedPctCost = periodCostUsdCap ? (observedCostUsd / periodCostUsdCap) * 100 : undefined;
-      const projectedPctCost = periodCostUsdCap ? (projectedCostUsdEndOfPeriod / periodCostUsdCap) * 100 : undefined;
-      const usedPctRequests = periodRequestsCap ? (observedRequests / periodRequestsCap) * 100 : undefined;
-      const projectedPctRequests = periodRequestsCap ? (projectedRequestsEndOfPeriod / periodRequestsCap) * 100 : undefined;
+      const usedPctTokens = periodTokensCap !== undefined
+        ? (periodTokensCap === 0 ? (observedTokens > 0 ? 100 : 0) : (observedTokens / periodTokensCap) * 100)
+        : undefined;
+      const projectedPctTokens = periodTokensCap !== undefined
+        ? (periodTokensCap === 0 ? (projectedTokensEndOfPeriod > 0 ? 100 : 0) : (projectedTokensEndOfPeriod / periodTokensCap) * 100)
+        : undefined;
+      const usedPctCost = periodCostUsdCap !== undefined
+        ? (periodCostUsdCap === 0 ? (observedCostUsd > 0 ? 100 : 0) : (observedCostUsd / periodCostUsdCap) * 100)
+        : undefined;
+      const projectedPctCost = periodCostUsdCap !== undefined
+        ? (periodCostUsdCap === 0 ? (projectedCostUsdEndOfPeriod > 0 ? 100 : 0) : (projectedCostUsdEndOfPeriod / periodCostUsdCap) * 100)
+        : undefined;
+      const usedPctRequests = periodRequestsCap !== undefined
+        ? (periodRequestsCap === 0 ? (observedRequests > 0 ? 100 : 0) : (observedRequests / periodRequestsCap) * 100)
+        : undefined;
+      const projectedPctRequests = periodRequestsCap !== undefined
+        ? (periodRequestsCap === 0 ? (projectedRequestsEndOfPeriod > 0 ? 100 : 0) : (projectedRequestsEndOfPeriod / periodRequestsCap) * 100)
+        : undefined;
 
       const maxPct = Math.max(
         safeNum(usedPctTokens),
@@ -1215,9 +1227,9 @@ function formatWindowInsightLine(w: ProviderWindowInsight): string {
 function formatProviderBudgetLine(b: ProviderBudgetStatus): string {
   const stateTag = b.state === "blocked" ? "BLOCK" : b.state === "warning" ? "WARN" : "OK";
   const owner = b.owner ? ` owner=${b.owner}` : "";
-  const capTok = b.periodTokensCap ? fmt(b.periodTokensCap) : "n/a";
-  const capUsd = b.periodCostUsdCap ? money(b.periodCostUsdCap) : "n/a";
-  const capReq = b.periodRequestsCap ? fmt(b.periodRequestsCap) : "n/a";
+  const capTok = b.periodTokensCap !== undefined ? fmt(b.periodTokensCap) : "n/a";
+  const capUsd = b.periodCostUsdCap !== undefined ? money(b.periodCostUsdCap) : "n/a";
+  const capReq = b.periodRequestsCap !== undefined ? fmt(b.periodRequestsCap) : "n/a";
   return [
     `  - [${stateTag}] ${b.provider}${owner} | period=${b.period} | unit=${b.unit} | used=${fmt(b.observedTokens)} tok (${pct(b.usedPctTokens)}) / cap=${capTok}`,
     `    cost=${money(b.observedCostUsd)} (${pct(b.usedPctCost)}) / cap=${capUsd} | requests=${fmt(b.observedRequests)} (${pct(b.usedPctRequests)}) / cap=${capReq}`,

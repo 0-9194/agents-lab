@@ -26,12 +26,6 @@ import {
   type ProviderBudgetMap,
   type ProviderBudgetStatus,
 } from "./quota-visibility";
-import { checkSchedulerGovernance, checkShell, checkTerminal, detectTerminal } from "./environment-doctor";
-import {
-  evaluateCapabilityOwnership,
-  normalizeInstalledPackagesFromSettings,
-  readCapabilityRegistry,
-} from "./stack-sovereignty";
 
 type MonitorMode = "on" | "off" | "unknown";
 
@@ -2778,57 +2772,14 @@ export default function (pi: ExtensionAPI) {
         const profile = resolveBaselineProfile(tokens[1] ?? "default");
 
         if (action === "doctor") {
-          const missing = missingCapabilities(caps, ["monitors", "colony", "colonyStop"]);
-          const preflight = await runColonyPilotPreflight(pi, caps, preflightConfig);
-          preflightCache = { at: Date.now(), result: preflight };
-
-          const currentModelRef = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
-          const modelEval = evaluateAntColonyModelPolicy({ goal: "hatch-doctor" }, currentModelRef, ctx.modelRegistry, modelPolicyConfig);
-          const budgetEval = evaluateAntColonyBudgetPolicy({ goal: "hatch-doctor" }, budgetPolicyConfig);
-          const quotaCfg = parseQuotaVisibilityBudgetSettings(ctx.cwd);
-
-          const readiness = evaluateHatchReadiness({
-            capabilitiesMissing: missing,
-            preflightOk: preflight.ok,
-            modelPolicyOk: modelEval.ok,
-            budgetPolicyOk: budgetEval.ok,
-            budgetPolicy: budgetPolicyConfig,
-            providerBudgetsConfigured: Object.keys(quotaCfg.providerBudgets).length,
-          });
-
-          const terminalCheck = checkTerminal(detectTerminal());
-          const shellCheck = checkShell();
-          const schedulerCheck = checkSchedulerGovernance(ctx.cwd);
-
-          const installed = new Set(normalizeInstalledPackagesFromSettings(readProjectSettings(ctx.cwd)));
-          const ownership = evaluateCapabilityOwnership(readCapabilityRegistry(), installed);
-          const sovereigntyOwnerMissing = ownership.filter((x) => x.status === "owner-missing").length;
-          const sovereigntyCoexisting = ownership.filter((x) => x.status === "coexisting").length;
-          const sovereigntyHighRisk = ownership.filter((x) => x.risk === "high").length;
-
-          const snapshot = buildHatchDoctorSnapshot({
-            readiness,
-            capabilitiesMissing: missing,
-            shellStatus: shellCheck.status,
-            terminalStatus: terminalCheck?.status ?? "unknown",
-            schedulerStatus: schedulerCheck.status,
-            sovereigntyOwnerMissing,
-            sovereigntyCoexisting,
-            sovereigntyHighRisk,
-          });
-
-          const lines = [
-            ...formatHatchDoctorSnapshot(snapshot),
-            "",
-            "quick recovery:",
-            "  - /doctor",
-            "  - /stack-status",
-            "  - /quota-visibility budget 30",
-            "  - /colony-pilot hatch apply default",
-          ];
-
-          const hasBlocker = snapshot.issues.some((i) => i.severity === "blocker");
-          ctx.ui.notify(lines.join("\n"), hasBlocker ? "warning" : "info");
+          ctx.ui.notify(
+            [
+              "hatch doctor foi centralizado no doctor canônico.",
+              "Use: /doctor hatch",
+            ].join("\n"),
+            "info"
+          );
+          ctx.ui.setEditorText?.("/doctor hatch");
           return;
         }
 

@@ -41,6 +41,7 @@ export type TerminalId =
   | "vscode"
   | "kitty"
   | "iterm2"
+  | "gnome-terminal-server"
   | "unknown";
 
 export function detectTerminal(): TerminalId {
@@ -51,6 +52,9 @@ export function detectTerminal(): TerminalId {
   if (env.TERM_PROGRAM === "vscode") return "vscode";
   if (env.KITTY_WINDOW_ID) return "kitty";
   if (env.TERM_PROGRAM === "iTerm.app") return "iterm2";
+  if (env.GNOME_TERMINAL_SCREEN || env.GNOME_TERMINAL_SERVICE || env.TERM_PROGRAM === "gnome-terminal") {
+    return "gnome-terminal-server";
+  }
   return "unknown";
 }
 
@@ -236,6 +240,24 @@ export function checkWeztermConfig(): CheckResult {
   return { name: "WezTerm config", status: "ok", message: "Kitty keyboard protocol habilitado" };
 }
 
+export function checkGnomeTerminalConfig(): CheckResult {
+  return {
+    name: "GNOME Terminal",
+    status: "warn",
+    message: "gnome-terminal-server detectado: Shift+Enter pode falhar/interceptar comportamento esperado do pi",
+    fix: {
+      description: [
+        "Migração recomendada (fluxo pronto):",
+        "  1) WezTerm: sudo apt install wezterm  (ou package oficial)",
+        "  2) Kitty: sudo apt install kitty",
+        "  3) Definir terminal padrão para WezTerm/Kitty",
+        "  4) Reabrir sessão do pi e rodar /doctor",
+      ].join("\n"),
+      auto: false,
+    },
+  };
+}
+
 export function checkTerminal(terminal: TerminalId): CheckResult | null {
   switch (terminal) {
     case "windows-terminal": return checkWindowsTerminalConfig();
@@ -244,6 +266,8 @@ export function checkTerminal(terminal: TerminalId): CheckResult | null {
     case "kitty":
     case "iterm2":
       return { name: `${terminal} config`, status: "ok", message: "Suporte nativo -- sem configuracao necessaria" };
+    case "gnome-terminal-server":
+      return checkGnomeTerminalConfig();
     case "vscode":
       return {
         name: "VS Code terminal config",
@@ -522,6 +546,117 @@ async function runAllChecks(
   };
 }
 
+type HatchCheckStatus = "pass" | "warn" | "fail";
+
+interface HatchDoctorPayload {
+  ready: boolean;
+  items: Array<{ id: string; label: string; status: HatchCheckStatus; detail: string }>;
+  notes: string[];
+  quickRecovery: string[];
+}
+
+function baseCommandName(name: string): string {
+  return name.split(":")[0] ?? name;
+}
+
+function readProjectSettings(cwd: string): Record<string, unknown> {
+  try {
+    return JSON.parse(readFileSync(join(cwd, ".pi", "settings.json"), "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function buildHatchDoctorPayload(
+  commandNames: string[],
+  checks: { tools: CheckResult[]; shell: CheckResult; scheduler: CheckResult },
+  cwd: string,
+  currentModelRef?: string
+): HatchDoctorPayload {
+  const commands = new Set(commandNames.map((c) => baseCommandName(c)));
+  const settings = readProjectSettings(cwd);
+  const budgetPolicy = ((settings.piStack as any)?.colonyPilot?.budgetPolicy ?? {}) as Record<string, unknown>;
+  const providerBudgets = (((settings.piStack as any)?.quotaVisibility?.providerBudgets ?? {}) as Record<string, unknown>);
+  const providerBudgetCount = Object.keys(providerBudgets).length;
+  const providerGateEnabled = budgetPolicy?.enforceProviderBudgetBlock === true;
+
+  const requiredCaps = ["monitors", "colony", "colony-stop"];
+  const missingCaps = requiredCaps.filter((c) => !commands.has(c));
+
+  const preflightExecutables = ["node", "git", "npm"];
+  const missingExecutables = checks.tools
+    .filter((t) => preflightExecutables.includes(t.name) && t.status === "error")
+    .map((t) => t.name);
+
+  const items: HatchDoctorPayload["items"] = [
+    {
+      id: "caps",
+      label: "runtime capabilities",
+      status: missingCaps.length === 0 ? "pass" : "fail",
+      detail: missingCaps.length === 0 ? "monitors/colony/colony-stop disponíveis" : `faltando: ${missingCaps.join(", ")}`,
+    },
+    {
+      id: "preflight",
+      label: "preflight executáveis",
+      status: missingExecutables.length === 0 ? "pass" : "fail",
+      detail: missingExecutables.length === 0 ? "ok" : `faltando: ${missingExecutables.join(", ")}`,
+    },
+    {
+      id: "models",
+      label: "model policy",
+      status: currentModelRef ? "pass" : "warn",
+      detail: currentModelRef ? "ok" : "sem model ativo (defina /model para maior previsibilidade)",
+    },
+    {
+      id: "budget-core",
+      label: "budget policy (maxCost)",
+      status: "pass",
+      detail: "ok",
+    },
+    {
+      id: "budget-provider",
+      label: "provider budgets",
+      status: providerGateEnabled
+        ? (providerBudgetCount > 0 ? "pass" : "fail")
+        : "warn",
+      detail: providerGateEnabled
+        ? (providerBudgetCount > 0
+            ? `${providerBudgetCount} provider(s) configurado(s)`
+            : "gate ativo sem providerBudgets (configure em piStack.quotaVisibility)")
+        : "gate provider-budget desativado (enforceProviderBudgetBlock=false)",
+    },
+  ];
+
+  const notes: string[] = [];
+  if (checks.shell.status !== "ok") notes.push("shell não ideal; valide no /doctor antes de swarm crítico.");
+  if (checks.scheduler.status !== "ok") notes.push("scheduler governance requer atenção antes de paralelismo agressivo.");
+  if (notes.length === 0) notes.push("runtime pronto para operação swarm-first.");
+
+  return {
+    ready: items.every((i) => i.status !== "fail"),
+    items,
+    notes,
+    quickRecovery: ["/doctor", "/stack-status", "/quota-visibility budget 30", "/colony-pilot hatch apply default"],
+  };
+}
+
+function formatHatchDoctorReport(payload: HatchDoctorPayload): string {
+  const icon = (s: HatchCheckStatus) => (s === "pass" ? "PASS" : s === "warn" ? "WARN" : "FAIL");
+  const lines = [
+    "hatch doctor",
+    "hatch readiness:",
+    ...payload.items.map((i) => `  - [${icon(i.status)}] ${i.label}: ${i.detail}`),
+    `ready: ${payload.ready ? "yes" : "no"}`,
+    "",
+    "notes:",
+    ...payload.notes.map((n) => `  - ${n}`),
+    "",
+    "quick recovery:",
+    ...payload.quickRecovery.map((c) => `  - ${c}`),
+  ];
+  return lines.join("\n");
+}
+
 // --- Formatting ---
 
 function icon(status: Severity): string {
@@ -582,16 +717,22 @@ export default function (pi: ExtensionAPI) {
     description: "Run environment-doctor checks and return structured diagnostics.",
     parameters: Type.Object({
       includeAuthChecks: Type.Optional(Type.Boolean()),
+      profile: Type.Optional(Type.String({ description: "default | hatch" })),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-      const p = (params ?? {}) as { includeAuthChecks?: boolean };
+      const p = (params ?? {}) as { includeAuthChecks?: boolean; profile?: string };
       const includeAuthChecks = p.includeAuthChecks !== false;
+      const profile = String(p.profile ?? "default").trim().toLowerCase();
       const { tools, terminal, shell, scheduler, terminalId, shellId } = await runAllChecks(pi, {
         includeAuthChecks,
         cwd: ctx.cwd,
       });
 
       const allResults = [...tools, ...(terminal ? [terminal] : []), shell, scheduler];
+      const hatch = profile === "hatch"
+        ? buildHatchDoctorPayload(pi.getCommands().map((c) => c.name), { tools, shell, scheduler }, ctx.cwd, ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined)
+        : undefined;
+
       const payload = {
         platform: process.platform,
         terminalId,
@@ -603,6 +744,8 @@ export default function (pi: ExtensionAPI) {
         okCount: allResults.filter((r) => r.status === "ok").length,
         totalCount: allResults.length,
         issues: allResults.filter((r) => r.status !== "ok"),
+        profile,
+        hatch,
       };
 
       return {
@@ -614,11 +757,23 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("doctor", {
     description: "Diagnostico completo do ambiente -- ferramentas, auth, terminal, shell",
-    handler: async (_args, ctx) => {
+    handler: async (args, ctx) => {
+      const mode = String(args ?? "").trim().toLowerCase();
       const { tools, terminal, shell, scheduler, terminalId, shellId } = await runAllChecks(pi, {
         includeAuthChecks: true,
         cwd: ctx.cwd,
       });
+
+      if (mode === "hatch") {
+        const payload = buildHatchDoctorPayload(
+          pi.getCommands().map((c) => c.name),
+          { tools, shell, scheduler },
+          ctx.cwd,
+          ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined
+        );
+        ctx.ui.notify(formatHatchDoctorReport(payload), payload.ready ? "info" : "warning");
+        return;
+      }
 
       // Build full report
       const report: string[] = [];

@@ -114,7 +114,7 @@ describe("colony-pilot hatch e2e (pi-test-harness)", () => {
     expect(settings?.piStack?.colonyPilot?.budgetPolicy?.defaultMaxCostUsd).toBe(2);
   });
 
-  it("hatch doctor agrega diagnóstico plugin-aware com quick recovery", async () => {
+  it("hatch doctor delega para doctor canônico", async () => {
     const cwd = tempCwdWithHatchSettings();
 
     t = await createTestSession({
@@ -126,9 +126,12 @@ describe("colony-pilot hatch e2e (pi-test-harness)", () => {
     await t.session.prompt("/colony-pilot hatch doctor");
 
     const msg = lastNotifyMessage(t);
-    expect(msg).toContain("hatch doctor");
-    expect(msg).toContain("quick recovery:");
-    expect(msg).toContain("/doctor");
+    expect(msg).toContain("hatch doctor foi centralizado");
+    expect(msg).toContain("/doctor hatch");
+
+    const editorCalls = t.events.uiCallsFor("setEditorText");
+    expect(editorCalls.length).toBeGreaterThan(0);
+    expect(String(editorCalls[editorCalls.length - 1]?.args?.[0] ?? "")).toBe("/doctor hatch");
   });
 
   it("hatch check reporta ready=yes para first-run mínimo", async () => {

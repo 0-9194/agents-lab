@@ -19,6 +19,9 @@ function detectTerminal(env) {
   if (env.TERM_PROGRAM === "vscode") return "vscode";
   if (env.KITTY_WINDOW_ID) return "kitty";
   if (env.TERM_PROGRAM === "iTerm.app") return "iterm2";
+  if (env.GNOME_TERMINAL_SCREEN || env.GNOME_TERMINAL_SERVICE || env.TERM_PROGRAM === "gnome-terminal") {
+    return "gnome-terminal-server";
+  }
   return "unknown";
 }
 
@@ -81,6 +84,10 @@ describe("detectTerminal", () => {
 
   it("detects iTerm2 via TERM_PROGRAM", () => {
     assert.equal(detectTerminal({ TERM_PROGRAM: "iTerm.app" }), "iterm2");
+  });
+
+  it("detects GNOME Terminal server via env", () => {
+    assert.equal(detectTerminal({ GNOME_TERMINAL_SERVICE: ":1.2" }), "gnome-terminal-server");
   });
 
   it("returns unknown for unrecognized terminal", () => {

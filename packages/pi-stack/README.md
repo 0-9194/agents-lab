@@ -112,7 +112,7 @@ Ativar: `/settings` → selecionar `agents-lab`
 
 | Comando | O que faz |
 |---|---|
-| `/doctor` | Diagnóstico do ambiente — verifica git, gh, glab, node, npm e autenticações |
+| `/doctor` | Diagnóstico canônico do ambiente (`/doctor` e `/doctor hatch`) — verifica tools/auth/shell/terminal e readiness operacional |
 | `/colony-pilot` | Guia pilot (`hatch/check/models/preflight/baseline/run/status/stop/web/monitors/tui/artifacts`), incluindo `hatch doctor` plugin-aware com quick-recovery e hard-gates para `ant_colony` |
 | `/session-web` | Controla gateway web first-party (`start/status/open/stop`) para inspeção local da sessão sem UI hospedada externa |
 | `/monitor-provider` | Diagnostica e sincroniza modelos dos classifiers dos monitors por provider (`status/apply/template`) |

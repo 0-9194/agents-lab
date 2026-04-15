@@ -78,16 +78,27 @@ Comportamento importante:
 1. `/doctor` (saúde global)
 2. `/monitor-provider status`
 3. `/monitor-provider apply` (se houver drift)
-4. `/colony-pilot models status`
-5. `/colony-pilot check`
-6. `/colony-pilot preflight`
-7. rodar colônia com budget explícito (`ant_colony` com `maxCost`)
-8. monitorar janela/limite com `/usage` + histórico com `/quota-visibility windows`
+4. `/colony-pilot models apply codex` (perfil generic-first para ambiente Codex-only)
+5. `/colony-pilot models status`
+6. `/colony-pilot check`
+7. `/colony-pilot preflight`
+8. rodar colônia com budget explícito (`ant_colony` com `maxCost`)
+9. monitorar janela/limite com `/usage` + histórico com `/quota-visibility windows`
 
 Se quiser observabilidade web local:
 
 - `/session-web start`
 - `/colony-pilot status`
+
+### Diretriz atual: generic-first
+
+No estado atual do laboratório (especialmente quando só há Codex disponível), a recomendação é:
+
+- priorizar papéis genéricos (`scout`, `worker`, `soldier`)
+- manter papéis especializados (`design`, `multimodal`, `backend`, `review`) como **opt-in**
+- só endurecer especialização quando houver evidência de ganho
+
+Isso evita crescimento acidental de complexidade e melhora coesão da arquitetura.
 
 ### Perfis rápidos de model policy
 
@@ -96,15 +107,25 @@ Se quiser observabilidade web local:
 - `/colony-pilot models apply copilot`
 - `/colony-pilot models apply hybrid`
 - `/colony-pilot models apply factory-strict`
+- `/colony-pilot models apply factory-strict-copilot`
+- `/colony-pilot models apply factory-strict-hybrid`
 
 Esses perfis escrevem `piStack.colonyPilot.modelPolicy` no `.pi/settings.json` e ativam hard-gate no `tool_call` de `ant_colony`.
 
 A baseline também pode configurar `piStack.colonyPilot.budgetPolicy` para exigir/injetar `maxCost` e bloquear caps acima do limite definido.
 
-`factory-strict` é o perfil mais rígido para fábrica de agentes:
-- exige modelos explícitos para todas as classes (scout/worker/soldier/design/multimodal/backend/review)
-- bloqueia mistura de providers
-- exige referência completa `provider/model`
+Perfis rígidos para fábrica de agentes:
+- `factory-strict` (Codex-only)
+- `factory-strict-copilot` (Copilot-only)
+- `factory-strict-hybrid` (mix permitido, mas com allowlist por role)
+
+Todos eles:
+- exigem modelos explícitos para todas as classes (scout/worker/soldier/design/multimodal/backend/review)
+- exigem referência completa `provider/model`
+
+No `factory-strict-hybrid`, a mistura de provider é controlada por papel (`allowedProvidersByRole`), por exemplo:
+- `worker/review/design` em Copilot
+- `scout/soldier/backend/multimodal` em Codex
 
 ---
 

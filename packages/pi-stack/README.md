@@ -116,10 +116,16 @@ Ativar: `/settings` → selecionar `agents-lab`
 | `/session-web` | Controla gateway web first-party (`start/status/open/stop`) para inspeção local da sessão sem UI hospedada externa |
 | `/monitor-provider` | Diagnostica e sincroniza modelos dos classifiers dos monitors por provider (`status/apply/template`) |
 | `/quota-visibility` | Mostra consumo estimado da janela, projeção semanal, visão de janelas/peak hours por provider e exporta relatório em `.pi/reports` |
+| `/scheduler-governance` | Governança de scheduler lease/ownership (`status/policy/apply`) com confirmações fortes para ações destrutivas |
+| `/stack-status` | Diagnóstico de soberania da stack: owners por capability, risco de overlap e postura de governança em runtime |
 
-> Convenção: `/doctor` permanece o diagnóstico global de ambiente/runtime. Comandos como `/monitor-provider` e `/colony-pilot` fazem diagnóstico apenas do seu domínio.
+> Convenção: `/doctor` permanece o diagnóstico global de ambiente/runtime. Comandos verticais como `/monitor-provider`, `/colony-pilot` e `/scheduler-governance` fazem diagnóstico/controle de domínio.
 >
 > Guia de governança provider/model para colônia e multi-agentes: [`docs/guides/colony-provider-model-governance.md`](../../docs/guides/colony-provider-model-governance.md)
+>
+> Guia de governança forte do scheduler: [`docs/guides/scheduler-governance.md`](../../docs/guides/scheduler-governance.md)
+>
+> Guia operacional de soberania (inclui CI artifact + comentário de PR): [`docs/guides/stack-sovereignty-user-guide.md`](../../docs/guides/stack-sovereignty-user-guide.md)
 
 ## Baseline de projeto (.pi/settings.json)
 
@@ -160,6 +166,13 @@ Baseline aplicada (default):
       "mode": "local",
       "port": 3100
     },
+    "schedulerGovernance": {
+      "enabled": true,
+      "policy": "observe",
+      "requireTextConfirmation": true,
+      "allowEnvOverride": true,
+      "staleAfterMs": 10000
+    },
     "guardrailsCore": {
       "portConflict": {
         "enabled": true,
@@ -169,6 +182,18 @@ Baseline aplicada (default):
   }
 }
 ```
+
+## CI de soberania (fail/pass + visibilidade)
+
+No repositório, a soberania é validada por dois níveis:
+
+- **Gate de bloqueio** (job `smoke`):
+  - `npm run audit:sovereignty`
+  - `npm run audit:sovereignty:diff`
+- **Visibilidade operacional** (job `sovereignty-report`):
+  - gera `docs/architecture/stack-sovereignty-audit-latest.md`
+  - publica artifact `stack-sovereignty-audit`
+  - faz upsert de comentário no PR (`<!-- stack-sovereignty-report -->`)
 
 ## Filosofia
 

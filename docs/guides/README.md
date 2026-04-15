@@ -31,6 +31,10 @@ Guias práticos para trabalhar com o ecossistema de agentes deste laboratório.
 | [web-session-gateway.md](./web-session-gateway.md) | Gateway web first-party para observabilidade local da sessão (health/state/prompt) |
 | [colony-runtime-recovery.md](./colony-runtime-recovery.md) | Como localizar artefatos de colony (state/worktree/branch) e recuperar contexto após parada |
 | [colony-provider-model-governance.md](./colony-provider-model-governance.md) | Governança de provider/model para colony e multi-agentes (usuário + dev) |
+| [scheduler-governance.md](./scheduler-governance.md) | Governança forte de ownership/lease do scheduler para evitar conflito entre sessões |
+| [stack-sovereignty-user-guide.md](./stack-sovereignty-user-guide.md) | Guia operacional da soberania da stack (owners, defaults seguros, convivência) |
+| [extension-acceptance-checklist.md](./extension-acceptance-checklist.md) | Checklist para aceitar nova extensão sem aumentar fragmentação |
+| [ci-governance.md](./ci-governance.md) | Troubleshooting dos gates de soberania no CI (annotations, registry, criticality, owner) |
 
 ### Migração e Filosofia
 

@@ -78,6 +78,20 @@ npm run pi:parity
 npm run pi:parity:project
 ```
 
+## Governança de soberania no CI (para contribuidores)
+
+Ao contribuir no agents-lab, a stack usa dois checks complementares:
+
+- **Fail/pass obrigatório**
+  - `npm run audit:sovereignty`
+  - `npm run audit:sovereignty:diff`
+- **Relatório operacional**
+  - job `Sovereignty Report`
+  - artifact `stack-sovereignty-audit`
+  - comentário no PR com marcador `<!-- stack-sovereignty-report -->`
+
+Guia detalhado: [`stack-sovereignty-user-guide.md`](./stack-sovereignty-user-guide.md)
+
 ## Baseline operacional de projeto
 
 Para usuários do `@aretw0/pi-stack`, a baseline de governança pode ser aplicada direto pelo comando distribuído na stack:

@@ -19,6 +19,10 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+/**
+ * @capability-id monitor-provider-governance
+ * @capability-criticality high
+ */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";

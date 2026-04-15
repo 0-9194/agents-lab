@@ -1,0 +1,95 @@
+{
+  "version": "2026-04-14",
+  "capabilities": [
+    {
+      "id": "scheduler-runtime-governance",
+      "name": "Scheduler ownership/lease governance",
+      "criticality": "high",
+      "primaryPackage": "@aretw0/pi-stack",
+      "secondaryPackages": ["@ifi/oh-pi-extensions"],
+      "conflictsWithPackages": ["@ifi/oh-pi-extensions"],
+      "coexistencePolicy": "policy-first-party-engine-third-party",
+      "defaultAction": "consolidate"
+    },
+    {
+      "id": "monitor-provider-governance",
+      "name": "Monitor provider/model governance",
+      "criticality": "high",
+      "primaryPackage": "@aretw0/pi-stack",
+      "secondaryPackages": ["@davidorex/pi-project-workflows"],
+      "conflictsWithPackages": ["@davidorex/pi-project-workflows"],
+      "coexistencePolicy": "policy-first-party-engine-third-party",
+      "defaultAction": "consolidate"
+    },
+    {
+      "id": "colony-runtime-governance",
+      "name": "Colony runtime governance",
+      "criticality": "medium",
+      "primaryPackage": "@aretw0/pi-stack",
+      "secondaryPackages": ["@ifi/oh-pi-ant-colony", "@ifi/pi-web-remote"],
+      "conflictsWithPackages": ["@ifi/oh-pi-ant-colony"],
+      "coexistencePolicy": "policy-first-party-engine-third-party",
+      "defaultAction": "consolidate"
+    },
+    {
+      "id": "global-runtime-doctor",
+      "name": "Global runtime diagnostics",
+      "criticality": "high",
+      "primaryPackage": "@aretw0/pi-stack",
+      "secondaryPackages": [],
+      "conflictsWithPackages": [],
+      "coexistencePolicy": "single-owner",
+      "defaultAction": "maintain"
+    },
+    {
+      "id": "quota-visibility-ops",
+      "name": "Quota visibility operations",
+      "criticality": "medium",
+      "primaryPackage": "@aretw0/pi-stack",
+      "secondaryPackages": ["@ifi/oh-pi-extensions", "mitsupi"],
+      "conflictsWithPackages": ["@ifi/oh-pi-extensions", "mitsupi"],
+      "coexistencePolicy": "coexist-with-boundaries",
+      "defaultAction": "maintain"
+    },
+    {
+      "id": "web-research-policy",
+      "name": "Web research/browser policy",
+      "criticality": "medium",
+      "primaryPackage": "@aretw0/web-skills",
+      "secondaryPackages": ["pi-web-access", "@ifi/oh-pi-skills", "mitsupi"],
+      "conflictsWithPackages": ["pi-web-access", "@ifi/oh-pi-skills", "mitsupi"],
+      "coexistencePolicy": "first-party-policy-multi-engine",
+      "defaultAction": "filter-migrate"
+    },
+    {
+      "id": "stack-sovereignty-governance",
+      "name": "Stack sovereignty ownership governance",
+      "criticality": "high",
+      "primaryPackage": "@aretw0/pi-stack",
+      "secondaryPackages": [],
+      "conflictsWithPackages": [],
+      "coexistencePolicy": "single-owner",
+      "defaultAction": "maintain"
+    },
+    {
+      "id": "runtime-guardrails",
+      "name": "Runtime guardrails and tool-call safety policy",
+      "criticality": "high",
+      "primaryPackage": "@aretw0/pi-stack",
+      "secondaryPackages": ["@ifi/oh-pi-extensions"],
+      "conflictsWithPackages": ["@ifi/oh-pi-extensions"],
+      "coexistencePolicy": "first-party-policy-third-party-fallback",
+      "defaultAction": "consolidate"
+    },
+    {
+      "id": "session-web-observability",
+      "name": "Session web observability gateway",
+      "criticality": "medium",
+      "primaryPackage": "@aretw0/pi-stack",
+      "secondaryPackages": ["@ifi/pi-web-remote"],
+      "conflictsWithPackages": ["@ifi/pi-web-remote"],
+      "coexistencePolicy": "coexist-with-boundaries",
+      "defaultAction": "maintain"
+    }
+  ]
+}

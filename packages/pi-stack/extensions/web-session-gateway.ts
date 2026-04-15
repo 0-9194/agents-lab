@@ -1,5 +1,7 @@
 /**
  * web-session-gateway — First-party local web observability for pi sessions.
+ * @capability-id session-web-observability
+ * @capability-criticality medium
  *
  * Philosophy:
  * - deterministic access URL by mode (local/lan/public)

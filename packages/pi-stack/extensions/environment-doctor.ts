@@ -1,5 +1,7 @@
 /**
  * environment-doctor -- Health check extension for pi-stack.
+ * @capability-id global-runtime-doctor
+ * @capability-criticality high
  *
  * On session_start, runs a quick environment check and shows a status
  * widget if tools or terminal configurations are missing.
@@ -12,7 +14,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, parse, resolve } from "node:path";
 
 // --- Types ---
 
@@ -348,17 +350,103 @@ async function checkTool(
   }
 }
 
+interface SchedulerLeaseSnapshot {
+  instanceId: string;
+  sessionId: string | null;
+  pid: number;
+  cwd: string;
+  heartbeatAt: number;
+}
+
+export function getSchedulerStoragePathForCwd(cwd: string): string {
+  const schedulerRoot = join(homedir(), ".pi", "agent", "scheduler");
+  const resolved = resolve(cwd);
+  const parsed = parse(resolved);
+  const relativeSegments = resolved.slice(parsed.root.length).split(/[/\\]+/).filter(Boolean);
+  const rootSegment = parsed.root
+    ? parsed.root.replaceAll(/[^a-zA-Z0-9]+/g, "-").replaceAll(/^-+|-+$/g, "").toLowerCase() || "root"
+    : "root";
+  return join(schedulerRoot, rootSegment, ...relativeSegments, "scheduler.json");
+}
+
+export function getSchedulerLeasePathForCwd(cwd: string): string {
+  const storagePath = getSchedulerStoragePathForCwd(cwd);
+  return join(storagePath, "..", "scheduler.lease.json");
+}
+
+export function readSchedulerLease(cwd: string): SchedulerLeaseSnapshot | undefined {
+  const leasePath = getSchedulerLeasePathForCwd(cwd);
+  if (!existsSync(leasePath)) return undefined;
+
+  try {
+    const parsed = JSON.parse(readFileSync(leasePath, "utf8")) as SchedulerLeaseSnapshot;
+    if (!(parsed?.instanceId && Number.isFinite(parsed?.heartbeatAt))) return undefined;
+    return parsed;
+  } catch {
+    return undefined;
+  }
+}
+
+export function checkSchedulerGovernance(cwd: string): CheckResult {
+  const lease = readSchedulerLease(cwd);
+  const settingsPath = join(cwd, ".pi", "settings.json");
+
+  let policy = "observe";
+  if (existsSync(settingsPath)) {
+    try {
+      const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
+      const maybePolicy = settings?.piStack?.schedulerGovernance?.policy;
+      if (typeof maybePolicy === "string" && maybePolicy.trim()) policy = maybePolicy.trim();
+    } catch {
+      // ignore malformed settings
+    }
+  }
+
+  if (!lease) {
+    return {
+      name: "Scheduler governance",
+      status: "ok",
+      message: `policy=${policy} · no active lease found`,
+    };
+  }
+
+  const ageMs = Math.max(0, Date.now() - lease.heartbeatAt);
+  const staleAfterMs = 10_000;
+  const fresh = ageMs < staleAfterMs;
+  const foreign = fresh && lease.pid !== process.pid;
+
+  if (foreign) {
+    return {
+      name: "Scheduler governance",
+      status: policy === "observe" || policy === "review" ? "warn" : "error",
+      message: `policy=${policy} · foreign owner pid=${lease.pid} instance=${lease.instanceId} heartbeatAge=${ageMs}ms`,
+      fix: {
+        description: "Run /scheduler-governance status and keep policy=observe/review unless takeover is explicitly approved.",
+        auto: false,
+      },
+    };
+  }
+
+  return {
+    name: "Scheduler governance",
+    status: "ok",
+    message: `policy=${policy} · lease owner pid=${lease.pid} heartbeatAge=${ageMs}ms${fresh ? "" : " (stale)"}`,
+  };
+}
+
 async function runAllChecks(
   pi: ExtensionAPI,
-  options: { includeAuthChecks?: boolean } = {}
+  options: { includeAuthChecks?: boolean; cwd?: string } = {}
 ): Promise<{
   tools: CheckResult[];
   terminal: CheckResult | null;
   shell: CheckResult;
+  scheduler: CheckResult;
   terminalId: TerminalId;
   shellId: ShellId;
 }> {
   const includeAuthChecks = options.includeAuthChecks ?? true;
+  const cwd = options.cwd ?? process.cwd();
 
   const [tools, terminalId, shellId] = await Promise.all([
     Promise.all([
@@ -402,6 +490,7 @@ async function runAllChecks(
     tools,
     terminal: checkTerminal(terminalId),
     shell: checkShell(),
+    scheduler: checkSchedulerGovernance(cwd),
     terminalId,
     shellId,
   };
@@ -436,12 +525,16 @@ export default function (pi: ExtensionAPI) {
     // Nao bloqueia inicializacao: roda em background com checks mais leves.
     void (async () => {
       try {
-        const { tools, terminal, shell } = await runAllChecks(pi, { includeAuthChecks: false });
+        const { tools, terminal, shell, scheduler } = await runAllChecks(pi, {
+          includeAuthChecks: false,
+          cwd: ctx.cwd,
+        });
 
         const allResults = [
           ...tools,
           ...(terminal ? [terminal] : []),
           shell,
+          scheduler,
         ];
         const issues = allResults.filter((r) => r.status !== "ok");
 
@@ -460,7 +553,10 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("doctor", {
     description: "Diagnostico completo do ambiente -- ferramentas, auth, terminal, shell",
     handler: async (_args, ctx) => {
-      const { tools, terminal, shell, terminalId, shellId } = await runAllChecks(pi, { includeAuthChecks: true });
+      const { tools, terminal, shell, scheduler, terminalId, shellId } = await runAllChecks(pi, {
+        includeAuthChecks: true,
+        cwd: ctx.cwd,
+      });
 
       // Build full report
       const report: string[] = [];
@@ -484,8 +580,11 @@ export default function (pi: ExtensionAPI) {
       // Shell section
       report.push(formatSection("Shell", [shell]));
 
+      // Scheduler governance section
+      report.push(formatSection("Scheduler", [scheduler]));
+
       // Summary
-      const allResults = [...tools, ...(terminal ? [terminal] : []), shell];
+      const allResults = [...tools, ...(terminal ? [terminal] : []), shell, scheduler];
       const issues = allResults.filter((r) => r.status !== "ok");
       const okCount = allResults.filter((r) => r.status === "ok").length;
 

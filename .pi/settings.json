@@ -14,6 +14,43 @@
         "openai-codex": "openai-codex/gpt-5.4-mini"
       },
       "hedgeConversationHistory": false
+    },
+    "colonyPilot": {
+      "preflight": {
+        "enabled": true,
+        "enforceOnAntColonyTool": true,
+        "requiredExecutables": [
+          "node",
+          "git"
+        ]
+      },
+      "budgetPolicy": {
+        "enabled": true,
+        "enforceOnAntColonyTool": true,
+        "requireMaxCost": true,
+        "autoInjectMaxCost": true,
+        "defaultMaxCostUsd": 2,
+        "hardCapUsd": 20,
+        "minMaxCostUsd": 0.05
+      },
+      "projectTaskSync": {
+        "enabled": true,
+        "createOnLaunch": true,
+        "trackProgress": true,
+        "markTerminalState": true,
+        "taskIdPrefix": "colony",
+        "requireHumanClose": true,
+        "maxNoteLines": 20
+      },
+      "deliveryPolicy": {
+        "enabled": true,
+        "mode": "patch-artifact",
+        "requireWorkspaceReport": true,
+        "requireTaskSummary": true,
+        "requireFileInventory": true,
+        "requireValidationCommandLog": true,
+        "blockOnMissingEvidence": true
+      }
     }
   }
 }

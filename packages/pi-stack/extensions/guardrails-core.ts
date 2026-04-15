@@ -1,5 +1,7 @@
 /**
  * guardrails-core — Unified first-party guard extension.
+ * @capability-id runtime-guardrails
+ * @capability-criticality high
  *
  * Consolidates:
  * - read path protection (former read-guard)

@@ -27,6 +27,8 @@
       "./extensions/monitor-provider-patch.ts",
       "./extensions/environment-doctor.ts",
       "./extensions/guardrails-core.ts",
+      "./extensions/scheduler-governance.ts",
+      "./extensions/stack-sovereignty.ts",
       "./extensions/colony-pilot.ts",
       "./extensions/web-session-gateway.ts",
       "./extensions/quota-visibility.ts"

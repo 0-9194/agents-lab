@@ -1,5 +1,7 @@
 /**
  * colony-pilot — Session visibility + colony runtime orchestration primitive.
+ * @capability-id colony-runtime-governance
+ * @capability-criticality medium
  *
  * Goals:
  * - Give one first-party command surface to orchestrate colony pilot runs
@@ -257,6 +259,8 @@ const ROLE_ORDER: Array<Exclude<ColonyAgentRole, "queen">> = [
   "review",
 ];
 
+const CORE_ROLE_ORDER: Array<Exclude<ColonyAgentRole, "queen">> = ["scout", "worker", "soldier"];
+
 const ROLE_TO_INPUT_KEY: Record<Exclude<ColonyAgentRole, "queen">, keyof AntColonyToolInput> = {
   scout: "scoutModel",
   worker: "workerModel",
@@ -269,6 +273,7 @@ const ROLE_TO_INPUT_KEY: Record<Exclude<ColonyAgentRole, "queen">, keyof AntColo
 
 const DEFAULT_MODEL_POLICY: ColonyPilotModelPolicyConfig = {
   enabled: true,
+  specializedRolesEnabled: false,
   autoInjectRoleModels: true,
   requireHealthyCurrentModel: true,
   requireExplicitRoleModels: false,
@@ -276,6 +281,7 @@ const DEFAULT_MODEL_POLICY: ColonyPilotModelPolicyConfig = {
   enforceFullModelRef: true,
   allowMixedProviders: true,
   allowedProviders: [],
+  allowedProvidersByRole: {},
   roleModels: {},
 };
 
@@ -344,16 +350,34 @@ function normalizeRoleModels(value: unknown): ColonyRoleModelMap {
   return out;
 }
 
+function normalizeAllowedProvidersByRole(value: unknown): Partial<Record<ColonyAgentRole, string[]>> {
+  const input = isPlainObject(value) ? (value as Record<string, unknown>) : {};
+  const out: Partial<Record<ColonyAgentRole, string[]>> = {};
+  for (const role of ["queen", ...ROLE_ORDER] as ColonyAgentRole[]) {
+    const providers = normalizeStringList(input[role]);
+    if (providers.length > 0) out[role] = providers;
+  }
+  return out;
+}
+
 export function resolveColonyPilotModelPolicy(raw?: Partial<ColonyPilotModelPolicyConfig>): ColonyPilotModelPolicyConfig {
+  const specializedRolesEnabled = raw?.specializedRolesEnabled === true;
+  const requestedRequiredRoles = normalizeRoleList(raw?.requiredRoles);
+  const requiredRoles = specializedRolesEnabled
+    ? requestedRequiredRoles
+    : requestedRequiredRoles.filter((role) => role === "queen" || CORE_ROLE_ORDER.includes(role as Exclude<ColonyAgentRole, "queen">));
+
   return {
     enabled: raw?.enabled !== false,
+    specializedRolesEnabled,
     autoInjectRoleModels: raw?.autoInjectRoleModels !== false,
     requireHealthyCurrentModel: raw?.requireHealthyCurrentModel !== false,
     requireExplicitRoleModels: raw?.requireExplicitRoleModels === true,
-    requiredRoles: normalizeRoleList(raw?.requiredRoles),
+    requiredRoles,
     enforceFullModelRef: raw?.enforceFullModelRef !== false,
     allowMixedProviders: raw?.allowMixedProviders !== false,
     allowedProviders: normalizeStringList(raw?.allowedProviders),
+    allowedProvidersByRole: normalizeAllowedProvidersByRole(raw?.allowedProvidersByRole),
     roleModels: normalizeRoleModels(raw?.roleModels),
   };
 }
@@ -564,6 +588,8 @@ export function evaluateAntColonyModelPolicy(
     review: undefined,
   };
 
+  const activeRoles = policy.specializedRolesEnabled ? ROLE_ORDER : CORE_ROLE_ORDER;
+
   if (policy.requireHealthyCurrentModel) {
     const status = resolveModelAuthStatus(modelRegistry, currentModelRef);
     if (status !== "ok" && status !== "unavailable") {
@@ -571,17 +597,29 @@ export function evaluateAntColonyModelPolicy(
     }
   }
 
+  const queenProvider = providerOf(currentModelRef);
+  const queenAllowed = policy.allowedProvidersByRole.queen ?? [];
+  if (queenProvider && queenAllowed.length > 0 && !queenAllowed.includes(queenProvider)) {
+    issues.push(`queen provider '${queenProvider}' is not in allowedProvidersByRole.queen`);
+  }
+
   for (const role of ROLE_ORDER) {
     const key = ROLE_TO_INPUT_KEY[role];
     const explicit = typeof input[key] === "string" ? input[key]?.trim() : undefined;
-    const configured = policy.roleModels[role];
+    const roleIsActive = activeRoles.includes(role);
+    const configured = roleIsActive ? policy.roleModels[role] : undefined;
 
-    if (!explicit && policy.autoInjectRoleModels && configured) {
+    if (!explicit && roleIsActive && policy.autoInjectRoleModels && configured) {
       input[key] = configured;
     }
 
     const effective = (typeof input[key] === "string" && input[key]?.trim().length ? input[key]?.trim() : undefined) ?? currentModelRef;
     effectiveModels[role] = effective;
+
+    // In generic-first mode, specialist roles are advisory only unless explicitly overridden.
+    if (!roleIsActive && !explicit) {
+      continue;
+    }
 
     if (policy.requireExplicitRoleModels && policy.requiredRoles.includes(role) && !input[key]) {
       issues.push(`missing explicit model for role '${role}' (${String(key)})`);
@@ -607,11 +645,16 @@ export function evaluateAntColonyModelPolicy(
     if (provider && policy.allowedProviders.length > 0 && !policy.allowedProviders.includes(provider)) {
       issues.push(`role '${role}' provider '${provider}' is not in allowedProviders`);
     }
+
+    const roleAllowed = policy.allowedProvidersByRole[role] ?? [];
+    if (provider && roleAllowed.length > 0 && !roleAllowed.includes(provider)) {
+      issues.push(`role '${role}' provider '${provider}' is not in allowedProvidersByRole.${role}`);
+    }
   }
 
   if (!policy.allowMixedProviders) {
     const providers = new Set<string>();
-    for (const role of ["queen", ...ROLE_ORDER] as ColonyAgentRole[]) {
+    for (const role of ["queen", ...activeRoles] as ColonyAgentRole[]) {
       const p = providerOf(effectiveModels[role]);
       if (p) providers.add(p);
     }
@@ -628,15 +671,29 @@ export function evaluateAntColonyModelPolicy(
 }
 
 function formatPolicyEvaluation(policy: ColonyPilotModelPolicyConfig, evalResult: ColonyModelPolicyEvaluation): string[] {
+  const roleAllowRows = (["queen", ...ROLE_ORDER] as ColonyAgentRole[])
+    .map((role) => {
+      const providers = policy.allowedProvidersByRole[role] ?? [];
+      if (providers.length === 0) return undefined;
+      return `    ${role}: ${providers.join(", ")}`;
+    })
+    .filter((row): row is string => Boolean(row));
+
+  const activeRoles = policy.specializedRolesEnabled ? ROLE_ORDER : CORE_ROLE_ORDER;
+
   return [
     "model-policy:",
     `  enabled: ${policy.enabled ? "yes" : "no"}`,
+    `  specializedRolesEnabled: ${policy.specializedRolesEnabled ? "yes" : "no"}`,
+    `  activeRoles: ${activeRoles.join(", ")}`,
     `  autoInjectRoleModels: ${policy.autoInjectRoleModels ? "yes" : "no"}`,
     `  requireHealthyCurrentModel: ${policy.requireHealthyCurrentModel ? "yes" : "no"}`,
     `  requireExplicitRoleModels: ${policy.requireExplicitRoleModels ? "yes" : "no"}`,
     `  requiredRoles: ${policy.requiredRoles.join(", ") || "(none)"}`,
     `  allowMixedProviders: ${policy.allowMixedProviders ? "yes" : "no"}`,
     `  allowedProviders: ${policy.allowedProviders.join(", ") || "(any)"}`,
+    `  allowedProvidersByRole: ${roleAllowRows.length > 0 ? "(configured)" : "(none)"}`,
+    ...(roleAllowRows.length > 0 ? roleAllowRows : []),
     "  effectiveModels:",
     `    queen: ${evalResult.effectiveModels.queen ?? "(none)"}`,
     ...ROLE_ORDER.map((role) => `    ${role}: ${evalResult.effectiveModels[role] ?? "(none)"}`),
@@ -805,6 +862,7 @@ export interface ColonyRoleModelMap {
 
 export interface ColonyPilotModelPolicyConfig {
   enabled: boolean;
+  specializedRolesEnabled: boolean;
   autoInjectRoleModels: boolean;
   requireHealthyCurrentModel: boolean;
   requireExplicitRoleModels: boolean;
@@ -812,6 +870,7 @@ export interface ColonyPilotModelPolicyConfig {
   enforceFullModelRef: boolean;
   allowMixedProviders: boolean;
   allowedProviders: string[];
+  allowedProvidersByRole: Partial<Record<ColonyAgentRole, string[]>>;
   roleModels: ColonyRoleModelMap;
 }
 
@@ -971,19 +1030,62 @@ function formatPreflightResult(result: ColonyPilotPreflightResult): string {
 }
 
 export type BaselineProfile = "default" | "phase2";
-export type ModelPolicyProfile = "copilot" | "codex" | "hybrid" | "factory-strict";
+export type ModelPolicyProfile =
+  | "copilot"
+  | "codex"
+  | "hybrid"
+  | "factory-strict"
+  | "factory-strict-copilot"
+  | "factory-strict-hybrid";
 
 export function resolveBaselineProfile(input?: string): BaselineProfile {
   return input === "phase2" ? "phase2" : "default";
 }
 
 export function resolveModelPolicyProfile(input?: string): ModelPolicyProfile {
-  return input === "copilot" || input === "hybrid" || input === "factory-strict" ? input : "codex";
+  return input === "copilot" ||
+      input === "hybrid" ||
+      input === "factory-strict" ||
+      input === "factory-strict-copilot" ||
+      input === "factory-strict-hybrid"
+    ? input
+    : "codex";
 }
 
 export function buildModelPolicyProfile(profile: ModelPolicyProfile): ColonyPilotModelPolicyConfig {
   if (profile === "copilot") {
     return resolveColonyPilotModelPolicy({
+      specializedRolesEnabled: false,
+      allowMixedProviders: false,
+      allowedProviders: ["github-copilot"],
+      roleModels: {
+        scout: "github-copilot/claude-haiku-4.5",
+        worker: "github-copilot/claude-sonnet-4.6",
+        soldier: "github-copilot/claude-sonnet-4.6",
+      },
+    });
+  }
+
+  if (profile === "hybrid") {
+    return resolveColonyPilotModelPolicy({
+      specializedRolesEnabled: false,
+      allowMixedProviders: true,
+      allowedProviders: ["github-copilot", "openai-codex"],
+      roleModels: {
+        scout: "openai-codex/gpt-5.4-mini",
+        worker: "github-copilot/claude-sonnet-4.6",
+        soldier: "openai-codex/gpt-5.2-codex",
+      },
+    });
+  }
+
+  if (profile === "factory-strict-copilot") {
+    return resolveColonyPilotModelPolicy({
+      specializedRolesEnabled: true,
+      autoInjectRoleModels: true,
+      requireExplicitRoleModels: true,
+      requiredRoles: ["scout", "worker", "soldier", "design", "multimodal", "backend", "review"],
+      enforceFullModelRef: true,
       allowMixedProviders: false,
       allowedProviders: ["github-copilot"],
       roleModels: {
@@ -998,10 +1100,25 @@ export function buildModelPolicyProfile(profile: ModelPolicyProfile): ColonyPilo
     });
   }
 
-  if (profile === "hybrid") {
+  if (profile === "factory-strict-hybrid") {
     return resolveColonyPilotModelPolicy({
+      specializedRolesEnabled: true,
+      autoInjectRoleModels: true,
+      requireExplicitRoleModels: true,
+      requiredRoles: ["scout", "worker", "soldier", "design", "multimodal", "backend", "review"],
+      enforceFullModelRef: true,
       allowMixedProviders: true,
       allowedProviders: ["github-copilot", "openai-codex"],
+      allowedProvidersByRole: {
+        queen: ["openai-codex", "github-copilot"],
+        scout: ["openai-codex"],
+        worker: ["github-copilot"],
+        soldier: ["openai-codex"],
+        design: ["github-copilot"],
+        multimodal: ["openai-codex"],
+        backend: ["openai-codex"],
+        review: ["github-copilot"],
+      },
       roleModels: {
         scout: "openai-codex/gpt-5.4-mini",
         worker: "github-copilot/claude-sonnet-4.6",
@@ -1016,6 +1133,7 @@ export function buildModelPolicyProfile(profile: ModelPolicyProfile): ColonyPilo
 
   if (profile === "factory-strict") {
     return resolveColonyPilotModelPolicy({
+      specializedRolesEnabled: true,
       autoInjectRoleModels: true,
       requireExplicitRoleModels: true,
       requiredRoles: ["scout", "worker", "soldier", "design", "multimodal", "backend", "review"],
@@ -1035,16 +1153,13 @@ export function buildModelPolicyProfile(profile: ModelPolicyProfile): ColonyPilo
   }
 
   return resolveColonyPilotModelPolicy({
+    specializedRolesEnabled: false,
     allowMixedProviders: false,
     allowedProviders: ["openai-codex"],
     roleModels: {
       scout: "openai-codex/gpt-5.4-mini",
       worker: "openai-codex/gpt-5.3-codex",
       soldier: "openai-codex/gpt-5.2-codex",
-      design: "openai-codex/gpt-5.3-codex",
-      multimodal: "openai-codex/gpt-5.4-mini",
-      backend: "openai-codex/gpt-5.3-codex",
-      review: "openai-codex/gpt-5.2-codex",
     },
   });
 }
@@ -1061,6 +1176,7 @@ export function buildProjectBaselineSettings(profile: BaselineProfile = "default
         },
         modelPolicy: {
           enabled: true,
+          specializedRolesEnabled: false,
           autoInjectRoleModels: true,
           requireHealthyCurrentModel: true,
           requireExplicitRoleModels: false,
@@ -1068,6 +1184,7 @@ export function buildProjectBaselineSettings(profile: BaselineProfile = "default
           enforceFullModelRef: true,
           allowMixedProviders: true,
           allowedProviders: [],
+          allowedProvidersByRole: {},
           roleModels: {},
         },
         budgetPolicy: {
@@ -1101,6 +1218,13 @@ export function buildProjectBaselineSettings(profile: BaselineProfile = "default
       webSessionGateway: {
         mode: "local",
         port: 3100,
+      },
+      schedulerGovernance: {
+        enabled: true,
+        policy: "observe",
+        requireTextConfirmation: true,
+        allowEnvOverride: true,
+        staleAfterMs: 10000,
       },
       guardrailsCore: {
         portConflict: {
@@ -1828,7 +1952,7 @@ export default function (pi: ExtensionAPI) {
             "  tui                           Mostra como entrar/retomar sessão no TUI",
             "  status                        Snapshot consolidado",
             "  check                         Diagnóstico de capacidades + readiness de provider/model/budget para ant_colony",
-            "  models <status|template|apply> [copilot|codex|hybrid|factory-strict]  Política granular de modelos por classe",
+            "  models <status|template|apply> [copilot|codex|hybrid|factory-strict|factory-strict-copilot|factory-strict-hybrid]  Política granular de modelos por classe",
             "  preflight                     Executa gates duros (capabilities + executáveis) antes da colony",
             "  baseline [show|apply] [default|phase2]  Baseline de .pi/settings.json (phase2 = mais estrito)",
             "  artifacts                     Mostra onde colony guarda states/worktrees para recovery",
@@ -2037,7 +2161,7 @@ export default function (pi: ExtensionAPI) {
           return;
         }
 
-        ctx.ui.notify("Usage: /colony-pilot models <status|template|apply> [copilot|codex|hybrid|factory-strict]", "warning");
+        ctx.ui.notify("Usage: /colony-pilot models <status|template|apply> [copilot|codex|hybrid|factory-strict|factory-strict-copilot|factory-strict-hybrid]", "warning");
         return;
       }
 

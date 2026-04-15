@@ -1890,6 +1890,92 @@ export function parseCommandInput(input: string): { cmd: string; body: string } 
   };
 }
 
+export type HatchCheckStatus = "pass" | "fail" | "warn";
+
+export interface HatchCheckItem {
+  id: string;
+  label: string;
+  status: HatchCheckStatus;
+  detail: string;
+}
+
+export interface HatchReadiness {
+  ready: boolean;
+  items: HatchCheckItem[];
+}
+
+export function evaluateHatchReadiness(input: {
+  capabilitiesMissing: Array<keyof PilotCapabilities>;
+  preflightOk: boolean;
+  modelPolicyOk: boolean;
+  budgetPolicyOk: boolean;
+  budgetPolicy: ColonyPilotBudgetPolicyConfig;
+  providerBudgetsConfigured: number;
+}): HatchReadiness {
+  const items: HatchCheckItem[] = [];
+
+  items.push({
+    id: "caps",
+    label: "runtime capabilities",
+    status: input.capabilitiesMissing.length === 0 ? "pass" : "fail",
+    detail: input.capabilitiesMissing.length === 0
+      ? "monitors/colony/colony-stop disponíveis"
+      : `faltando: ${input.capabilitiesMissing.join(", ")}`,
+  });
+
+  items.push({
+    id: "preflight",
+    label: "preflight executáveis",
+    status: input.preflightOk ? "pass" : "fail",
+    detail: input.preflightOk ? "ok" : "falhou (rode /colony-pilot preflight)",
+  });
+
+  items.push({
+    id: "models",
+    label: "model policy",
+    status: input.modelPolicyOk ? "pass" : "fail",
+    detail: input.modelPolicyOk ? "ok" : "inconsistência em provider/model",
+  });
+
+  items.push({
+    id: "budget-core",
+    label: "budget policy (maxCost)",
+    status: input.budgetPolicyOk ? "pass" : "fail",
+    detail: input.budgetPolicyOk ? "ok" : "maxCost/hardcap inválido",
+  });
+
+  if (input.budgetPolicy.enforceProviderBudgetBlock) {
+    const configured = input.providerBudgetsConfigured > 0;
+    items.push({
+      id: "budget-provider",
+      label: "provider budgets",
+      status: configured ? "pass" : "fail",
+      detail: configured
+        ? `${input.providerBudgetsConfigured} provider(s) configurado(s)`
+        : "gate ativo sem providerBudgets (configure em piStack.quotaVisibility)",
+    });
+  } else {
+    items.push({
+      id: "budget-provider",
+      label: "provider budgets",
+      status: "warn",
+      detail: "gate provider-budget desativado (enforceProviderBudgetBlock=false)",
+    });
+  }
+
+  const ready = items.every((i) => i.status !== "fail");
+  return { ready, items };
+}
+
+export function formatHatchReadiness(readiness: HatchReadiness): string[] {
+  const icon = (s: HatchCheckStatus) => (s === "pass" ? "PASS" : s === "warn" ? "WARN" : "FAIL");
+  return [
+    "hatch readiness:",
+    ...readiness.items.map((i) => `  - [${icon(i.status)}] ${i.label}: ${i.detail}`),
+    `ready: ${readiness.ready ? "yes" : "no"}`,
+  ];
+}
+
 export function normalizeQuotedText(text: string): string {
   const trimmed = text.trim();
   if (!trimmed) return "";
@@ -2447,6 +2533,7 @@ export default function (pi: ExtensionAPI) {
             "  tui                           Mostra como entrar/retomar sessão no TUI",
             "  status                        Snapshot consolidado",
             "  check                         Diagnóstico de capacidades + readiness de provider/model/budget para ant_colony",
+            "  hatch [check|apply] [default|phase2]  Onboarding guiado para deixar runtime pronto para swarm",
             "  models <status|template|apply> [copilot|codex|hybrid|factory-strict|factory-strict-copilot|factory-strict-hybrid]  Política granular de modelos por classe",
             "  preflight                     Executa gates duros (capabilities + executáveis) antes da colony",
             "  baseline [show|apply] [default|phase2]  Baseline de .pi/settings.json (phase2 = mais estrito)",
@@ -2546,6 +2633,85 @@ export default function (pi: ExtensionAPI) {
 
         const warn = missing.length > 0 || modelIssues.length > 0;
         ctx.ui.notify(lines.join("\n"), warn ? "warning" : "info");
+        return;
+      }
+
+      if (cmd === "hatch") {
+        const tokens = body.split(/\s+/).map((t) => t.trim()).filter(Boolean);
+        const action = (tokens[0] ?? "check").toLowerCase();
+        const profile = resolveBaselineProfile(tokens[1] ?? "default");
+
+        if (action === "apply") {
+          const existing = readProjectSettings(ctx.cwd);
+          const merged = applyProjectBaselineSettings(existing, profile);
+          writeProjectSettings(ctx.cwd, merged as Record<string, unknown>);
+
+          const settings = parseColonyPilotSettings(ctx.cwd);
+          preflightConfig = resolveColonyPilotPreflightConfig(settings.preflight);
+          modelPolicyConfig = resolveColonyPilotModelPolicy(settings.modelPolicy);
+          budgetPolicyConfig = resolveColonyPilotBudgetPolicy(settings.budgetPolicy);
+          projectTaskSyncConfig = resolveColonyPilotProjectTaskSync(settings.projectTaskSync);
+          deliveryPolicyConfig = resolveColonyPilotDeliveryPolicy(settings.deliveryPolicy);
+          preflightCache = undefined;
+          providerBudgetGateCache = undefined;
+
+          ctx.ui.notify(
+            [
+              `hatch apply: baseline '${profile}' aplicado em .pi/settings.json`,
+              "",
+              "Próximos passos (ordem recomendada):",
+              "  1) /reload 3",
+              "  2) /monitor-provider apply",
+              "  3) /colony-pilot hatch check",
+              "  4) /quota-visibility budget 30",
+              "  5) /colony-pilot run \"<goal>\"",
+            ].join("\n"),
+            "info"
+          );
+          ctx.ui.setEditorText?.("/reload 3");
+          return;
+        }
+
+        if (action !== "check") {
+          ctx.ui.notify("Usage: /colony-pilot hatch [check|apply] [default|phase2]", "warning");
+          return;
+        }
+
+        const missing = missingCapabilities(caps, ["monitors", "colony", "colonyStop"]);
+        const preflight = await runColonyPilotPreflight(pi, caps, preflightConfig);
+        preflightCache = { at: Date.now(), result: preflight };
+
+        const currentModelRef = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
+        const modelEval = evaluateAntColonyModelPolicy({ goal: "hatch-check" }, currentModelRef, ctx.modelRegistry, modelPolicyConfig);
+        const budgetEval = evaluateAntColonyBudgetPolicy({ goal: "hatch-check" }, budgetPolicyConfig);
+        const quotaCfg = parseQuotaVisibilityBudgetSettings(ctx.cwd);
+
+        const readiness = evaluateHatchReadiness({
+          capabilitiesMissing: missing,
+          preflightOk: preflight.ok,
+          modelPolicyOk: modelEval.ok,
+          budgetPolicyOk: budgetEval.ok,
+          budgetPolicy: budgetPolicyConfig,
+          providerBudgetsConfigured: Object.keys(quotaCfg.providerBudgets).length,
+        });
+
+        const lines = [
+          "colony-pilot hatch",
+          ...formatHatchReadiness(readiness),
+          "",
+          "rotina mínima de uso:",
+          "  - /monitors off",
+          "  - /colony <goal>  (ou ant_colony com maxCost)",
+          "  - /colony-pilot status",
+          "  - /quota-visibility budget 30",
+          "  - /colony-pilot stop --restore-monitors",
+        ];
+
+        if (!readiness.ready) {
+          lines.push("", "ação sugerida: /colony-pilot hatch apply default");
+        }
+
+        ctx.ui.notify(lines.join("\n"), readiness.ready ? "info" : "warning");
         return;
       }
 

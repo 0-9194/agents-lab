@@ -112,7 +112,7 @@ Ativar: `/settings` → selecionar `agents-lab`
 | Comando | O que faz |
 |---|---|
 | `/doctor` | Diagnóstico do ambiente — verifica git, gh, glab, node, npm e autenticações |
-| `/colony-pilot` | Guia pilot (`check/models/preflight/baseline/run/status/stop/web/monitors/tui/artifacts`) com execução manual assistida, diagnóstico de capacidades + readiness de provider/model/budget, policy granular por classe e hard-gates para `ant_colony` |
+| `/colony-pilot` | Guia pilot (`hatch/check/models/preflight/baseline/run/status/stop/web/monitors/tui/artifacts`) com execução manual assistida, diagnóstico de capacidades + readiness de provider/model/budget, onboarding guiado e hard-gates para `ant_colony` |
 | `/session-web` | Controla gateway web first-party (`start/status/open/stop`) para inspeção local da sessão sem UI hospedada externa |
 | `/monitor-provider` | Diagnostica e sincroniza modelos dos classifiers dos monitors por provider (`status/apply/template`) |
 | `/quota-visibility` | Mostra consumo estimado da janela, projeção semanal, visão de janelas/peak hours por provider e exporta relatório em `.pi/reports` |
@@ -159,7 +159,11 @@ Baseline aplicada (default):
         "autoInjectMaxCost": true,
         "defaultMaxCostUsd": 2,
         "hardCapUsd": 20,
-        "minMaxCostUsd": 0.05
+        "minMaxCostUsd": 0.05,
+        "enforceProviderBudgetBlock": false,
+        "providerBudgetLookbackDays": 30,
+        "allowProviderBudgetOverride": true,
+        "providerBudgetOverrideToken": "budget-override:"
       }
     },
     "webSessionGateway": {

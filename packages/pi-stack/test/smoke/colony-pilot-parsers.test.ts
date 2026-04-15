@@ -38,6 +38,8 @@ import {
   colonyPhaseToProjectTaskStatus,
   buildModelPolicyProfile,
   resolveModelPolicyProfile,
+  evaluateHatchReadiness,
+  formatHatchReadiness,
 } from "../../extensions/colony-pilot";
 
 describe("colony-pilot parsers", () => {
@@ -501,6 +503,38 @@ describe("colony-pilot parsers", () => {
 
     expect(evalResult.ok).toBe(true);
     expect(evalResult.overrideReason).toBe("plantao critico");
+  });
+
+  it("evaluateHatchReadiness marca fail quando gate de provider está ativo sem budgets", () => {
+    const readiness = evaluateHatchReadiness({
+      capabilitiesMissing: [],
+      preflightOk: true,
+      modelPolicyOk: true,
+      budgetPolicyOk: true,
+      budgetPolicy: resolveColonyPilotBudgetPolicy({ enabled: true, enforceProviderBudgetBlock: true }),
+      providerBudgetsConfigured: 0,
+    });
+
+    expect(readiness.ready).toBe(false);
+    const providerItem = readiness.items.find((i) => i.id === "budget-provider");
+    expect(providerItem?.status).toBe("fail");
+  });
+
+  it("formatHatchReadiness gera linhas determinísticas", () => {
+    const lines = formatHatchReadiness({
+      ready: true,
+      items: [
+        { id: "caps", label: "runtime capabilities", status: "pass", detail: "ok" },
+        { id: "budget-provider", label: "provider budgets", status: "warn", detail: "desativado" },
+      ],
+    });
+
+    expect(lines).toEqual([
+      "hatch readiness:",
+      "  - [PASS] runtime capabilities: ok",
+      "  - [WARN] provider budgets: desativado",
+      "ready: yes",
+    ]);
   });
 
   it("project task sync resolver aplica defaults e clamp", () => {

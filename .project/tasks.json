@@ -616,6 +616,31 @@
         "Docs explicam como operar quando identidade de conta não é emitida pela origem."
       ],
       "notes": "Direcionado ao cenário real de contas emprestadas e múltiplas contas no mesmo provider."
+    },
+    {
+      "id": "TASK-BUD-029",
+      "description": "[P0] Fechar release candidate de governança multi-provider (hatch + budget global + copilot requests) com gates determinísticos de qualidade e operação em ambiente com plugins extras.",
+      "status": "in-progress",
+      "depends_on": [
+        "TASK-BUD-026",
+        "TASK-BUD-027"
+      ],
+      "files": [
+        "packages/pi-stack/extensions/colony-pilot.ts",
+        "packages/pi-stack/extensions/guardrails-core.ts",
+        "packages/pi-stack/extensions/quota-visibility.ts",
+        "packages/pi-stack/README.md",
+        "docs/guides/budget-governance.md",
+        "docs/guides/quota-visibility.md",
+        ".changeset/*"
+      ],
+      "acceptance_criteria": [
+        "/colony-pilot hatch check retorna ready=yes em setup alvo.",
+        "Governança global bloqueia provider em BLOCK e mantém comandos de recovery permitidos.",
+        "Smoke + node tests + verify passam sem regressão.",
+        "Changeset preparado e release notes resumem riscos/limites conhecidos."
+      ],
+      "notes": "Task de stop condition para decidir momento exato de cortar versão e publicar."
     }
   ]
 }

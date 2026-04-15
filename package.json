@@ -10,6 +10,8 @@
     "test": "node --test packages/*/test/*.test.mjs",
     "test:smoke": "npx vitest run",
     "verify": "node scripts/verify-pi-stack.mjs",
+    "audit:sovereignty": "node scripts/stack-sovereignty-audit.mjs --strict",
+    "audit:sovereignty:diff": "node scripts/sovereignty-diff-gate.mjs --strict",
     "release": "changeset version",
     "publish:all": "npm run build --workspaces --if-present && changeset publish",
     "pi:local": "node scripts/pi-source-switch.mjs local",

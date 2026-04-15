@@ -12,6 +12,7 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { Type } from "@sinclair/typebox";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, parse, resolve } from "node:path";
@@ -260,14 +261,15 @@ export function checkTerminal(terminal: TerminalId): CheckResult | null {
 
 // --- Shell Check ---
 
-export type ShellId = "git-bash" | "wsl" | "native-bash" | "unknown";
+export type ShellId = "git-bash" | "wsl" | "native-bash" | "powershell" | "cmd" | "unknown";
 
 export function detectShell(): ShellId {
   const platform = process.platform;
   if (platform !== "win32") return "native-bash";
 
-  // WSL_DISTRO_NAME and WSL_INTEROP are set by WSL itself.
-  // WSLENV is set by Windows Terminal even in Git Bash sessions -- not a reliable indicator.
+  const shellPath = (process.env.SHELL ?? process.env.ComSpec ?? "").toLowerCase();
+  const psModule = (process.env.PSModulePath ?? "").toLowerCase();
+
   const isWSL =
     (process.env.WSL_DISTRO_NAME !== undefined && process.env.WSL_DISTRO_NAME !== "") ||
     process.env.WSL_INTEROP !== undefined ||
@@ -275,6 +277,8 @@ export function detectShell(): ShellId {
 
   if (isWSL) return "wsl";
   if (process.env.MSYSTEM || process.env.MINGW_PREFIX) return "git-bash";
+  if (shellPath.includes("powershell") || psModule.includes("powershell")) return "powershell";
+  if (shellPath.includes("cmd.exe") || shellPath.endsWith("\\cmd")) return "cmd";
 
   return "unknown";
 }
@@ -304,7 +308,23 @@ export function checkShell(): CheckResult {
     return { name: "Shell", status: "ok", message: "Git Bash (MINGW)" };
   }
 
-  return { name: "Shell", status: "ok", message: shell };
+  if (shell === "powershell") {
+    return { name: "Shell", status: "ok", message: "PowerShell" };
+  }
+
+  if (shell === "cmd") {
+    return {
+      name: "Shell",
+      status: "warn",
+      message: "cmd.exe detectado (funciona, mas Git Bash tende a ser mais estável para dev flows)",
+      fix: {
+        description: 'Se quiser padronizar, configure shellPath para Git Bash em ~/.pi/agent/settings.json:\n  "shellPath": "C:\\\\Program Files\\\\Git\\\\bin\\\\bash.exe"',
+        auto: false,
+      },
+    };
+  }
+
+  return { name: "Shell", status: "warn", message: "unknown (não foi possível identificar shell com precisão)" };
 }
 
 // --- Tool Checks ---
@@ -548,6 +568,42 @@ export default function (pi: ExtensionAPI) {
         clearTimeout(loadingTimer);
       }
     })();
+  });
+
+  pi.registerTool({
+    name: "environment_doctor_status",
+    label: "Environment Doctor Status",
+    description: "Run environment-doctor checks and return structured diagnostics.",
+    parameters: Type.Object({
+      includeAuthChecks: Type.Optional(Type.Boolean()),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const p = (params ?? {}) as { includeAuthChecks?: boolean };
+      const includeAuthChecks = p.includeAuthChecks !== false;
+      const { tools, terminal, shell, scheduler, terminalId, shellId } = await runAllChecks(pi, {
+        includeAuthChecks,
+        cwd: ctx.cwd,
+      });
+
+      const allResults = [...tools, ...(terminal ? [terminal] : []), shell, scheduler];
+      const payload = {
+        platform: process.platform,
+        terminalId,
+        shellId,
+        tools,
+        terminal,
+        shell,
+        scheduler,
+        okCount: allResults.filter((r) => r.status === "ok").length,
+        totalCount: allResults.length,
+        issues: allResults.filter((r) => r.status !== "ok"),
+      };
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+        details: payload,
+      };
+    },
   });
 
   pi.registerCommand("doctor", {

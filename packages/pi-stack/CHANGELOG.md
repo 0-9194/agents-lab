@@ -1,5 +1,13 @@
 # @aretw0/pi-stack
 
+## 0.4.1
+
+### Patch Changes
+
+- 200a74b: Fix cross-platform handling of Windows-style paths in colony runtime mirror detection.
+
+  This prevents smoke test failures on Linux CI when validating Windows path normalization.
+
 ## 0.4.0
 
 ### Minor Changes

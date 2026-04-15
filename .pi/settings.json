@@ -31,7 +31,11 @@
         "autoInjectMaxCost": true,
         "defaultMaxCostUsd": 2,
         "hardCapUsd": 20,
-        "minMaxCostUsd": 0.05
+        "minMaxCostUsd": 0.05,
+        "enforceProviderBudgetBlock": true,
+        "providerBudgetLookbackDays": 30,
+        "allowProviderBudgetOverride": true,
+        "providerBudgetOverrideToken": "budget-override:"
       },
       "projectTaskSync": {
         "enabled": true,
@@ -50,6 +54,36 @@
         "requireFileInventory": true,
         "requireValidationCommandLog": true,
         "blockOnMissingEvidence": true
+      }
+    },
+    "guardrailsCore": {
+      "providerBudgetGovernor": {
+        "enabled": true,
+        "lookbackDays": 30,
+        "allowOverride": true,
+        "overrideToken": "budget-override:",
+        "recoveryCommands": [
+          "doctor",
+          "quota-visibility",
+          "model",
+          "login"
+        ]
+      }
+    },
+    "quotaVisibility": {
+      "defaultDays": 30,
+      "monthlyQuotaRequests": 1000,
+      "providerBudgets": {
+        "github-copilot": {
+          "owner": "shared-github-account",
+          "period": "monthly",
+          "unit": "requests",
+          "requestSharePolicy": "remaining",
+          "shareMonthlyRequestsPct": 50,
+          "monthlyQuotaCostUsd": 40,
+          "warnPct": 80,
+          "hardPct": 100
+        }
       }
     }
   }

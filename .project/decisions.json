@@ -83,6 +83,13 @@
       "rationale": "Colaboração com colegas exige controle previsível de consumo por provider; sem cap por provider, acordos de cota ociosa ficam frágeis e geram risco operacional/relacional.",
       "status": "decided",
       "context": "Pedido explícito do usuário para travar uso por porcentagem acordada com terceiros."
+    },
+    {
+      "id": "DEC-BUD-013",
+      "decision": "Adotar governança de budget em duas camadas: (1) enforcement global no control-plane para bloquear uso quando provider/account entrar em BLOCK, e (2) policy de roteamento para delegar trabalho entre providers por custo/confiabilidade sem perder trilha auditável.",
+      "rationale": "Controle apenas por swarm é insuficiente para operação real com múltiplos providers e contas emprestadas. Separar enforcement de roteamento permite segurança forte agora e otimização contínua depois.",
+      "status": "decided",
+      "context": "Escalonamento do agents-lab para malabarismo de custo multi-provider e multi-conta."
     }
   ]
 }

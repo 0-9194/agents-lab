@@ -557,6 +557,65 @@
         "Mensagens de bloqueio orientam ação corretiva (renegociar cap, trocar provider, esperar janela)."
       ],
       "notes": "Endurecimento inicial de trava operacional; escopo começa em swarm/colônia antes de cobertura total de todas as chamadas de modelo."
+    },
+    {
+      "id": "TASK-BUD-026",
+      "description": "[P0] Operacionalizar budget global no workspace: ativar governor de provider em guardrails-core e gate de provider budget em colony-pilot com overrides auditáveis e allowlist de recovery.",
+      "status": "in-progress",
+      "depends_on": [
+        "TASK-BUD-025"
+      ],
+      "files": [
+        ".pi/settings.json",
+        "packages/pi-stack/extensions/guardrails-core.ts",
+        "packages/pi-stack/extensions/colony-pilot.ts",
+        "docs/guides/budget-governance.md"
+      ],
+      "acceptance_criteria": [
+        "Bloqueio global ocorre quando provider atual está em BLOCK.",
+        "/doctor, /quota-visibility, /model e /login continuam permitidos para recovery.",
+        "Override auditável registra evidência de exceção."
+      ],
+      "notes": "Task operacional imediata para transformar capability em política ativa no runtime atual."
+    },
+    {
+      "id": "TASK-BUD-027",
+      "description": "[P1] Implementar portfolio routing advisor: recomendação de provider/model por tipo de trabalho baseada em custo relativo, estado de budget (OK/WARN/BLOCK) e confiabilidade alvo.",
+      "status": "planned",
+      "depends_on": [
+        "TASK-BUD-026"
+      ],
+      "files": [
+        "packages/pi-stack/extensions/quota-visibility.ts",
+        "packages/pi-stack/extensions/colony-pilot.ts",
+        "docs/guides/quota-visibility.md"
+      ],
+      "acceptance_criteria": [
+        "Existe superfície de recomendação determinística (tool/command) para roteamento.",
+        "Sugestões evitam providers em BLOCK e degradam para alternativas mais baratas quando possível.",
+        "Saída inclui justificativa auditável (custo/risco/limites)."
+      ],
+      "notes": "Primeira etapa para malabarismo de custo multi-provider com decisões explícitas."
+    },
+    {
+      "id": "TASK-BUD-028",
+      "description": "[P1] Definir chave canônica account-aware (`provider/account`) e plano de ingestão para múltiplas contas do mesmo provider (incluindo Copilot), com fallback compatível provider-only.",
+      "status": "planned",
+      "depends_on": [
+        "TASK-BUD-023",
+        "TASK-BUD-026"
+      ],
+      "files": [
+        "docs/primitives/conversation-event-canonical-schema.md",
+        "packages/pi-stack/extensions/quota-visibility.ts",
+        "docs/guides/budget-governance.md"
+      ],
+      "acceptance_criteria": [
+        "Schema canônico suporta identidade de conta opcional sem quebrar eventos existentes.",
+        "Parser/evaluator aceitam budgets por provider/account quando identidade estiver disponível.",
+        "Docs explicam como operar quando identidade de conta não é emitida pela origem."
+      ],
+      "notes": "Direcionado ao cenário real de contas emprestadas e múltiplas contas no mesmo provider."
     }
   ]
 }

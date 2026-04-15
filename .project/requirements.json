@@ -150,6 +150,32 @@
         "Relatório de quota expõe estado por provider (OK/WARN/BLOCK) com projeção 7d.",
         "Evidência exportável inclui avaliação de budget por provider para auditoria."
       ]
+    },
+    {
+      "id": "REQ-BUD-013",
+      "description": "A governança de budget deve suportar unidade de consumo por provider (tokens/cost/requests), incluindo Copilot por premium requests mensais com política de share fixa ou share sobre saldo remanescente.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Configuração permite unidade `requests` com caps/shares semanais e mensais.",
+        "Cálculo expõe semântica `remaining` de forma auditável (ex.: 50% do saldo disponível no snapshot).",
+        "Estados WARN/BLOCK consideram projeção do período para requests, não apenas tokens/custo."
+      ]
+    },
+    {
+      "id": "REQ-BUD-014",
+      "description": "O sistema deve evoluir para segregação de budget por identidade de conta dentro do mesmo provider (ex.: múltiplas contas GitHub Copilot), com chave canônica account-aware para auditoria e enforcement.",
+      "type": "integration",
+      "status": "accepted",
+      "priority": "should",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe modelo canônico de identidade de conta (`provider/account`) para eventos de uso.",
+        "Orçamento e bloqueio podem ser aplicados por conta sem quebrar compatibilidade com provider-only.",
+        "Documentação explicita limitações e fallback quando a origem não fornece identidade de conta."
+      ]
     }
   ]
 }

@@ -787,18 +787,25 @@
     {
       "id": "TASK-BUD-037",
       "description": "[P0] Implementar advisor de handoff do control plane (budget + readiness + runtime errors) com recomendação determinística de próximo provider/model e comando operacional para troca explícita sem guessing.",
-      "status": "planned",
+      "status": "completed",
       "type": "feature",
       "references": [
         "REQ-BUD-020",
         "TASK-BUD-031"
       ],
       "files": [
-        "packages/pi-stack/extensions/quota-visibility.ts",
-        "packages/pi-stack/extensions/provider-readiness.ts",
-        "packages/pi-stack/extensions/guardrails-core.ts",
-        "docs/guides/quota-visibility.md"
-      ]
+        "packages/pi-stack/extensions/handoff-advisor.ts",
+        "packages/pi-stack/test/smoke/handoff-advisor.test.ts",
+        "packages/pi-stack/package.json"
+      ],
+      "acceptance_criteria": [
+        "handoff_advisor tool combina budget_state (quota-visibility) + readiness (provider-readiness) em score unificado.",
+        "Selecao de proximo provider e deterministica: score = budget_score * readiness_score, menor = melhor.",
+        "Retorna: current_state, recommended_next, switch_command (modelRef do routeModelRefs), blocked_providers.",
+        "/handoff command exibe o mesmo resultado em formato humano com instrucoes de troca.",
+        "Testes unitarios cobrem: computeHandoffScore, selectNextProvider, buildHandoffAdvisory."
+      ],
+      "notes": "Implementado. handoff-advisor.ts combina quota-visibility (budget_state) + provider-readiness (readiness) em score aditivo: computeHandoffScore = budget_score + readiness_score. selectNextProvider exclui current_provider e provider blocked/unconfigured. handoff_advisor tool + /handoff command com noAutoSwitch invariante. 16 testes unitarios. 218/218 passando."
     },
     {
       "id": "TASK-BUD-038",

@@ -34,7 +34,8 @@
       "./extensions/web-session-gateway.ts",
       "./extensions/quota-visibility.ts",
       "./extensions/provider-readiness.ts",
-      "./extensions/session-analytics.ts"
+      "./extensions/session-analytics.ts",
+      "./extensions/handoff-advisor.ts"
     ],
     "themes": [
       "./themes"

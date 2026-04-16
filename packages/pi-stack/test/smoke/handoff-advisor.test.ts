@@ -3,6 +3,7 @@ import {
   computeHandoffScore,
   isAvailable,
   selectNextProvider,
+  resolveHandoffModelRef,
   type ProviderHandoffScore,
 } from "../../extensions/handoff-advisor";
 
@@ -108,5 +109,32 @@ describe("handoff-advisor — selectNextProvider", () => {
     // Both score 0, tie-broken by name
     const result = selectNextProvider(candidates, undefined);
     expect(result?.provider).toBe("provider-a");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveHandoffModelRef (execute path — pure helper)
+// ---------------------------------------------------------------------------
+
+describe("handoff-advisor — resolveHandoffModelRef", () => {
+  it("retorna modelRef configurado para o provider", () => {
+    const refs = { "openai": "openai/gpt-5", "anthropic": "anthropic/claude-4" };
+    expect(resolveHandoffModelRef("openai", refs)).toBe("openai/gpt-5");
+    expect(resolveHandoffModelRef("anthropic", refs)).toBe("anthropic/claude-4");
+  });
+
+  it("retorna undefined quando provider nao esta em routeModelRefs", () => {
+    const refs = { "openai": "openai/gpt-5" };
+    expect(resolveHandoffModelRef("gemini", refs)).toBeUndefined();
+  });
+
+  it("retorna undefined para routeModelRefs vazio", () => {
+    expect(resolveHandoffModelRef("anthropic", {})).toBeUndefined();
+  });
+
+  it("nao confunde providers com nomes similares", () => {
+    const refs = { "openai": "openai/gpt-5", "openai-codex": "openai-codex/codex-3" };
+    expect(resolveHandoffModelRef("openai", refs)).toBe("openai/gpt-5");
+    expect(resolveHandoffModelRef("openai-codex", refs)).toBe("openai-codex/codex-3");
   });
 });

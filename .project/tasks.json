@@ -671,23 +671,18 @@
     {
       "id": "TASK-BUD-031",
       "description": "[P0] Implementar rota de rodízio v1 (advisory+execute opt-in) entre providers configurados com matriz custo/confiabilidade/capacidade e evidência por decisão.",
-      "status": "planned",
-      "depends_on": [
-        "TASK-BUD-027",
-        "TASK-BUD-029"
-      ],
+      "status": "completed",
       "files": [
+        "packages/pi-stack/extensions/handoff-advisor.ts",
         "packages/pi-stack/extensions/quota-visibility.ts",
-        "packages/pi-stack/extensions/colony-pilot.ts",
-        "docs/guides/quota-visibility.md",
-        "docs/guides/budget-governance.md"
+        "packages/pi-stack/test/smoke/handoff-advisor.test.ts"
       ],
       "acceptance_criteria": [
         "Comando/tool entrega recomendação determinística por perfil (cheap/balanced/reliable).",
         "Modo execute é opt-in e registra decisão + motivo + provider escolhido.",
         "Providers em BLOCK nunca são selecionados automaticamente."
       ],
-      "notes": "Primeiro passo concreto do rodízio solicitado pelo usuário."
+      "notes": "Implementado via handoff-advisor.ts (execute path + /handoff --execute) + quota_visibility_route. Matriz: budget (quota-visibility) + readiness (provider-readiness). Execute audita via pi.appendEntry. BLOCK providers filtrados por isAvailable()."
     },
     {
       "id": "TASK-BUD-032",

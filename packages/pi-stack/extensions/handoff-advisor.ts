@@ -207,6 +207,26 @@ export async function buildHandoffAdvisory(
 }
 
 // ---------------------------------------------------------------------------
+// Execute path (opt-in, audited)
+// ---------------------------------------------------------------------------
+
+export interface HandoffExecutionResult {
+  executed: boolean;
+  executedModelRef: string | undefined;
+  reason: string | undefined;
+  advisory: HandoffAdvisory;
+}
+
+/** Pure helper: resolve model ref for a recommended provider given routeModelRefs map.
+ *  Returns undefined if the provider has no configured routeModelRef. */
+export function resolveHandoffModelRef(
+  recommendedProvider: string,
+  routeModelRefs: Record<string, string | undefined>,
+): string | undefined {
+  return routeModelRefs[recommendedProvider];
+}
+
+// ---------------------------------------------------------------------------
 // Extension factory
 // ---------------------------------------------------------------------------
 
@@ -220,19 +240,51 @@ export default function handoffAdvisorExtension(pi: ExtensionAPI) {
       "Deterministic control plane handoff advisor.",
       "Combines budget pressure (quota-visibility) + provider availability (provider-readiness)",
       "to recommend the next provider when current is at WARN/BLOCK.",
-      "noAutoSwitch: true — never switches automatically; produces a confirming command for human approval.",
+      "execute=true: opt-in execute path — calls pi.setModel and audits the decision.",
+      "noAutoSwitch default — execute must be explicitly requested.",
     ].join(" "),
     parameters: Type.Object({
       current_provider: Type.Optional(
         Type.String({ description: "Currently active provider (used to exclude from candidates). Optional." })
       ),
+      execute: Type.Optional(
+        Type.Boolean({ description: "If true, apply the recommended provider switch via pi.setModel. Audited." })
+      ),
+      reason: Type.Optional(
+        Type.String({ description: "Human-readable reason for the switch, stored in audit log." })
+      ),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-      const p = params as { current_provider?: string };
+      const p = params as { current_provider?: string; execute?: boolean; reason?: string };
       const advisory = await buildHandoffAdvisory(ctx.cwd, p.current_provider);
+
+      let executed = false;
+      let executedModelRef: string | undefined;
+
+      if (p.execute === true && advisory.recommended?.modelRef && advisory.recommended.modelRef !== "(no routeModelRef configured)") {
+        const [provider, modelId] = advisory.recommended.modelRef.split("/");
+        const model = ctx.modelRegistry.find(provider, modelId);
+        if (model) {
+          executed = await pi.setModel(model);
+          if (executed) executedModelRef = advisory.recommended.modelRef;
+        }
+
+        pi.appendEntry("handoff-advisor.route-execution", {
+          atIso: new Date().toISOString(),
+          currentProvider: advisory.currentProvider,
+          recommendedProvider: advisory.recommended.provider,
+          executedModelRef,
+          executed,
+          reason: p.reason,
+          currentState: advisory.currentState,
+          score: advisory.candidates.find((c) => c.provider === advisory.recommended?.provider)?.score,
+        });
+      }
+
+      const result: HandoffExecutionResult = { executed, executedModelRef, reason: p.reason, advisory };
       return {
-        content: [{ type: "text", text: JSON.stringify(advisory, null, 2) }],
-        details: advisory,
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
       };
     },
   });
@@ -240,10 +292,42 @@ export default function handoffAdvisorExtension(pi: ExtensionAPI) {
   // ---- command: /handoff -----------------------------------------------
 
   pi.registerCommand("handoff", {
-    description: "Control plane handoff advisor. Usage: /handoff [current_provider]",
+    description: "Control plane handoff advisor. Usage: /handoff [current_provider] [--execute [--reason <text>]]",
     handler: async (args, ctx) => {
-      const currentProvider = (args ?? "").trim() || undefined;
+      const tokens = (args ?? "").trim().split(/\s+/).filter(Boolean);
+      const executeIdx = tokens.findIndex((t) => t === "--execute" || t === "--apply");
+      const execute = executeIdx >= 0;
+      let reason: string | undefined;
+      const reasonIdx = tokens.findIndex((t) => t === "--reason");
+      if (reasonIdx >= 0 && tokens[reasonIdx + 1]) {
+        reason = tokens.slice(reasonIdx + 1).join(" ");
+      }
+      const currentProvider = tokens.find((t) => !t.startsWith("--")) || undefined;
+
       const advisory = await buildHandoffAdvisory(ctx.cwd, currentProvider);
+
+      let executed = false;
+      let executedModelRef: string | undefined;
+
+      if (execute && advisory.recommended?.modelRef && advisory.recommended.modelRef !== "(no routeModelRef configured)") {
+        const [provider, modelId] = advisory.recommended.modelRef.split("/");
+        const model = ctx.modelRegistry.find(provider, modelId);
+        if (model) {
+          executed = await pi.setModel(model);
+          if (executed) executedModelRef = advisory.recommended.modelRef;
+        }
+
+        pi.appendEntry("handoff-advisor.route-execution", {
+          atIso: new Date().toISOString(),
+          currentProvider: advisory.currentProvider,
+          recommendedProvider: advisory.recommended.provider,
+          executedModelRef,
+          executed,
+          reason,
+          currentState: advisory.currentState,
+          score: advisory.candidates.find((c) => c.provider === advisory.recommended?.provider)?.score,
+        });
+      }
 
       const lines: string[] = [
         "handoff advisor",
@@ -256,8 +340,14 @@ export default function handoffAdvisorExtension(pi: ExtensionAPI) {
         lines.push("RECOMMENDATION:");
         lines.push(`  next:    ${advisory.recommended.provider}`);
         lines.push(`  model:   ${advisory.recommended.modelRef}`);
-        lines.push(`  switch:  ${advisory.recommended.switchCommand}`);
+        if (!execute) {
+          lines.push(`  switch:  ${advisory.recommended.switchCommand}`);
+        }
         lines.push(`  reason:  ${advisory.recommended.reason.slice(0, 120)}`);
+        if (execute) {
+          lines.push(`  executed: ${executed ? `YES → ${executedModelRef}` : "NO (model not found in registry)"}`);
+          if (reason) lines.push(`  rationale: ${reason}`);
+        }
       } else {
         lines.push("No available provider found.");
         if (advisory.blockedProviders.length > 0) {
@@ -274,7 +364,9 @@ export default function handoffAdvisorExtension(pi: ExtensionAPI) {
         );
       }
 
-      lines.push("", "noAutoSwitch: true — confirm before switching.");
+      if (!execute) {
+        lines.push("", "noAutoSwitch: true — pass --execute to apply.");
+      }
 
       ctx.ui.notify(
         lines.join("\n"),

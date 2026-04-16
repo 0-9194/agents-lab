@@ -226,6 +226,19 @@
       "priority": "must",
       "description": "A adoção do Claude Code CLI deve operar como um sub-agente/provider integrado, obedecendo às mesmas cotas (requests/month), governança e bloqueios que os LLMs via API, blindando o desenvolvedor da complexidade de gerir múltiplas instâncias de billing isoladas.",
       "id": "REQ-BUD-018"
+    },
+    {
+      "type": "functional",
+      "acceptance_criteria": [
+        "Projetos externos usando pi-stack devem ter o mesmo visual (tema agents-lab) e ferramentas (Swarm, Claude Code) configurados por padrão.",
+        "Não deve haver configuração manual extra para o usuário final ter a mesma experiência tátil do laboratório interno."
+      ],
+      "id": "REQ-BUD-019",
+      "title": "Dogfooding e Paridade de Experiência (UX/Visual/Swarm)",
+      "priority": "must",
+      "description": "O pacote @aretw0/pi-stack deve garantir 100% de paridade de Dogfooding: a experiência visual (TUI, temas) e operacional (Swarm, Claude Code) de um usuário final em um projeto externo deve ser idêntica à do ambiente de desenvolvimento interno.",
+      "source": "human",
+      "status": "accepted"
     }
   ]
 }

@@ -72,18 +72,49 @@
     },
     "quotaVisibility": {
       "defaultDays": 30,
-      "monthlyQuotaRequests": 1000,
       "providerBudgets": {
         "github-copilot": {
           "owner": "shared-github-account",
           "period": "monthly",
-          "unit": "requests",
-          "requestSharePolicy": "remaining",
-          "shareMonthlyRequestsPct": 50,
+          "unit": "tokens-cost",
+          "monthlyQuotaTokens": 650000000,
           "monthlyQuotaCostUsd": 40,
+          "warnPct": 75,
+          "hardPct": 100
+        },
+        "openai-codex": {
+          "owner": "shared-portfolio",
+          "period": "monthly",
+          "unit": "tokens-cost",
+          "monthlyQuotaTokens": 600000000,
+          "monthlyQuotaCostUsd": 180,
+          "warnPct": 80,
+          "hardPct": 100
+        },
+        "google-antigravity": {
+          "owner": "shared-portfolio",
+          "period": "monthly",
+          "unit": "tokens-cost",
+          "monthlyQuotaTokens": 300000000,
+          "monthlyQuotaCostUsd": 60,
+          "warnPct": 80,
+          "hardPct": 100
+        },
+        "google-gemini-cli": {
+          "owner": "shared-portfolio",
+          "period": "monthly",
+          "unit": "tokens-cost",
+          "monthlyQuotaTokens": 300000000,
+          "monthlyQuotaCostUsd": 60,
           "warnPct": 80,
           "hardPct": 100
         }
+      },
+      "routeModelRefs": {
+        "openai-codex": "openai-codex/gpt-5.3-codex",
+        "github-copilot": "github-copilot/claude-sonnet-4.6",
+        "google-antigravity": "google-antigravity/gemini-3.1-pro-high",
+        "google-gemini-cli": "google-gemini-cli/gemini-2.5-pro"
       }
     }
   }

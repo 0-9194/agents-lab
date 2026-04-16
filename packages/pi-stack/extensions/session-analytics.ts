@@ -26,8 +26,11 @@ import { Type } from "@sinclair/typebox";
 // ---------------------------------------------------------------------------
 
 export function toSessionWorkspaceKey(absPath: string): string {
-  const resolved = path.resolve(absPath).replace(/\\/g, "/");
-  const driveMatch = resolved.match(/^([A-Za-z]):\/(.*)$/);
+  // Normalize backslashes before drive-letter check so Windows paths work on
+  // any platform. path.resolve() mis-resolves "C:\..." on Linux by treating
+  // it as a relative path and prepending the Linux CWD.
+  const normalized = absPath.replace(/\\/g, "/");
+  const driveMatch = normalized.match(/^([A-Za-z]):\/(.*)$/);
   if (driveMatch) {
     const letter = driveMatch[1].toUpperCase();
     const rest = driveMatch[2]
@@ -37,6 +40,7 @@ export function toSessionWorkspaceKey(absPath: string): string {
       .join("-");
     return `--${letter}--${rest}--`;
   }
+  const resolved = path.resolve(normalized);
   const rest = resolved
     .replace(/^\//, "")
     .split("/")

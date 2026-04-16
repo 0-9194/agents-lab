@@ -1185,9 +1185,9 @@ export function executableProbe(name: string, platform = process.platform): { co
   if (!clean) return { command: "", args: [], label: "" };
 
   if (platform === "win32" && clean.toLowerCase() === "npm") {
-    // Em alguns runtimes (ex.: shell híbrido), spawn direto de npm.cmd pode falhar com EINVAL.
-    // cmd /c npm --version é mais portável nesses cenários.
-    return { command: "cmd", args: ["/c", "npm", "--version"], label: "npm" };
+    // Em alguns runtimes Windows, `cmd /c npm` pode não executar como esperado.
+    // PowerShell sem profile é mais estável para probe de versão.
+    return { command: "powershell", args: ["-NoProfile", "-Command", "npm --version"], label: "npm" };
   }
 
   return { command: clean, args: ["--version"], label: clean };

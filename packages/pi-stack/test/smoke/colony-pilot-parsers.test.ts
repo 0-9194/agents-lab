@@ -160,8 +160,12 @@ describe("colony-pilot parsers", () => {
     expect(cfg.requireColonyCapabilities).toEqual(["colony", "colonyStop"]);
   });
 
-  it("executableProbe usa cmd /c npm no Windows", () => {
-    expect(executableProbe("npm", "win32")).toEqual({ command: "cmd", args: ["/c", "npm", "--version"], label: "npm" });
+  it("executableProbe usa powershell para npm no Windows", () => {
+    expect(executableProbe("npm", "win32")).toEqual({
+      command: "powershell",
+      args: ["-NoProfile", "-Command", "npm --version"],
+      label: "npm",
+    });
     expect(executableProbe("node", "linux")).toEqual({ command: "node", args: ["--version"], label: "node" });
   });
 

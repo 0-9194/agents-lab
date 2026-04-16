@@ -363,9 +363,10 @@ async function checkTool(
   try {
     let result = await pi.exec(command, versionArgs, { timeout: 5000 });
 
-    // Windows portability fallback: some runtimes fail spawning npm(.cmd) directly.
+    // Windows portability fallback: some runtimes fail spawning npm(.cmd) directly
+    // or don't honor cmd /c reliably. Prefer PowerShell without profile.
     if (result.code !== 0 && process.platform === "win32" && name === "npm") {
-      result = await pi.exec("cmd", ["/c", "npm", "--version"], { timeout: 5000 });
+      result = await pi.exec("powershell", ["-NoProfile", "-Command", "npm --version"], { timeout: 5000 });
     }
 
     if (result.code !== 0) {
@@ -630,7 +631,13 @@ function buildHatchDoctorPayload(
   const notes: string[] = [];
   if (checks.shell.status !== "ok") notes.push("shell não ideal; valide no /doctor antes de swarm crítico.");
   if (checks.scheduler.status !== "ok") notes.push("scheduler governance requer atenção antes de paralelismo agressivo.");
-  if (notes.length === 0) notes.push("runtime pronto para operação swarm-first.");
+
+  const hasFailures = items.some((i) => i.status === "fail");
+  if (hasFailures) {
+    notes.push("há blockers de hatch; resolva os FAIL antes de operação swarm-first.");
+  } else if (notes.length === 0) {
+    notes.push("runtime pronto para operação swarm-first.");
+  }
 
   return {
     ready: items.every((i) => i.status !== "fail"),

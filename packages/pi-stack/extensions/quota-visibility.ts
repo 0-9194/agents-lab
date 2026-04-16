@@ -1830,4 +1830,71 @@ export default function quotaVisibilityExtension(pi: ExtensionAPI) {
       ctx.ui.notify("Usage: /quota-visibility <status|windows|budget|route|export> [provider|profile] [days] [--execute]", "warning");
     },
   });
+
+  // ---------------------------------------------------------------------------
+  // Control plane: live budget + model status in footer
+  // ---------------------------------------------------------------------------
+
+  /** Short provider label for compact footer display. */
+  function shortProvider(p: string): string {
+    return p
+      .replace("github-copilot", "copilot")
+      .replace("openai-codex", "codex")
+      .replace("google-gemini-cli", "gemini")
+      .replace("google-antigravity", "antigrav");
+  }
+
+  /** Compact budget summary: "✓codex:12% ✗copilot:100% ✓gemini:8%". */
+  async function refreshBudgetStatus(ctx: ExtensionContext): Promise<void> {
+    try {
+      const cfg = readSettings(ctx.cwd);
+      const providerBudgets = cfg.providerBudgets ?? {};
+      if (Object.keys(providerBudgets).length === 0) return;
+
+      const dayOfMonth = new Date().getDate();
+      const status = await analyzeQuota({
+        days: Math.max(dayOfMonth, 7),
+        providerBudgets,
+        providerWindowHours: {},
+      });
+
+      if (status.providerBudgets.length === 0) return;
+
+      const parts = status.providerBudgets.map((b) => {
+        const pct = Math.round(
+          Math.max(
+            safeNum(b.usedPctTokens),
+            safeNum(b.usedPctCost),
+            safeNum(b.usedPctRequests)
+          )
+        );
+        const icon = b.state === "blocked" ? "✗" : b.state === "warning" ? "!" : "✓";
+        return `${icon}${shortProvider(b.provider)}:${pct}%`;
+      });
+
+      ctx.ui.setStatus("quota-budgets", parts.join(" "));
+    } catch {
+      // silent — status display is best-effort
+    }
+  }
+
+  /** Footer entry: "provider/model" resolved from ctx.model. */
+  function refreshModelStatus(ctx: ExtensionContext): void {
+    const m = ctx.model as (Record<string, unknown> | undefined);
+    if (!m) return;
+    const provider = typeof m["provider"] === "string" ? m["provider"] : undefined;
+    const id = typeof m["id"] === "string" ? m["id"] : undefined;
+    if (provider && id) {
+      ctx.ui.setStatus("active-model", `${provider}/${id}`);
+    }
+  }
+
+  pi.on("session_start", async (_event, ctx) => {
+    refreshModelStatus(ctx);
+    await refreshBudgetStatus(ctx);
+  });
+
+  pi.on("model_select", (_event, ctx) => {
+    refreshModelStatus(ctx);
+  });
 }

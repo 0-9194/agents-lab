@@ -651,22 +651,18 @@
     {
       "id": "TASK-BUD-030",
       "description": "[P0] Implementar 'safe-core boot profile' e rollback snapshot para pi-stack (dogfood), com comando de ativação rápida e recovery path garantido.",
-      "status": "planned",
-      "depends_on": [
-        "TASK-BUD-029"
-      ],
+      "status": "completed",
       "files": [
-        "scripts/pi-pilot-profile.mjs",
-        ".pi/settings.json",
-        "docs/guides/recommended-pi-stack.md",
-        "docs/guides/budget-governance.md"
+        "packages/pi-stack/extensions/safe-boot.ts",
+        "packages/pi-stack/test/smoke/safe-boot.test.ts",
+        "packages/pi-stack/package.json"
       ],
       "acceptance_criteria": [
         "Perfil safe-core ativa apenas extensões testadas/curadas e desativa extras não essenciais.",
         "Snapshot pré-boot é salvo e pode ser restaurado por comando único.",
         "Recovery channel permanece funcional para diagnóstico e correção."
       ],
-      "notes": "Derivada da necessidade de evitar lockout em ambientes com excesso de plugins/extensões conflitantes."
+      "notes": "Implementado via safe-boot.ts: SAFE_CORE_PROFILE (delivery=report-only, scheduler=observe, gateways=local), saveSnapshot/restoreSnapshot, /safe-boot [apply|snapshot|restore|list|recover]. 14 unit tests."
     },
     {
       "id": "TASK-BUD-031",

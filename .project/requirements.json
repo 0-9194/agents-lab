@@ -291,6 +291,19 @@
       "description": "O sistema de budget deve suportar ingestão de dados de billing de fontes externas (API do provider, CSV de fatura) para reconciliar o custo observado localmente com o custo real faturado.",
       "id": "REQ-BUD-023",
       "type": "integration"
+    },
+    {
+      "description": "A ferramenta ant_colony deve permitir a especificação do modo de entrega como um parâmetro no momento do lançamento, evitando a necessidade de editar a configuração global para tarefas que exigem criação de branch.",
+      "acceptance_criteria": [
+        "É possível lançar uma colônia com um modo de entrega que sobrepõe a configuração global (ex: /ant_colony goal=... deliveryMode='apply-to-branch').",
+        "A política global de segurança não é alterada por uma execução com override.",
+        "O log de execução da colônia registra explicitamente que um override de política foi usado."
+      ],
+      "source": "human",
+      "id": "REQ-BUD-024",
+      "priority": "must",
+      "type": "functional",
+      "status": "accepted"
     }
   ]
 }

@@ -48,7 +48,7 @@
       },
       "deliveryPolicy": {
         "enabled": true,
-        "mode": "patch-artifact",
+        "mode": "apply-to-branch",
         "requireWorkspaceReport": true,
         "requireTaskSummary": true,
         "requireFileInventory": true,

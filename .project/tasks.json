@@ -811,6 +811,15 @@
       "references": [
         "REQ-BUD-020"
       ]
+    },
+    {
+      "references": [
+        "REQ-BUD-024"
+      ],
+      "description": "[P0] Evoluir a tool `ant_colony` para aceitar um parâmetro de override da política de entrega (ex: `deliveryMode='apply-to-branch'`), eliminando a necessidade de editar a configuração global. A implementação pode ser via parâmetro direto ou um comando wrapper (ex: /colony-promote) que invoca a `ant_colony` com permissões elevadas.",
+      "id": "TASK-BUD-042",
+      "status": "planned",
+      "type": "feature"
     }
   ]
 }

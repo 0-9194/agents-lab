@@ -577,6 +577,7 @@ function buildHatchDoctorPayload(
   const commands = new Set(commandNames.map((c) => baseCommandName(c)));
   const settings = readProjectSettings(cwd);
   const budgetPolicy = ((settings.piStack as any)?.colonyPilot?.budgetPolicy ?? {}) as Record<string, unknown>;
+  const preflightPolicy = ((settings.piStack as any)?.colonyPilot?.preflight ?? {}) as Record<string, unknown>;
   const providerBudgets = (((settings.piStack as any)?.quotaVisibility?.providerBudgets ?? {}) as Record<string, unknown>);
   const providerBudgetCount = Object.keys(providerBudgets).length;
   const providerGateEnabled = budgetPolicy?.enforceProviderBudgetBlock === true;
@@ -584,9 +585,15 @@ function buildHatchDoctorPayload(
   const requiredCaps = ["monitors", "colony", "colony-stop"];
   const missingCaps = requiredCaps.filter((c) => !commands.has(c));
 
-  const preflightExecutables = ["node", "git", "npm"];
+  const configuredExecutables = Array.isArray(preflightPolicy.requiredExecutables)
+    ? preflightPolicy.requiredExecutables
+      .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+      .map((x) => x.trim().toLowerCase())
+    : ["node", "git", "npm"];
+  const preflightExecutables = configuredExecutables.length > 0 ? configuredExecutables : ["node", "git", "npm"];
+
   const missingExecutables = checks.tools
-    .filter((t) => preflightExecutables.includes(t.name) && t.status === "error")
+    .filter((t) => preflightExecutables.includes(t.name.toLowerCase()) && t.status === "error")
     .map((t) => t.name);
 
   const items: HatchDoctorPayload["items"] = [

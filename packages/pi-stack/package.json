@@ -37,7 +37,8 @@
       "./extensions/session-analytics.ts",
       "./extensions/handoff-advisor.ts",
       "./extensions/quota-alerts.ts",
-      "./extensions/safe-boot.ts"
+      "./extensions/safe-boot.ts",
+      "./extensions/governance-profiles.ts"
     ],
     "themes": [
       "./themes"

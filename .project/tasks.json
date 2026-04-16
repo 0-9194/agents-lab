@@ -821,17 +821,22 @@
     {
       "id": "TASK-BUD-039",
       "description": "[P1] Criar perfis de governança de budget/routing (conservative|balanced|throughput) com comando de apply/preview para abstrair micro-configurações por provider.",
-      "status": "planned",
+      "status": "completed",
       "type": "feature",
       "references": [
         "REQ-BUD-022"
       ],
       "files": [
-        ".pi/settings.json",
-        "packages/pi-stack/extensions/quota-visibility.ts",
-        "packages/pi-stack/extensions/colony-pilot.ts",
-        "docs/guides/quota-visibility.md"
-      ]
+        "packages/pi-stack/extensions/governance-profiles.ts",
+        "packages/pi-stack/test/smoke/governance-profiles.test.ts",
+        "packages/pi-stack/package.json"
+      ],
+      "acceptance_criteria": [
+        "Existe comando para aplicar perfil de budget/routing com preview do delta.",
+        "Cada perfil define thresholds consistentes (warn/hard), fallback order e política de overage.",
+        "Perfil ativo é visível no /doctor hatch e no /quota-visibility route."
+      ],
+      "notes": "Implementado em governance-profiles.ts. 3 perfis: conservative (report-only, observe, $0.50/run), balanced (patch-artifact, observe, $2/run), throughput (apply-to-branch, enforce, $5/run). governance_profile tool (preview|apply|list|status) + /governance-profile command. Perfil ativo salvo em piStack.governanceProfile.active. Snapshot antes de apply via .pi/snapshots/. 21 testes unitarios: parseGovernanceProfile, flattenObject, previewGovernanceDelta, applyGovernanceProfile, invariantes dos perfis. 296/296 vitest passando."
     },
     {
       "type": "feature",

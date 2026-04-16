@@ -911,6 +911,23 @@
         "Auditável: log mostra qual skill foi selecionada e por quê."
       ],
       "notes": "Originou de observação do usuário (2026-04-16): o pi-stack tem roteamento de provider mas não de comportamento. O Claude Code decide dinamicamente qual skill carregar baseado no contexto do prompt — lacuna equivalente existe no pi."
+    },
+    {
+      "id": "TASK-BUD-044",
+      "description": "[P1] Criar GitHub Actions workflow para abrir a janela de cota do provider no horário ideal (7-8h) via chamada mínima à API, permitindo que a janela expire cedo o suficiente para reiniciar antes do horário de trabalho pesado.",
+      "status": "planned",
+      "type": "feature",
+      "files": [
+        ".github/workflows/quota-window-opener.yml"
+      ],
+      "acceptance_criteria": [
+        "Workflow roda via cron em horário configurável (padrão 7h no fuso do usuário).",
+        "Faz a menor chamada possível ao provider (ex: 1 token de input, 1 de output) para abrir a janela sem desperdiçar cota.",
+        "Provider e horário são configuráveis via variáveis de repositório (sem hardcode).",
+        "Execução registra evidência mínima (timestamp + provider + tokens consumidos) nos logs do Actions.",
+        "Não expõe credenciais — usa GitHub Secrets."
+      ],
+      "notes": "Motivação (2026-04-16): usuário identificou que iniciar o consumo da janela de cota mais cedo permite que ela expire e reinicie antes do pico de trabalho. Estratégia: um workflow cron que faz um 'oi' ao modelo às 7-8h, abrindo a janela. Quando a janela expirar (dependendo do provider: 5h/diária/semanal), já terá reiniciado para quando o trabalho pesado começar."
     }
   ]
 }

@@ -1,5 +1,33 @@
 # @aretw0/pi-stack
 
+## 0.6.0
+
+### Minor Changes
+
+- Add 9 new capabilities to the control plane: safe-core boot profile, provider handoff execute path, per-call delivery mode override, proactive quota alerts, deterministic handoff advisor, session analytics query primitive, Claude Code CLI adapter with request-budget governor, installer baseline flag, and passive provider readiness matrix.
+
+  **New extensions:**
+
+  - **safe-boot**: settings snapshot/restore + safe-core profile (`delivery=report-only`, `scheduler=observe`, `gateway=local`). `/safe-boot [apply|snapshot|restore|list|recover]` command with single-command rollback.
+
+  - **quota-alerts**: proactive WARN/BLOCK + 429-streak detection + overage consent gate. `quota_alerts` tool + `/quota-alerts` command with structured `AlertEntry` list (severity, message, action).
+
+  - **session-analytics**: queryable session log primitive for swarms. Reads JSONL directly — no subprocess. Supports `signals|timeline|model-usage|summary` query types with `lookback_hours` filter. `/session-analytics` command.
+
+  **Extension upgrades:**
+
+  - **colony-pilot**: `ant_colony` now accepts `deliveryMode?: ColonyDeliveryMode` per-call override, eliminating the need to edit global config. Override is audited via `pi.appendEntry`. New `/colony-promote <goal>` command pre-fills `apply-to-branch` call.
+
+  - **handoff-advisor**: added `execute: true` opt-in path to both `handoff_advisor` tool and `/handoff` command. When executed, calls `pi.setModel()` and logs route decision via `pi.appendEntry`. `--execute` / `--apply` flags with optional `--reason <text>`.
+
+  - **handoff-advisor v2** (BUD-037): deterministic score combining `budget_state` (quota-visibility) + `readiness` (provider-readiness). `computeHandoffScore = budget_score + readiness_score`. Returns `current_state`, `recommended_next`, `switch_command`, `blocked_providers`. `noAutoSwitch` invariant enforced.
+
+  - **claude-code-adapter**: evolved into full provider with request-budget governor (`ok/warn/block` by session cap). `claude_code_execute` tool with dry-run mode and isolated `cwd` per execution. `/claude-code budget` command. `buildProviderHint` exposes `routeModelRef` suggestion for quota-visibility.
+
+  - **installer**: new `--baseline` (`-b`) flag applies non-destructive theme + colony-pilot + claude-code defaults via `deepMergeForBaseline`. Preserves existing user config.
+
+  - **provider-readiness**: re-implemented as passive health matrix (config + budget state only). Removed non-existent `pi.loadModel()` call. `/provider-matrix` and `provider_readiness_matrix` tool now work correctly at runtime.
+
 ## 0.5.0
 
 ### Minor Changes

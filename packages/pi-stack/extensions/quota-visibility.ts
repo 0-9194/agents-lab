@@ -243,6 +243,30 @@ export function safeNum(v: unknown): number {
   return 0;
 }
 
+/** Compact provider label for footer display ("github-copilot" → "copilot"). */
+export function shortProviderLabel(p: string): string {
+  return p
+    .replace("github-copilot", "copilot")
+    .replace("openai-codex", "codex")
+    .replace("google-gemini-cli", "gemini")
+    .replace("google-antigravity", "antigrav");
+}
+
+/**
+ * Format per-provider budget state into compact footer tokens.
+ * Each entry: "✓codex:12%", "✗copilot:100%", "!gemini:78%".
+ * Pure — no I/O, no pi APIs.
+ */
+export function formatBudgetStatusParts(providerBudgets: ProviderBudgetStatus[]): string[] {
+  return providerBudgets.map((b) => {
+    const pct = Math.round(
+      Math.max(safeNum(b.usedPctTokens), safeNum(b.usedPctCost), safeNum(b.usedPctRequests))
+    );
+    const icon = b.state === "blocked" ? "✗" : b.state === "warning" ? "!" : "✓";
+    return `${icon}${shortProviderLabel(b.provider)}:${pct}%`;
+  });
+}
+
 export function parseSessionStartFromFilename(fileName: string): Date | undefined {
   const m = fileName.match(SESSION_TS_RE);
   if (!m) return undefined;
@@ -1835,15 +1859,6 @@ export default function quotaVisibilityExtension(pi: ExtensionAPI) {
   // Control plane: live budget + model status in footer
   // ---------------------------------------------------------------------------
 
-  /** Short provider label for compact footer display. */
-  function shortProvider(p: string): string {
-    return p
-      .replace("github-copilot", "copilot")
-      .replace("openai-codex", "codex")
-      .replace("google-gemini-cli", "gemini")
-      .replace("google-antigravity", "antigrav");
-  }
-
   /** Compact budget summary: "✓codex:12% ✗copilot:100% ✓gemini:8%". */
   async function refreshBudgetStatus(ctx: ExtensionContext): Promise<void> {
     try {
@@ -1859,20 +1874,7 @@ export default function quotaVisibilityExtension(pi: ExtensionAPI) {
       });
 
       if (status.providerBudgets.length === 0) return;
-
-      const parts = status.providerBudgets.map((b) => {
-        const pct = Math.round(
-          Math.max(
-            safeNum(b.usedPctTokens),
-            safeNum(b.usedPctCost),
-            safeNum(b.usedPctRequests)
-          )
-        );
-        const icon = b.state === "blocked" ? "✗" : b.state === "warning" ? "!" : "✓";
-        return `${icon}${shortProvider(b.provider)}:${pct}%`;
-      });
-
-      ctx.ui.setStatus("quota-budgets", parts.join(" "));
+      ctx.ui.setStatus("quota-budgets", formatBudgetStatusParts(status.providerBudgets).join(" "));
     } catch {
       // silent — status display is best-effort
     }

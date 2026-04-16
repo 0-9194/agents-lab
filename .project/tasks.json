@@ -276,22 +276,23 @@
     {
       "id": "TASK-BUD-015",
       "description": "[P1] Especificar adapter de execução para runners externos (GitHub Actions/CI) com sync issue/PR ↔ clock canônico.",
-      "status": "in-progress",
+      "status": "completed",
       "depends_on": [
         "TASK-BUD-012",
         "TASK-BUD-014"
       ],
       "files": [
+        ".project/requirements.json",
         "docs/research/colony-project-task-bridge.md",
-        "docs/guides/budget-governance.md",
-        ".project/requirements.json"
+        "docs/guides/ci-runner-adapter-spec.md",
+        "docs/guides/budget-governance.md"
       ],
       "acceptance_criteria": [
         "Contrato de eventos mínimo para runners definido (start/progress/review/done/recovery).",
         "Mapeamento canônico para issue/PR state documentado com riscos/gaps.",
         "Proposta de implementação incremental sem acoplamento a um único provedor."
       ],
-      "notes": "Iniciando especificação adapter runner externo (CI/issue/PR) em paralelo ao hardening de delivery policy hard para reduzir acoplamento a runtime local."
+      "notes": "Iniciando especificação adapter runner externo (CI/issue/PR) em paralelo ao hardening de delivery policy hard para reduzir acoplamento a runtime local.\n[2026-04-16T06:23:09Z] Fechada. Spec produzida em docs/guides/ci-runner-adapter-spec.md.\n  AC1: contrato de 5 eventos (start/progress/review/done/recovery) definido.\n  AC2: mapeamento GitHub Issues/PRs documentado com gaps e riscos.\n  AC3: implementacao incremental em 3 fases sem acoplamento a um provider."
     },
     {
       "id": "TASK-BUD-016",
@@ -313,23 +314,22 @@
     {
       "id": "TASK-BUD-017",
       "description": "[P1] Implementar loop de execução autônoma supervisionada (scheduler/backlog pull) para colônias dentro de políticas hard.",
-      "status": "planned",
+      "status": "completed",
       "depends_on": [
         "TASK-BUD-016",
         "TASK-BUD-014",
         "TASK-BUD-015"
       ],
       "files": [
-        "packages/pi-stack/extensions/colony-pilot.ts",
-        ".project/tasks.json",
-        "docs/guides/budget-governance.md"
+        "scripts/autonomous-scheduler.mjs",
+        "package.json"
       ],
       "acceptance_criteria": [
         "Execução seleciona próxima task elegível por prioridade/dependências.",
         "Cada run respeita budget/delivery policy e registra evidência mínima.",
         "Falhas entram em recovery pipeline sem perder artefatos."
       ],
-      "notes": "Objetivo: reduzir necessidade de micro-prompting humano mantendo aprovação final."
+      "notes": "Implementado. scheduler.mjs le .project/tasks.json, filtra por status=planned + depends_on completos, ordena P0>P1>P2 e por countUnblocked(). Flags: --execute emite goal-prompt para colar em sessao pi, --json para automacao, --budget, --priority, --verbose. Dry-run por padrao. Testado: 10 tarefas elegiveis, selecionou TASK-BUD-033. Scripts adicionados: scheduler:next, scheduler:next:p0, scheduler:next:execute."
     },
     {
       "id": "TASK-BUD-018",

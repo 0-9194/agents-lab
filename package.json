@@ -27,6 +27,9 @@
     "colony:inspect": "node scripts/colony-runtime-inspect.mjs",
     "session:triage": "node scripts/session-triage.mjs --days 1 --limit 8",
     "session:triage:json": "node scripts/session-triage.mjs --days 1 --limit 8 --json",
+    "scheduler:next": "node scripts/autonomous-scheduler.mjs",
+    "scheduler:next:p0": "node scripts/autonomous-scheduler.mjs --priority p0",
+    "scheduler:next:execute": "node scripts/autonomous-scheduler.mjs --execute",
     "release:deprecate": "node scripts/deprecate-release.mjs"
   },
   "devDependencies": {

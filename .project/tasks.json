@@ -760,6 +760,37 @@
         "packages/pi-stack/extensions/guardrails-core.ts",
         "docs/guides/quota-visibility.md"
       ]
+    },
+    {
+      "id": "TASK-BUD-038",
+      "description": "[P0] Implementar alerta proativo de exaustão de cota no control plane (WARN/HARD + 429 streak + janela semanal) com sugestões de handoff e consentimento explícito para usar overage/créditos pagos.",
+      "status": "planned",
+      "type": "feature",
+      "references": [
+        "REQ-BUD-021",
+        "TASK-BUD-037"
+      ],
+      "files": [
+        "packages/pi-stack/extensions/quota-visibility.ts",
+        "packages/pi-stack/extensions/guardrails-core.ts",
+        "packages/pi-stack/extensions/environment-doctor.ts",
+        "docs/guides/budget-governance.md"
+      ]
+    },
+    {
+      "id": "TASK-BUD-039",
+      "description": "[P1] Criar perfis de governança de budget/routing (conservative|balanced|throughput) com comando de apply/preview para abstrair micro-configurações por provider.",
+      "status": "planned",
+      "type": "feature",
+      "references": [
+        "REQ-BUD-022"
+      ],
+      "files": [
+        ".pi/settings.json",
+        "packages/pi-stack/extensions/quota-visibility.ts",
+        "packages/pi-stack/extensions/colony-pilot.ts",
+        "docs/guides/quota-visibility.md"
+      ]
     }
   ]
 }

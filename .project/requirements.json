@@ -252,6 +252,32 @@
         "Recomendação explica o motivo (budget, readiness ou erro runtime) e a ação sugerida (manter, trocar, bloquear).",
         "Quando o provider atual degrada por 429 repetido, a recomendação muda para fallback saudável sem auto-switch silencioso."
       ]
+    },
+    {
+      "id": "REQ-BUD-021",
+      "description": "Quando um provider entrar em risco de exaustão (ex.: limite semanal próximo, WARN/HARD por projeção ou erros 429 recorrentes), o control plane deve alertar proativamente e sugerir o próximo provider/model com opção explícita de consentimento para usar overage/créditos pagos.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Antes de exaurir cap principal, o usuário recebe alerta com ETA e impacto.",
+        "O alerta oferece opções claras: manter, trocar provider/model, ou autorizar uso de créditos/overage.",
+        "A decisão fica auditada (timestamp, provider origem/destino, motivo)."
+      ]
+    },
+    {
+      "id": "REQ-BUD-022",
+      "description": "A governança de quotas deve suportar perfis de configuração ('conservative', 'balanced', 'throughput') para reduzir carga cognitiva de micro-budgets sem perder controle auditável.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "should",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe comando para aplicar perfil de budget/routing com preview do delta.",
+        "Cada perfil define thresholds consistentes (warn/hard), fallback order e política de overage.",
+        "Perfil ativo é visível no /doctor hatch e no /quota-visibility route."
+      ]
     }
   ]
 }

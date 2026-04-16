@@ -88,8 +88,8 @@
           "unit": "tokens-cost",
           "monthlyQuotaTokens": 600000000,
           "monthlyQuotaCostUsd": 180,
-          "warnPct": 80,
-          "hardPct": 100
+          "warnPct": 70,
+          "hardPct": 95
         },
         "google-antigravity": {
           "owner": "shared-portfolio",

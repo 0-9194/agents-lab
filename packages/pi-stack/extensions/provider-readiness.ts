@@ -9,7 +9,9 @@ export interface ReadinessResult {
   message?: string;
 }
 
-export function registerProviderReadiness(pi: ExtensionAPI, getProviderSettings: () => any) {
+export default function providerReadinessExtension(pi: ExtensionAPI) {
+  const getProviderSettings = () => (pi.getSettings() as any)?.piStack?.quotaVisibility ?? {};
+
   pi.registerTool({
     name: "provider_readiness_matrix",
     label: "Provider Readiness Matrix",

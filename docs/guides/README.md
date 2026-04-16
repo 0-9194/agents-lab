@@ -38,6 +38,12 @@ Guias práticos para trabalhar com o ecossistema de agentes deste laboratório.
 | [extension-acceptance-checklist.md](./extension-acceptance-checklist.md) | Checklist para aceitar nova extensão sem aumentar fragmentação |
 | [ci-governance.md](./ci-governance.md) | Troubleshooting dos gates de soberania no CI (annotations, registry, criticality, owner) |
 
+### Embedding e Integração
+
+| Guia | Descrição |
+|------|-----------|
+| [pi-embedding-cli.md](./pi-embedding-cli.md) | Como integrar pi em projetos CLI externos — config embedding, extension bundle, subprocess bridge |
+
 ### Migração e Filosofia
 
 | Guia | Descrição |

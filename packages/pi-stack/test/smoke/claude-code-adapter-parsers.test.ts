@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   parseWhichLikeOutput,
+  parseAuthStatusOutput,
   parseClaudeCodeRequestBudget,
   checkBudgetGate,
   buildProviderHint,
@@ -11,6 +12,53 @@ describe("claude-code adapter — parseWhichLikeOutput", () => {
     expect(parseWhichLikeOutput("C:/tools/claude.exe\nC:/other/claude.exe\n")).toBe("C:/tools/claude.exe");
     expect(parseWhichLikeOutput("\n\n")).toBeUndefined();
     expect(parseWhichLikeOutput("  /usr/local/bin/claude  ")).toBe("/usr/local/bin/claude");
+  });
+});
+
+describe("claude-code adapter — parseAuthStatusOutput (auth bridge)", () => {
+  it("retorna unauthenticated quando exitCode != 0", () => {
+    expect(parseAuthStatusOutput("Logged in as foo", "", 1)).toBe("unauthenticated");
+    expect(parseAuthStatusOutput("authenticated", "", 127)).toBe("unauthenticated");
+  });
+
+  it("detecta 'not logged' como unauthenticated", () => {
+    expect(parseAuthStatusOutput("You are not logged in.", "", 0)).toBe("unauthenticated");
+    expect(parseAuthStatusOutput("NOT LOGGED IN", "", 0)).toBe("unauthenticated");
+  });
+
+  it("detecta 'not authenticated' como unauthenticated", () => {
+    expect(parseAuthStatusOutput("You are not authenticated.", "", 0)).toBe("unauthenticated");
+  });
+
+  it("detecta 'login required' como unauthenticated", () => {
+    expect(parseAuthStatusOutput("Login required to continue.", "", 0)).toBe("unauthenticated");
+  });
+
+  it("detecta 'please log in' / 'please login' como unauthenticated", () => {
+    expect(parseAuthStatusOutput("Please log in first.", "", 0)).toBe("unauthenticated");
+    expect(parseAuthStatusOutput("Please login to proceed.", "", 0)).toBe("unauthenticated");
+  });
+
+  it("detecta 'logged in' como authenticated", () => {
+    expect(parseAuthStatusOutput("Logged in as user@example.com", "", 0)).toBe("authenticated");
+    expect(parseAuthStatusOutput("You are logged in.", "", 0)).toBe("authenticated");
+  });
+
+  it("detecta 'account:' como authenticated", () => {
+    expect(parseAuthStatusOutput("account: user@example.com\nplan: pro", "", 0)).toBe("authenticated");
+  });
+
+  it("detecta 'authenticated' isolado no stdout como authenticated", () => {
+    expect(parseAuthStatusOutput("Status: authenticated", "", 0)).toBe("authenticated");
+  });
+
+  it("retorna unknown quando saida e ambigua (exit 0, sem sinal conhecido)", () => {
+    expect(parseAuthStatusOutput("ok", "", 0)).toBe("unknown");
+    expect(parseAuthStatusOutput("", "", 0)).toBe("unknown");
+  });
+
+  it("verifica stderr também — unauthenticated via stderr", () => {
+    expect(parseAuthStatusOutput("", "Not logged in — run claude auth login", 0)).toBe("unauthenticated");
   });
 });
 

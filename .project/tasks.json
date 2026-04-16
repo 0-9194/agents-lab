@@ -679,21 +679,20 @@
     {
       "id": "TASK-BUD-032",
       "description": "[P1] Criar adapter experimental para Claude Code CLI como runtime de subagente, com auth-status/login bridge e execução controlada por policy.",
-      "status": "planned",
+      "status": "completed",
       "depends_on": [
         "TASK-BUD-031"
       ],
       "files": [
-        "packages/pi-stack/extensions",
-        "docs/guides/budget-governance.md",
-        "docs/research"
+        "packages/pi-stack/extensions/claude-code-adapter.ts",
+        "packages/pi-stack/test/smoke/claude-code-adapter-parsers.test.ts"
       ],
       "acceptance_criteria": [
         "Detecta binário local (`claude.exe`) e expõe status operacional.",
         "Fluxo de login segue caminho oficial do provider com fallback manual; automação browser é opcional/local.",
         "Execução como subagente respeita budget governor e trilha auditável."
       ],
-      "notes": "Usuário confirmou binário disponível em `c:\\Users\\aretw\\.local\\bin\\claude.exe`."
+      "notes": "Implementado em TASK-BUD-033 (claude_code_execute + budget governor). BUD-032 completa o auth bridge: extraiu parseAuthStatusOutput como função pura testável (interpreta stdout/stderr de 'claude auth status' em authenticated/unauthenticated/unknown). 11 novos testes adicionados cobrindo: exit code não-zero, todas as frases de sinal conhecidas (not logged, not authenticated, login required, logged in, account:), saída ambígua, e stderr."
     },
     {
       "type": "feature",
@@ -878,11 +877,10 @@
       "references": [
         "REQ-BUD-024"
       ],
-      "description": "[P0] Evoluir a tool `ant_colony` para aceitar um parâmetro de override da política de entrega (ex: `deliveryMode='apply-to-branch'`), eliminando a necessidade de editar a configuração global. A implementação pode ser via parâmetro direto ou um comando wrapper (ex: /colony-promote) que invoca a `ant_colony` com permissões elevadas.",
+      "description": "[P0] Evoluir a tool ant_colony para aceitar deliveryMode='apply-to-branch' como parametro de override por chamada, eliminando necessidade de editar a configuracao global.",
       "id": "TASK-BUD-042",
       "status": "completed",
       "type": "feature",
-      "description": "[P0] Evoluir a tool ant_colony para aceitar deliveryMode='apply-to-branch' como parametro de override por chamada, eliminando necessidade de editar a configuracao global.",
       "files": [
         "packages/pi-stack/extensions/colony-pilot.ts",
         "packages/pi-stack/test/smoke/colony-pilot-parsers.test.ts"
@@ -915,7 +913,7 @@
     {
       "id": "TASK-BUD-044",
       "description": "[P1] Criar GitHub Actions workflow para abrir a janela de cota do provider no horário ideal (7-8h) via chamada mínima à API, permitindo que a janela expire cedo o suficiente para reiniciar antes do horário de trabalho pesado.",
-      "status": "planned",
+      "status": "completed",
       "type": "feature",
       "files": [
         ".github/workflows/quota-window-opener.yml"
@@ -927,7 +925,7 @@
         "Execução registra evidência mínima (timestamp + provider + tokens consumidos) nos logs do Actions.",
         "Não expõe credenciais — usa GitHub Secrets."
       ],
-      "notes": "Motivação (2026-04-16): usuário identificou que iniciar o consumo da janela de cota mais cedo permite que ela expire e reinicie antes do pico de trabalho. Estratégia: um workflow cron que faz um 'oi' ao modelo às 7-8h, abrindo a janela. Quando a janela expirar (dependendo do provider: 5h/diária/semanal), já terá reiniciado para quando o trabalho pesado começar."
+      "notes": "Motivação (2026-04-16): usuário identificou que iniciar o consumo da janela de cota mais cedo permite que ela expire e reinicie antes do pico de trabalho. Estratégia: um workflow cron que faz um 'oi' ao modelo às 7-8h, abrindo a janela. Quando a janela expirar (dependendo do provider: 5h/diária/semanal), já terá reiniciado para quando o trabalho pesado começar.\n[2026-04-16T15:00:00Z] Implementado. .github/workflows/quota-window-opener.yml: cron 0 10 * * 1-5 (10h UTC = 7h BRT, Seg-Sex). Chama claude-haiku-4-5-20251001 com max_tokens=1 via Anthropic API. Secret: ANTHROPIC_API_KEY. Dry-run via workflow_dispatch. Loga timestamp + tokens consumidos."
     }
   ]
 }

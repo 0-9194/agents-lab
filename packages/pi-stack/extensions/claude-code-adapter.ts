@@ -112,6 +112,51 @@ export function parseWhichLikeOutput(stdout: string): string | undefined {
   return line && line.length > 0 ? line : undefined;
 }
 
+/**
+ * Pure function — interprets `claude auth status` output into a typed auth
+ * status. Extracted so it can be unit-tested without invoking the CLI.
+ *
+ * Rules (applied in order):
+ *  1. Non-zero exit code → "unauthenticated"
+ *  2. Combined stdout+stderr contains a "not logged in" or "unauthenticated"
+ *     signal phrase (case-insensitive) → "unauthenticated"
+ *  3. Contains an affirmative phrase ("logged in", "authenticated") → "authenticated"
+ *  4. Otherwise → "unknown" (output exists but is ambiguous)
+ */
+export function parseAuthStatusOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): ClaudeCodeRuntimeStatus["authStatus"] {
+  if (exitCode !== 0) return "unauthenticated";
+
+  const combined = `${stdout ?? ""}\n${stderr ?? ""}`.toLowerCase();
+
+  // Explicit unauthenticated signals
+  if (
+    combined.includes("not logged") ||
+    combined.includes("not authenticated") ||
+    combined.includes("unauthenticated") ||
+    combined.includes("login required") ||
+    combined.includes("please log in") ||
+    combined.includes("please login")
+  ) {
+    return "unauthenticated";
+  }
+
+  // Explicit authenticated signals
+  if (
+    combined.includes("logged in") ||
+    combined.includes("authenticated") ||
+    combined.includes("you are signed in") ||
+    combined.includes("account:")
+  ) {
+    return "authenticated";
+  }
+
+  return "unknown";
+}
+
 async function detectClaudeBinary(pi: ExtensionAPI): Promise<string | undefined> {
   const candidates = process.platform === "win32"
     ? [["where", ["claude"]], ["where", ["claude-code"]]]
@@ -135,10 +180,7 @@ async function detectClaudeAuth(pi: ExtensionAPI, binaryPath: string): Promise<C
   const cmd = binaryPath.toLowerCase().endsWith(".exe") ? binaryPath : "claude";
   try {
     const r = await pi.exec(cmd, ["auth", "status"], { timeout: 8000 });
-    if (r.code !== 0) return "unauthenticated";
-    const out = `${r.stdout ?? ""}\n${r.stderr ?? ""}`.toLowerCase();
-    if (out.includes("not logged") || out.includes("unauth")) return "unauthenticated";
-    return "authenticated";
+    return parseAuthStatusOutput(r.stdout ?? "", r.stderr ?? "", r.code);
   } catch {
     return "unknown";
   }

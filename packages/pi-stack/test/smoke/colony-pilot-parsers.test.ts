@@ -80,6 +80,50 @@ describe("colony-pilot parsers", () => {
     expect(normalizeColonySignalId("${launched.id}")).toBeUndefined();
   });
 
+  // BUD-019: comprehensive coverage for malformed signal IDs
+  describe("normalizeColonySignalId — malformed IDs", () => {
+    // exact real-world case that created the phantom "colony-colonyidentity-colony" task
+    it("rejeita template literal nao resolvido: colony ${colonyIdentity(colony)}", () => {
+      expect(normalizeColonySignalId("colony ${colonyIdentity(colony)}")).toBeUndefined();
+    });
+
+    it("rejeita qualquer ID contendo ${...}", () => {
+      expect(normalizeColonySignalId("${colonyIdentity(colony)}")).toBeUndefined();
+      expect(normalizeColonySignalId("c${x}1")).toBeUndefined();
+      expect(normalizeColonySignalId("prefix-${var}-suffix")).toBeUndefined();
+    });
+
+    it("rejeita ID com } solitario", () => {
+      expect(normalizeColonySignalId("foo}bar")).toBeUndefined();
+    });
+
+    it("rejeita ID vazio ou apenas whitespace", () => {
+      expect(normalizeColonySignalId("")).toBeUndefined();
+      expect(normalizeColonySignalId("   ")).toBeUndefined();
+    });
+
+    it("rejeita ID com espacos", () => {
+      expect(normalizeColonySignalId("colony abc")).toBeUndefined();
+    });
+
+    it("aceita IDs validos simples", () => {
+      expect(normalizeColonySignalId("c1")).toBe("c1");
+      expect(normalizeColonySignalId("colony-abc")).toBe("colony-abc");
+      expect(normalizeColonySignalId("C3")).toBe("C3");
+      expect(normalizeColonySignalId("abc.def")).toBe("abc.def");
+    });
+
+    it("extrai primeiro segmento de IDs compostos com pipe", () => {
+      expect(normalizeColonySignalId("c1|colony-abc-123")).toBe("c1");
+      expect(normalizeColonySignalId("c2|stable")).toBe("c2");
+    });
+
+    it("rejeita primeiro segmento invalido mesmo com pipe", () => {
+      expect(normalizeColonySignalId("${bad}|c1")).toBeUndefined();
+      expect(normalizeColonySignalId("colony ${x}|fallback")).toBeUndefined();
+    });
+  });
+
   it("requiresApplyToBranch detecta goals de materialização/promoção", () => {
     expect(requiresApplyToBranch("Executar promoção/materialização no branch principal")).toBe(true);
     expect(requiresApplyToBranch("apply outputs to main")).toBe(true);

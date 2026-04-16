@@ -246,8 +246,8 @@
     {
       "id": "colony-colonyidentity-colony",
       "description": "[COLONY:ant_colony] colony ${colonyIdentity(colony)}",
-      "status": "blocked",
-      "notes": "[2026-04-14T20:52:59.566Z] colony ${colonyIdentity(colony)} phase=failed\n[2026-04-14T20:52:59.584Z] colony ${colonyIdentity(colony)} phase=failed\n[2026-04-14T20:53:05.527Z] colony ${colonyIdentity(colony)} phase=failed\n[2026-04-14T20:53:05.541Z] colony ${colonyIdentity(colony)} phase=failed"
+      "status": "completed",
+      "notes": "[2026-04-14T20:52:59.566Z] colony ${colonyIdentity(colony)} phase=failed\n[2026-04-14T20:52:59.584Z] colony ${colonyIdentity(colony)} phase=failed\n[2026-04-14T20:53:05.527Z] colony ${colonyIdentity(colony)} phase=failed\n[2026-04-14T20:53:05.541Z] colony ${colonyIdentity(colony)} phase=failed\n[2026-04-16T14:32:00Z] PHANTOM TASK — criada por sinal com template literal nao resolvido (BUD-019). normalizeColonySignalId ja rejeita IDs com '${..}' desde commit 340d97e. Fechada como artefato historico; guard em producao previne novas ocorrencias."
     },
     {
       "id": "TASK-BUD-014",
@@ -350,13 +350,14 @@
     {
       "id": "TASK-BUD-019",
       "description": "[P1] Corrigir geração de task IDs inválidos a partir de sinais de colônia com placeholders/template literals (ex.: `colony ${colonyIdentity(colony)}`).",
-      "status": "planned",
+      "status": "completed",
       "depends_on": [
         "TASK-BUD-010",
         "TASK-BUD-014"
       ],
       "files": [
         "packages/pi-stack/extensions/colony-pilot.ts",
+        "packages/pi-stack/test/smoke/colony-pilot-parsers.test.ts",
         ".project/tasks.json"
       ],
       "acceptance_criteria": [
@@ -364,7 +365,7 @@
         "Nenhuma task fantasma é criada no board a partir de IDs não resolvidos.",
         "Teste cobre parsing/sanitize de IDs de sinal malformados."
       ],
-      "notes": "Detectado em runtime: item bloqueado `colony-colonyidentity-colony` criado por sinal inválido."
+      "notes": "Detectado em runtime: item bloqueado `colony-colonyidentity-colony` criado por sinal inválido.\n[2026-04-16T14:32:00Z] Fechado. Guard normalizeColonySignalId ja rejeitava '${...}' (commit 340d97e). Adicionados 8 testes abrangentes em colony-pilot-parsers.test.ts cobrindo: template literal exato do caso real, variantes ${...}, ID vazio/whitespace/espacos, IDs validos, compostos com pipe, e segmento invalido antes do pipe. Phantom task colony-colonyidentity-colony marcada como completed com nota explicativa."
     },
     {
       "id": "colony-c1-promotion",

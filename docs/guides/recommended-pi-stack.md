@@ -110,6 +110,18 @@ Isso grava/mescla `./.pi/settings.json` do workspace com defaults de:
 - web session gateway local determinístico (`127.0.0.1:3100`)
 - guardrail de conflito de porta com sugestão de porta alternativa para testes
 
+## Operações de swarm (ponto de entrada canônico)
+
+Para executar colônias/swarms com segurança, o manual canônico de referência é:
+
+**[swarm-cleanroom-protocol.md](./swarm-cleanroom-protocol.md)** — pré-run, execução, pós-run, promoção de candidates e reconciliação de conflitos.
+
+Leitura complementar obrigatória antes da primeira run autônoma:
+- [agent-driver-charter.md](./agent-driver-charter.md) — critérios de priorização e limites de autonomia
+- [budget-governance.md](./budget-governance.md) — budget envelope e governança de custo
+
+---
+
 ## Filosofia de Curadoria
 
 A stack evolui em dois sentidos:

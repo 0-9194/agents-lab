@@ -2,11 +2,32 @@
 
 Protocolo operacional para usar colônias/swarms com segurança, evitar drift entre sessões e impedir que `candidate-only` fique ocioso.
 
+> **Ponto de entrada único para operações de swarm.** Para critérios de priorização e limites de autonomia, ver [`agent-driver-charter.md`](./agent-driver-charter.md). Para governança de budget, ver [`budget-governance.md`](./budget-governance.md).
+
 ## Objetivo
 
 1. manter o branch principal sempre auditável;
 2. evitar perda de trabalho entre worktrees/stash/recovery;
 3. garantir continuidade quando delivery for `patch-artifact` ou `report-only`.
+
+---
+
+## Estado versionado vs estado efêmero
+
+Antes de operar qualquer swarm, entenda os dois planos de estado:
+
+| Plano | Onde vive | Persiste no git? | Fonte de verdade |
+|-------|-----------|-----------------|-----------------|
+| **Versionado** | `.project/tasks.json`, `.project/requirements.json`, `.project/decisions.json` | Sim | Sim — board oficial |
+| **Efêmero** | Sinais `COLONY_SIGNAL:*` em memória, `PilotState` no runtime, sessões JSONL em `~/.pi/agent/sessions/`, estado de monitors | Não | Não — auxílio operacional |
+
+**Regra prática:** uma colônia pode emitir `COLONY_SIGNAL:COMPLETE` (efêmero) sem que nada tenha sido commitado. Isso não conta como entrega. Só conta quando:
+
+1. o artefato está no branch alvo (git commit ou patch aplicado), **e**
+2. o `.project/tasks.json` foi atualizado com evidência, **e**
+3. a task foi submetida para revisão humana (status `in-progress` como candidato, não `completed`).
+
+A causa raiz dos "candidates órfãos" (como c1–c4 nesta sessão) é tratar o sinal efêmero como conclusão. O board versionado é o único árbitro.
 
 ---
 

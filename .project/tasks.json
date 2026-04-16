@@ -139,23 +139,24 @@
     {
       "id": "TASK-BUD-009",
       "description": "[P0] Consolidar Swarm Launch Policy v1 como manual único de operação (single-board clock + budget + evidência + revisão humana).",
-      "status": "in-progress",
+      "status": "completed",
       "depends_on": [
         "TASK-BUD-005",
         "TASK-BUD-007"
       ],
       "files": [
-        "docs/guides/recommended-pi-stack.md",
         "docs/guides/swarm-cleanroom-protocol.md",
         "docs/guides/consumption-visibility-surfaces.md",
-        "docs/guides/budget-governance.md"
+        "docs/guides/agent-driver-charter.md",
+        "docs/guides/budget-governance.md",
+        "docs/guides/recommended-pi-stack.md"
       ],
       "acceptance_criteria": [
         "Existe checklist operacional único para disparo de swarm com budget envelope.",
         "Manual diferencia estado versionado (board oficial) vs estado efêmero de execução.",
         "Referências duplicadas/confusas foram consolidadas."
       ],
-      "notes": "Derivado de REQ-BUD-006. c2 auditou canonicalização do Swarm Launch Policy e confirmou necessidade de manual canônico único + de-dup de referências. Aguardando aplicação final de arquivos no main e revisão humana.\n[2026-04-16T05:30:15Z] TRIAGEM 2026-04-16: AC1 (checklist operacional) atendido via docs/guides/swarm-cleanroom-protocol.md (commit 97e05db). AC2 e AC3 (manual diferencia board vs efemero + consolidacao de referencias) pendentes. Task permanece in-progress ate manual canonico completo."
+      "notes": "Derivado de REQ-BUD-006. c2 auditou canonicalização do Swarm Launch Policy e confirmou necessidade de manual canônico único + de-dup de referências. Aguardando aplicação final de arquivos no main e revisão humana.\n[2026-04-16T05:30:15Z] TRIAGEM 2026-04-16: AC1 (checklist operacional) atendido via docs/guides/swarm-cleanroom-protocol.md (commit 97e05db). AC2 e AC3 (manual diferencia board vs efemero + consolidacao de referencias) pendentes. Task permanece in-progress ate manual canonico completo.\n[2026-04-16T06:18:51Z] Fechada. Todos os ACs atendidos:\n  AC1: checklist operacional em swarm-cleanroom-protocol.md (fases A-E + criterio de saida)\n  AC2: secao 'Estado versionado vs estado efemero' adicionada ao cleanroom protocol\n  AC3: referencias consolidadas — swarm-cleanroom-protocol.md e' o ponto de entrada canonico;\n       recommended-pi-stack.md e agent-driver-charter.md referenciam corretamente;\n       budget-governance.md ja tinha referencia (linha 158)."
     },
     {
       "id": "TASK-BUD-010",

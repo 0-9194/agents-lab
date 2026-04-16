@@ -113,9 +113,10 @@ Cada execução autônoma deve:
 
 | Recurso | Uso |
 |---------|-----|
-| `docs/guides/swarm-cleanroom-protocol.md` | Protocolo completo de pre/pós-run |
-| `docs/guides/budget-governance.md` | Budget envelope e governança de custo |
-| `docs/guides/quota-visibility.md` | Como auditar consumo e detectar WARN/BLOCK |
-| `.project/tasks.json` | Board canônico — fonte de verdade |
+| [`swarm-cleanroom-protocol.md`](./swarm-cleanroom-protocol.md) | **Protocolo de execução** — pré/pós-run, promoção, reconciliação |
+| [`budget-governance.md`](./budget-governance.md) | Budget envelope e governança de custo |
+| [`quota-visibility.md`](./quota-visibility.md) | Como auditar consumo e detectar WARN/BLOCK |
+| [`provider-readiness`](/provider-matrix) | Verificar saúde de providers antes de lançar swarm |
+| `.project/tasks.json` | Board canônico — fonte de verdade versionada |
 | `.project/requirements.json` | Requisitos que fundamentam as tasks |
 | `.project/decisions.json` | Decisões já tomadas — não reabrir sem evidência nova |

@@ -35,7 +35,8 @@
       "./extensions/quota-visibility.ts",
       "./extensions/provider-readiness.ts",
       "./extensions/session-analytics.ts",
-      "./extensions/handoff-advisor.ts"
+      "./extensions/handoff-advisor.ts",
+      "./extensions/quota-alerts.ts"
     ],
     "themes": [
       "./themes"

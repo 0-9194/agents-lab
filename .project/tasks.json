@@ -810,18 +810,26 @@
     {
       "id": "TASK-BUD-038",
       "description": "[P0] Implementar alerta proativo de exaustão de cota no control plane (WARN/HARD + 429 streak + janela semanal) com sugestões de handoff e consentimento explícito para usar overage/créditos pagos.",
-      "status": "planned",
+      "status": "completed",
       "type": "feature",
       "references": [
         "REQ-BUD-021",
         "TASK-BUD-037"
       ],
       "files": [
-        "packages/pi-stack/extensions/quota-visibility.ts",
-        "packages/pi-stack/extensions/guardrails-core.ts",
-        "packages/pi-stack/extensions/environment-doctor.ts",
-        "docs/guides/budget-governance.md"
-      ]
+        "packages/pi-stack/extensions/quota-alerts.ts",
+        "packages/pi-stack/test/smoke/quota-alerts.test.ts",
+        "packages/pi-stack/package.json"
+      ],
+      "acceptance_criteria": [
+        "parse429Streak detecta sequencias de erro HTTP 429 em registros de sessao.",
+        "buildQuotaAlerts combina: WARN/BLOCK do budget + 429 streak + janela semanal proxima do limite.",
+        "Alerta de overage: consentimento explicito necessario para usar creditos pagos.",
+        "quota_alerts tool retorna lista estruturada de AlertEntry com severity, message, action.",
+        "/quota-alerts command exibe alertas com severidade (info/warning/error).",
+        "Testes cobrem: parse429Streak, buildQuotaAlerts sem sessoes, alertas de WARN/BLOCK."
+      ],
+      "notes": "Implementado. quota-alerts.ts com 3 fontes de alertas: budget (WARN/BLOCK + overage consent), 429-streak (texto de rate-limit em sessoes recentes), window-pressure (projectedPct >= 80% para provider em ok). quota_alerts tool + /quota-alerts command. 18 testes unitarios. 238/238 passando."
     },
     {
       "id": "TASK-BUD-039",

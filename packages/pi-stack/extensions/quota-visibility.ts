@@ -1,7 +1,7 @@
 /**
  * quota-visibility — consumer-side quota observability for pi sessions.
  * @capability-id quota-visibility-ops
- * @capability-criticality medium
+ * @capability-criticality high
  *
  * Why:
  * - Provider dashboards can be opaque for weekly quotas.

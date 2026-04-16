@@ -51,7 +51,10 @@ Antes de lançar swarm:
 3. Confirmar policy ativa:
    - `/colony-pilot status`
    - validar `budgetPolicy`, `deliveryPolicy`, `projectTaskSync`.
-4. Definir modo de entrega da execução:
+4. **(Opcional para runs de alto risco)** Salvar snapshot de settings antes de qualquer mudança de perfil:
+   - `/safe-boot snapshot` — cria `.pi/snapshots/<stamp>-manual.json`
+   - Restaurar depois com: `/safe-boot restore`
+5. Definir modo de entrega da execução:
    - `apply-to-branch` para materialização direta;
    - `patch-artifact` para execução exploratória/controlada.
 

@@ -768,8 +768,14 @@
         "DEC-BUD-016"
       ],
       "id": "TASK-BUD-036",
-      "status": "planned",
-      "type": "chore"
+      "status": "completed",
+      "type": "chore",
+      "files": [
+        "docs/research/pi-stack-curation-audit-2026-04-16.md",
+        "packages/pi-stack/extensions/quota-visibility.ts",
+        "docs/guides/swarm-cleanroom-protocol.md"
+      ],
+      "notes": "Auditoria em docs/research/pi-stack-curation-audit-2026-04-16.md. 15 extensões auditadas. Veredictos: CORE (7), ADOTAR (4), OBSERVAR (2), REFINAR (1). 0 removidas. Ações imediatas aplicadas: quota-visibility criticality medium→high (A1), safe-boot snapshot step no swarm-cleanroom-protocol (A4). Ações diferidas registradas: A2 (fusao claude_code_adapter_status), A3 (governance-profile no hatch check), A5 (web-session-gateway no checklist), A6 (dogfood governance-profiles). Desbloqueia TASK-BUD-043."
     },
     {
       "id": "TASK-BUD-037",

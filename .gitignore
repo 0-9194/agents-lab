@@ -138,12 +138,20 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Pi workspace runtime artifacts
+# Pi workspace runtime artifacts (ephemeral — NOT versioned)
 .pi-lens/
 .pi/monitors/
+.pi/agent/
+.pi/reports/
+.pi/snapshots/
 
-# Pi project settings/state versionable (single-board clock)
+# Pi versioned configuration + single-board clock
+# Policy: .pi/settings.json and .pi/agents/*.yaml are shared config — versioned.
+# .project/**/*.json is the canonical task board and architecture record — versioned.
+# Ephemeral artifacts (session logs, reports, snapshots) remain local-only.
 !.pi/settings.json
+!.pi/agents/
+!.pi/agents/*.yaml
 !.project/
 !.project/**/*.json
 packages/web-skills/skills/web-browser/scripts/package-lock.json

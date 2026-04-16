@@ -180,21 +180,16 @@
     {
       "id": "TASK-BUD-011",
       "description": "[P0] Definir política de versionamento de .project no git (incluir board oficial e excluir artefatos efêmeros).",
-      "status": "planned",
-      "depends_on": [
-        "TASK-BUD-007"
-      ],
+      "status": "completed",
       "files": [
-        ".gitignore",
-        "docs/guides/budget-governance.md",
-        "docs/guides/recommended-pi-stack.md"
+        ".gitignore"
       ],
       "acceptance_criteria": [
         ".project deixa de ser ignorado quando for fonte oficial compartilhada.",
         "Artefatos efêmeros continuam claramente excluídos.",
         "Guia documenta migração e impacto para colaboração entre agentes."
       ],
-      "notes": "Alinha soberania de contexto com single-board clock."
+      "notes": "Implementado via .gitignore: .project/**/*.json e .pi/settings.json + .pi/agents/*.yaml incluidos; .pi/reports/, .pi/snapshots/, .pi/agent/ explicitamente excluidos com comentarios de politica. .project/ ja estava rastreado (22 arquivos)."
     },
     {
       "id": "colony-c1",

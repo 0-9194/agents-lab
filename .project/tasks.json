@@ -256,21 +256,21 @@
     {
       "id": "TASK-BUD-014",
       "description": "[P0] Implementar delivery policy hard no colony-pilot (report-only | patch-artifact | apply-to-branch + gates obrigatórios de evidência).",
-      "status": "in-progress",
+      "status": "completed",
       "depends_on": [
         "TASK-BUD-013"
       ],
       "files": [
-        "packages/pi-stack/extensions/colony-pilot.ts",
+        "docs/research/colony-project-task-bridge.md",
         "docs/guides/budget-governance.md",
-        "docs/research/colony-project-task-bridge.md"
+        "packages/pi-stack/extensions/colony-pilot.ts"
       ],
       "acceptance_criteria": [
         "Config suporta modo de entrega explícito e default seguro.",
         "Gate hard bloqueia marcação de entrega sem inventário de arquivos + comandos de validação.",
         "Fluxo de recovery preserva patch/artefato quando apply não ocorre."
       ],
-      "notes": "Implementação iniciada no colony-pilot com delivery policy hard/configurável (modo de entrega + gates de evidência). Expandir para contexto runner/interface-agnostic conforme REQ-BUD-009."
+      "notes": "Implementação iniciada no colony-pilot com delivery policy hard/configurável (modo de entrega + gates de evidência). Expandir para contexto runner/interface-agnostic conforme REQ-BUD-009.\n[2026-04-16T05:38:50Z] Fechada por triagem 2026-04-16. Todos os ACs verificados:\n  AC1: tres modos suportados (report-only|patch-artifact|apply-to-branch) + default seguro\n  AC2: evaluateColonyDeliveryEvidence bloqueia sem fileInventory+validationCommandLog\n  AC3: recovery auto-queue de *-promotion task quando apply nao ocorre (l.1677-1703)\nRef: commits 0698142, 340d97e, 96c605f"
     },
     {
       "id": "TASK-BUD-015",

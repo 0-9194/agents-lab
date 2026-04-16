@@ -35,6 +35,7 @@ import {
   resolveColonyPilotProjectTaskSync,
   resolveColonyPilotDeliveryPolicy,
   evaluateColonyDeliveryEvidence,
+  ensureRecoveryTaskForCandidate,
   colonyPhaseToProjectTaskStatus,
   buildModelPolicyProfile,
   resolveModelPolicyProfile,
@@ -638,5 +639,67 @@ describe("colony-pilot parsers", () => {
     expect(colonyPhaseToProjectTaskStatus("completed", true)).toBe("in-progress");
     expect(colonyPhaseToProjectTaskStatus("completed", false)).toBe("completed");
     expect(colonyPhaseToProjectTaskStatus("budget_exceeded", true)).toBe("blocked");
+  });
+
+  it("ensureRecoveryTaskForCandidate cria task de promoção quando evidência está ausente", () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-delivery-recovery-"));
+    mkdirSync(join(dir, ".project"), { recursive: true });
+    writeFileSync(
+      join(dir, ".project", "tasks.json"),
+      JSON.stringify({ tasks: [{ id: "colony-c1", status: "in-progress", description: "[COLONY] test" }] })
+    );
+
+    const cfg = resolveColonyPilotProjectTaskSync({ recoveryTaskSuffix: "promotion", maxNoteLines: 5 });
+    const result = ensureRecoveryTaskForCandidate(dir, {
+      sourceTaskId: "colony-c1",
+      colonyId: "c1",
+      goal: "meu objetivo",
+      deliveryMode: "patch-artifact",
+      issues: ["delivery evidence missing: file inventory"],
+      config: cfg,
+    });
+
+    expect(result.changed).toBe(true);
+    expect(result.taskId).toBe("colony-c1-promotion");
+
+    const raw = JSON.parse(require("node:fs").readFileSync(join(dir, ".project", "tasks.json"), "utf8"));
+    const recovery = raw.tasks.find((t: { id: string }) => t.id === "colony-c1-promotion");
+    expect(recovery).toBeDefined();
+    expect(recovery.status).toBe("planned");
+    expect(recovery.notes).toMatch(/auto-queued/);
+    expect(recovery.notes).toMatch(/file inventory/);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("ensureRecoveryTaskForCandidate não duplica task de promoção existente", () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-delivery-nodup-"));
+    mkdirSync(join(dir, ".project"), { recursive: true });
+    writeFileSync(
+      join(dir, ".project", "tasks.json"),
+      JSON.stringify({
+        tasks: [
+          { id: "colony-c1", status: "in-progress", description: "[COLONY] test" },
+          { id: "colony-c1-promotion", status: "planned", description: "[RECOVERY] existing", notes: "nota anterior" },
+        ],
+      })
+    );
+
+    const cfg = resolveColonyPilotProjectTaskSync({ recoveryTaskSuffix: "promotion", maxNoteLines: 5 });
+    const result = ensureRecoveryTaskForCandidate(dir, {
+      sourceTaskId: "colony-c1",
+      colonyId: "c1",
+      goal: "meu objetivo",
+      deliveryMode: "patch-artifact",
+      issues: [],
+      config: cfg,
+    });
+
+    expect(result.taskId).toBe("colony-c1-promotion");
+    const raw = JSON.parse(require("node:fs").readFileSync(join(dir, ".project", "tasks.json"), "utf8"));
+    const promotions = raw.tasks.filter((t: { id: string }) => t.id === "colony-c1-promotion");
+    expect(promotions.length).toBe(1);
+
+    rmSync(dir, { recursive: true, force: true });
   });
 });

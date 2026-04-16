@@ -1662,7 +1662,7 @@ function upsertProjectTaskFromColonySignal(
   return { changed, taskId, status: current.status };
 }
 
-function ensureRecoveryTaskForCandidate(
+export function ensureRecoveryTaskForCandidate(
   cwd: string,
   options: {
     sourceTaskId: string;

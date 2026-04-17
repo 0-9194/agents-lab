@@ -1,0 +1,59 @@
+{
+  "version": 1,
+
+  "objectives": {
+    "swarm:scout":      "google/gemini-2.5-flash-lite",
+    "swarm:worker":     "anthropic/claude-sonnet-4.6",
+    "swarm:soldier":    "anthropic/claude-haiku-4.5",
+    "swarm:design":     "google/gemini-3.1-pro",
+    "swarm:backend":    "anthropic/claude-sonnet-4.6",
+    "swarm:multimodal": "google/gemini-3.1-pro",
+    "swarm:review":     "anthropic/claude-haiku-4.5",
+
+    "subagent:default":  "anthropic/claude-haiku-4.5",
+    "subagent:complex":  "anthropic/claude-sonnet-4.6",
+    "subagent:analysis": "google/gemini-2.5-pro",
+
+    "agent:default":  "anthropic/claude-sonnet-4.6",
+    "agent:cheap":    "anthropic/claude-haiku-4.5",
+    "agent:analysis": "google/gemini-2.5-pro"
+  },
+
+  "budgets": {
+    "swarm": {
+      "maxCostUsd": 2.00,
+      "alerts": [50, 75, 90, 95],
+      "timeoutOnGateSec": 30,
+      "defaultActionOnTimeout": "stop"
+    },
+    "subagent": {
+      "maxCostUsd": 0.10,
+      "alerts": [50, 75, 90, 95],
+      "timeoutOnGateSec": 30,
+      "defaultActionOnTimeout": "stop"
+    }
+  },
+
+  "planning": {
+    "enabled": true,
+    "level": "light",
+    "minTaskCount": 3,
+    "requireFilesOnAllTasks": true,
+    "requireContextOnWorkers": true,
+    "requirePriorityOnAll": true
+  },
+
+  "benchmark": {
+    "enabled": true,
+    "maxEntries": 10000,
+    "inlineReport": true,
+    "subagentReport": false
+  },
+
+  "pricing": {
+    "cacheReadDiscount": 0.90,
+    "cacheWriteMultiplier": 1.25
+  },
+
+  "experiments": {}
+}

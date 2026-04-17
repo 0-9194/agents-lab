@@ -229,3 +229,39 @@ Cruze este guia com [`token-efficiency.md`](./token-efficiency.md):
 - audite semanalmente top sessões para detectar regressões cedo.
 
 A combinação **eficiência + evidência** evita tanto desperdício quanto discussão sem dados.
+
+---
+
+## Painel de usage no footer (`/qp`)
+
+O painel de visibilidade pode ser fixado no footer da TUI para monitoramento contínuo.
+
+### Modos
+
+| Comando | Comportamento |
+|---------|---------------|
+| `/qp off` | Oculta o painel (padrão) |
+| `/qp on` | Exibe sempre no rodapé |
+| `/qp auto` | Abre automaticamente quando um provider atinge WARN/BLOCK; fecha quando todos voltam a OK |
+| `/qp snapshot` | Exibe o painel uma vez como notificação efêmera (funciona em qualquer modo) |
+
+### Quando usar `/qp auto`
+
+Útil para sessões longas ou swarms: o painel aparece no momento em que você precisa tomar uma decisão (adicionar fundos, trocar provider, comprar créditos). Quando os providers voltam a OK, o painel some automaticamente.
+
+### O que o painel exibe
+
+Quando ativo, o footer expande com 3 seções:
+
+```
+───── Provider Budgets ──────────────────────────────────────
+  copilot    monthly  req    38%  ████░░░░░░  380/1000req
+  antigrav   monthly  cost   10%  █░░░░░░░░░  $6.04/$60.00
+  codex      monthly  cost   46%  ████▌░░░░░  $82.80/$180.00  ⚠
+───── Rolling Windows ───────────────────────────────────────
+  codex      recent=45k max=182k  peak:14h 15h → start:09h
+───── Route Advisory ────────────────────────────────────────
+  balanced → antigrav  [ ✓antigrav 10%  ⚠codex 46%  ✓copilot 38% ]
+```
+
+> Os dados são atualizados automaticamente a cada turno de conversa com cache de 30s para não impactar performance.

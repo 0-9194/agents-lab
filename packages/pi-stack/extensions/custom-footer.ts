@@ -20,6 +20,7 @@ import type {
   ReadonlyFooterDataProvider,
 } from "@mariozechner/pi-coding-agent";
 import { truncateToWidth } from "@mariozechner/pi-tui";
+import { shouldShowPanel, getCachedStatus, buildPanelLines } from "./quota-panel";
 
 export function hyperlink(url: string, text: string): string {
   return `\x1b]8;;${url}\x07${text}\x1b]8;;\x07`;
@@ -59,6 +60,73 @@ export function collectFooterUsageTotals(
     }
   }
   return totals;
+}
+
+export type FooterTheme = { fg: (color: string, text: string) => string };
+
+export type FooterRenderInput = {
+  usageTotals: FooterUsageTotals;
+  sessionStart: number;
+  cachedPr: PrInfo | null;
+  thinkingLevel: string;
+  modelId: string;
+  modelProvider: string | null;
+  contextPct: number;
+  branch: string | null;
+  budgetStatus: string | undefined;
+  cwd: string;
+};
+
+export function buildFooterLines(
+  input: FooterRenderInput,
+  theme: FooterTheme,
+  width: number,
+): string[] {
+  const { usageTotals, sessionStart, cachedPr, thinkingLevel, modelId, modelProvider,
+          contextPct, branch, budgetStatus, cwd } = input;
+
+  const thinkColor =
+    thinkingLevel === "high" ? "warning"
+    : thinkingLevel === "medium" ? "accent"
+    : thinkingLevel === "low" ? "dim"
+    : "muted";
+
+  const pctColor = contextPct > 75 ? "error" : contextPct > 50 ? "warning" : "success";
+
+  const modelLabel = modelProvider ? `${modelProvider}/${modelId}` : modelId;
+  const modelStr = `${theme.fg(thinkColor, "◆")} ${theme.fg("accent", modelLabel)}`;
+
+  const tokenStats = [
+    theme.fg("accent", `${fmt(usageTotals.input)}/${fmt(usageTotals.output)}`),
+    theme.fg("warning", `$${usageTotals.cost.toFixed(2)}`),
+    theme.fg(pctColor, `${contextPct.toFixed(0)}%`),
+  ].join(" ");
+
+  const elapsed = theme.fg("dim", `⏱${formatElapsed(Date.now() - sessionStart)}`);
+
+  const sep = theme.fg("dim", " | ");
+  const line1Parts = [modelStr, tokenStats, elapsed];
+
+  const cwdParts = cwd.replace(/\\/g, "/").split("/");
+  const shortCwd = cwdParts.length > 2 ? cwdParts.slice(-2).join("/") : cwd;
+  const cwdStr = theme.fg("muted", `⌂ ${shortCwd}`);
+
+  let branchStr = branch ? theme.fg("accent", `⎇ ${branch}`) : "";
+  if (cachedPr) {
+    const prLabel = theme.fg("success", `PR #${cachedPr.number}`);
+    branchStr = branchStr
+      ? `${branchStr} ${hyperlink(cachedPr.url, prLabel)}`
+      : hyperlink(cachedPr.url, prLabel);
+  }
+
+  const line2Parts: string[] = [cwdStr];
+  if (branchStr) line2Parts.push(branchStr);
+  if (budgetStatus) line2Parts.push(theme.fg("dim", budgetStatus));
+
+  return [
+    truncateToWidth(line1Parts.join(sep), width),
+    truncateToWidth(line2Parts.join(sep), width),
+  ];
 }
 
 const PR_PROBE_COOLDOWN_MS = 60_000;
@@ -119,57 +187,26 @@ export default function customFooterExtension(pi: ExtensionAPI) {
         invalidate() {},
         render(width: number): string[] {
           const usage = ctx.getContextUsage();
-          const pct = usage?.percent ?? 0;
-          const pctColor = pct > 75 ? "error" : pct > 50 ? "warning" : "success";
-
-          const tokenStats = [
-            theme.fg("accent", `${fmt(usageTotals.input)}/${fmt(usageTotals.output)}`),
-            theme.fg("warning", `$${usageTotals.cost.toFixed(2)}`),
-            theme.fg(pctColor, `${pct.toFixed(0)}%`),
-          ].join(" ");
-
-          const elapsed = theme.fg("dim", `⏱${formatElapsed(Date.now() - sessionStart)}`);
-
-          const cwdParts = process.cwd().replace(/\\/g, "/").split("/");
-          const shortCwd = cwdParts.length > 2 ? cwdParts.slice(-2).join("/") : process.cwd();
-          const cwdStr = theme.fg("muted", `⌂ ${shortCwd}`);
-
-          const branch = footerData.getGitBranch();
-          let branchStr = branch ? theme.fg("accent", `⎇ ${branch}`) : "";
-          if (cachedPr) {
-            const prLabel = theme.fg("success", `PR #${cachedPr.number}`);
-            branchStr = branchStr
-              ? `${branchStr} ${hyperlink(cachedPr.url, prLabel)}`
-              : hyperlink(cachedPr.url, prLabel);
-          }
-
-          const thinking = pi.getThinkingLevel();
-          const thinkColor =
-            thinking === "high" ? "warning"
-            : thinking === "medium" ? "accent"
-            : thinking === "low" ? "dim"
-            : "muted";
-
-          // provider/modelId — core addition over upstream
-          const modelId = ctx.model?.id ?? "no-model";
           const modelProvider = (ctx.model as Record<string, unknown> | undefined)?.["provider"];
-          const modelLabel = typeof modelProvider === "string" && modelProvider
-            ? `${modelProvider}/${modelId}`
-            : modelId;
-          const modelStr = `${theme.fg(thinkColor, "◆")} ${theme.fg("accent", modelLabel)}`;
-
-          const sep = theme.fg("dim", " | ");
-          const leftParts = [modelStr, tokenStats, elapsed];
-
-          // budget status from quota-visibility — shown when available
           const statuses = footerData.getExtensionStatuses?.();
-          const budgetStatus = statuses?.get("quota-budgets");
-          if (budgetStatus) leftParts.push(theme.fg("dim", budgetStatus));
-
-          leftParts.push(cwdStr);
-          if (branchStr) leftParts.push(branchStr);
-
-          return [truncateToWidth(leftParts.join(sep), width)];
+          const baseLines = buildFooterLines(
+            {
+              usageTotals,
+              sessionStart,
+              cachedPr,
+              thinkingLevel: pi.getThinkingLevel(),
+              modelId: ctx.model?.id ?? "no-model",
+              modelProvider: typeof modelProvider === "string" && modelProvider ? modelProvider : null,
+              contextPct: usage?.percent ?? 0,
+              branch: footerData.getGitBranch(),
+              budgetStatus: statuses?.get("quota-budgets"),
+              cwd: process.cwd(),
+            },
+            theme,
+            width,
+          );
+          if (!shouldShowPanel()) return baseLines;
+          return [...baseLines, ...buildPanelLines(getCachedStatus(), width)];
         },
       };
     });

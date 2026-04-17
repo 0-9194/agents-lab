@@ -1,9 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import customFooterExtension, {
   formatElapsed,
   fmt,
   collectFooterUsageTotals,
+  buildFooterLines,
+  type FooterRenderInput,
 } from "../../extensions/custom-footer";
+import { setMode, resetAuto } from "../../extensions/quota-panel";
 
 function makeMockPi() {
   return {
@@ -94,5 +97,94 @@ describe("custom-footer — pure formatters", () => {
       } as any;
       expect(collectFooterUsageTotals(ctx)).toEqual({ input: 0, output: 0, cost: 0 });
     });
+  });
+});
+
+describe("custom-footer — buildFooterLines", () => {
+  const plainTheme = { fg: (_color: string, text: string) => text };
+
+  const baseInput: FooterRenderInput = {
+    usageTotals: { input: 1000, output: 500, cost: 0.05 },
+    sessionStart: Date.now() - 90_000,
+    cachedPr: null,
+    thinkingLevel: "none",
+    modelId: "claude-sonnet-4-6",
+    modelProvider: "anthropic",
+    contextPct: 30,
+    branch: "main",
+    budgetStatus: undefined,
+    cwd: "/home/user/projects/agents-lab",
+  };
+
+  it("retorna exatamente 2 linhas", () => {
+    const lines = buildFooterLines(baseInput, plainTheme, 200);
+    expect(lines).toHaveLength(2);
+  });
+
+  it("linha 1 contém provider/model e custo", () => {
+    const lines = buildFooterLines(baseInput, plainTheme, 200);
+    expect(lines[0]).toContain("anthropic/claude-sonnet-4-6");
+    expect(lines[0]).toContain("$0.05");
+  });
+
+  it("linha 1 contém tempo decorrido", () => {
+    const lines = buildFooterLines(baseInput, plainTheme, 200);
+    expect(lines[0]).toContain("1m30s");
+  });
+
+  it("linha 2 contém cwd e branch", () => {
+    const lines = buildFooterLines(baseInput, plainTheme, 200);
+    expect(lines[1]).toContain("projects/agents-lab");
+    expect(lines[1]).toContain("main");
+  });
+
+  it("linha 2 inclui budgetStatus quando presente", () => {
+    const lines = buildFooterLines(
+      { ...baseInput, budgetStatus: "✓copilot:38% !codex:46%" },
+      plainTheme,
+      200,
+    );
+    expect(lines[1]).toContain("✓copilot:38% !codex:46%");
+  });
+
+  it("linha 2 não inclui budget quando ausente", () => {
+    const lines = buildFooterLines({ ...baseInput, budgetStatus: undefined }, plainTheme, 200);
+    expect(lines[1]).not.toContain("%");
+  });
+
+  it("usa modelId sem provider quando modelProvider é null", () => {
+    const lines = buildFooterLines({ ...baseInput, modelProvider: null }, plainTheme, 200);
+    expect(lines[0]).toContain("claude-sonnet-4-6");
+    expect(lines[0]).not.toContain("/claude-sonnet-4-6");
+  });
+
+});
+
+describe("custom-footer — panel integration", () => {
+  beforeEach(() => {
+    setMode("off");
+    resetAuto();
+  });
+
+  it("buildFooterLines retorna 2 linhas quando painel está off", () => {
+    setMode("off");
+    const plainTheme = { fg: (_: string, text: string) => text };
+    const lines = buildFooterLines(
+      {
+        usageTotals: { input: 0, output: 0, cost: 0 },
+        sessionStart: Date.now(),
+        cachedPr: null,
+        thinkingLevel: "none",
+        modelId: "test-model",
+        modelProvider: "test-provider",
+        contextPct: 10,
+        branch: "main",
+        budgetStatus: undefined,
+        cwd: "/home/user/project",
+      },
+      plainTheme,
+      200,
+    );
+    expect(lines).toHaveLength(2);
   });
 });

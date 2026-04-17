@@ -1,0 +1,282 @@
+{
+  "runId": "run-2026-04-13",
+  "arms": [
+    {
+      "id": "A",
+      "name": "baseline",
+      "tasks": [
+        {
+          "taskId": "I1",
+          "prompt": "Abra a documentação do Vitest, navegue até a página Guide > Mocking e retorne a URL exata da página final e 3 bullets.",
+          "elapsedSec": 58.7,
+          "exitCode": 0,
+          "toolCalls": [
+            "bash",
+            "bash",
+            "read",
+            "bash",
+            "read",
+            "bash",
+            "read",
+            "bash",
+            "read"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "python - <<'PY'\nimport requests\nurl='https://vitest.dev/guide/mocking'\nr=requests.get(url,allow_redirects=True,timeout=20)\nprint('final',r.url)\nprint('status',r.status_code)\nprint('title snippet',r.text[:500])\nPY",
+            "curl -Ls -o /tmp/vitest_mocking.html -w \"FINAL_URL:%{url_effective}\\nHTTP:%{http_code}\\n\" https://vitest.dev/guide/mocking",
+            "curl -Ls -o vitest_mocking.html -w \"FINAL_URL:%{url_effective}\\nHTTP:%{http_code}\\n\" https://vitest.dev/guide/mocking && pwd",
+            "curl -Ls -o vitest_mocking_chunk.js https://vitest.dev/assets/guide_mocking.md.DZavQunt.lean.js && echo saved",
+            "curl -Ls -o vitest_mocking_full.js https://vitest.dev/assets/guide_mocking.md.DZavQunt.js && wc -c vitest_mocking_full.js"
+          ],
+          "cdpPathDetected": false,
+          "extractToolsDetected": false,
+          "assistantAnswer": "URL final exata: **https://vitest.dev/guide/mocking**\n\n- A página recomenda começar por `vi.fn`, `vi.spyOn` e `vi.mock`, e reforça limpar/restaurar mocks entre testes (`mockReset`, etc.) para evitar vazamento de estado.\n- O guia traz uma **cheat sheet** com exemplos práticos para mockar variáveis, funções, classes, partes de módulos, datas (`vi.setSystemTime`), globais (`vi.stubGlobal`) e `import.meta.env` (`vi.stubEnv`).\n- Há alertas importantes: `vi.mock` é **hoisted** (executa antes dos imports), alguns padrões com `vi.spyOn` não funcionam no **Browser Mode**, e stubs de env/globais não resetam automaticamente sem configuração (`unstubEnvs`/`unstubGlobals`) ou limpeza manual."
+        },
+        {
+          "taskId": "I2",
+          "prompt": "Abra npmjs do pacote vitest, vá para a seção de dependências e retorne 5 dependências.",
+          "elapsedSec": 29.0,
+          "exitCode": 0,
+          "toolCalls": [
+            "read",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "npm view vitest dependencies --json"
+          ],
+          "cdpPathDetected": false,
+          "extractToolsDetected": false,
+          "assistantAnswer": "Perfeito — na seção de dependências do pacote **vitest** (npm), aqui vão **5 dependências**:\n\n1. `vite`\n2. `picomatch`\n3. `magic-string`\n4. `tinybench`\n5. `@vitest/runner`"
+        },
+        {
+          "taskId": "I3",
+          "prompt": "Abra o site vite.dev, navegue até o blog e encontre o post announcing vite 7, retornando título e URL final.",
+          "elapsedSec": 46.8,
+          "exitCode": 0,
+          "toolCalls": [
+            "read",
+            "bash",
+            "bash",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "python - <<'PY'\nimport requests, bs4, re\nbase='https://vite.dev'\nhtml=requests.get(base+'/blog/').text\nsoup=bs4.BeautifulSoup(html,'html.parser')\nfor a in soup.select('a'):\n    t=a.get_text(' ',strip=True)\n    h=a.get('href')\n    if t and h and re.search(r'vite\\s*7',t,re.I):\n        print(t,'|',h)\nPY",
+            "python - <<'PY'\nfrom urllib.request import urlopen\nfrom urllib.parse import urljoin\nimport re\nhtml=urlopen('https://vite.dev/blog/').read().decode('utf-8','ignore')\n# find anchor tags roughly\nfor m in re.finditer(r'<a[^>]+href=[\"\\']([^\"\\']+)[\"\\'][^>]*>(.*?)</a>', html, re.I|re.S):\n    href,text=m.group(1),re.sub('<[^<]+?>','',m.group(2))\n    text=' '.join(text.split())\n    if re.search(r'vite\\s*7',text,re.I):\n        print(text)\n        print(urljoin('https://vite.dev/blog/',href))\nPY",
+            "curl -Ls -o /dev/null -w \"%{url_effective}\\n\" https://vite.dev/blog/announcing-vite7"
+          ],
+          "cdpPathDetected": false,
+          "extractToolsDetected": false,
+          "assistantAnswer": "Encontrei no blog da Vite:\n\n- **Título:** Announcing Vite 7  \n- **URL final:** https://vite.dev/blog/announcing-vite7"
+        },
+        {
+          "taskId": "I4",
+          "prompt": "Navegue pela documentação do TypeScript para a seção de tsconfig e resuma em 3 bullets a página final visitada com URL.",
+          "elapsedSec": 81.02,
+          "exitCode": 0,
+          "toolCalls": [
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash"
+          ],
+          "bashCommands": [
+            "python - <<'PY'\nimport requests\nurl='https://www.typescriptlang.org/tsconfig/'\nhtml=requests.get(url,timeout=20).text\nprint('len',len(html))\nprint(html[:500])\nprint('tsconfig' in html.lower())\nPY",
+            "python - <<'PY'\nfrom urllib.request import urlopen\nurl='https://www.typescriptlang.org/tsconfig/'\nhtml=urlopen(url,timeout=20).read().decode('utf-8','ignore')\nprint('len',len(html))\nprint(html[:500])\nprint('article' in html)\nPY",
+            "python - <<'PY'\nfrom urllib.request import urlopen\nimport re\nurl='https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html'\nhtml=urlopen(url,timeout=20).read().decode('utf-8','ignore')\nfor pat in [r'<title>(.*?)</title>', r'<meta data-react-helmet=\"true\" name=\"description\" content=\"(.*?)\"', r'<h1[^>]*>(.*?)</h1>']:\n m=re.search(pat,html,re.S)\n print(pat, '=>', (m.group(1)[:200] if m else None))\n# print snippet around first article\nidx=html.find('<article')\nprint('article idx',idx)\nprint(html[idx:idx+1000])\nPY",
+            "python - <<'PY'\nfrom urllib.request import urlopen\nimport re\nurl='https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html'\nhtml=urlopen(url).read().decode('utf-8','ignore')\nfor needle in ['noUncheckedIndexedAccess','Turning on','undefined','EnvironmentVars']:\n i=html.find(needle)\n print(needle,i)\n if i!=-1:\n  print(html[i-200:i+400])\n  print('---')\nPY",
+            "python - <<'PY'\nfrom urllib.request import urlopen\nimport re, html as h\nurl='https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html'\nraw=urlopen(url).read().decode('utf-8','ignore')\n# extract paragraph texts\nparas=re.findall(r'<p>(.*?)</p>', raw, re.S)\nclean=[]\nfor p in paras:\n    t=re.sub(r'<[^>]+>','',p)\n    t=h.unescape(t).strip()\n    if t:\n        clean.append(t)\nfor i,t in enumerate(clean):\n    if 'noUncheckedIndexedAccess' in t or 'EnvironmentVars' in t or ('index signature' in t.lower()):\n        print(i, t)\nprint('\\nNearby:')\nfor i in range(max(0,16), min(len(clean),26)):\n    print(i, clean[i])\nPY",
+            "python - <<'PY'\nfrom urllib.request import urlopen\nimport re, html\nraw=urlopen('https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html').read().decode('utf-8','ignore')\npres=re.findall(r'<pre class=\"shiki[^\"]*\"[^>]*>.*?<code>(.*?)</code>.*?</pre>',raw,re.S)\nprint('pre count',len(pres))\nfor i,p in enumerate(pres[:6]):\n    t=re.sub(r'<[^>]+>','',p)\n    t=html.unescape(t)\n    t='\\n'.join([ln.rstrip() for ln in t.splitlines() if ln.strip()!=''])\n    print('\\n--- pre',i,'---')\n    print(t[:600])\nPY"
+          ],
+          "cdpPathDetected": false,
+          "extractToolsDetected": false,
+          "assistantAnswer": "Página final visitada: **https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html**\n\n- A página explica que, com **index signatures** (`[key: string]: T`), o TypeScript normalmente assume que qualquer chave não declarada também retorna `T`.\n- Ao ativar **`noUncheckedIndexedAccess`**, o TypeScript passa a adicionar `undefined` para propriedades não declaradas acessadas por índice.\n- No exemplo com `EnvironmentVars`, `env.NAME` continua `string`, mas `env.NODE_ENV` muda de `string` para **`string | undefined`**, forçando checagem de segurança antes de usar o valor."
+        }
+      ],
+      "metrics": {
+        "taskCount": 4,
+        "successRate": 1.0,
+        "avgElapsedSec": 53.88,
+        "cdpPathRate": 0.0,
+        "fallbackRate": 1.0
+      }
+    },
+    {
+      "id": "B",
+      "name": "policy-strict",
+      "tasks": [
+        {
+          "taskId": "I1",
+          "prompt": "Abra a documentação do Vitest, navegue até a página Guide > Mocking e retorne a URL exata da página final e 3 bullets.",
+          "elapsedSec": 103.39,
+          "exitCode": 0,
+          "toolCalls": [
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/start.js\"",
+            "bash -lc 'node \"/c/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/start.js\"'",
+            "python - <<'PY'\nimport requests\nfrom bs4 import BeautifulSoup\nurl='https://vitest.dev/guide/mocking'\nr=requests.get(url,timeout=20)\nprint('FINAL_URL',r.url)\nprint('STATUS',r.status_code)\nsoup=BeautifulSoup(r.text,'html.parser')\n# extract main content text bullets\nmain=soup.find('main') or soup\n# collect first relevant list items\nitems=[]\nfor li in main.select('li'):\n    txt=' '.join(li.get_text(' ',strip=True).split())\n    if len(txt)>20 and txt not in items:\n        items.append(txt)\n    if len(items)>=8:\n        break\nprint('ITEMS')\nfor i,t in enumerate(items,1):\n    print(i,t)\nPY",
+            "python - <<'PY'\nfrom urllib.request import urlopen, Request\nfrom urllib.parse import urljoin\nimport re\nurl='https://vitest.dev/guide/mocking'\nreq=Request(url,headers={'User-Agent':'Mozilla/5.0'})\nresp=urlopen(req,timeout=20)\nfinal=resp.geturl()\nhtml=resp.read().decode('utf-8','ignore')\nprint('FINAL_URL',final)\n# extract <li>...</li>\nlis=re.findall(r'<li[^>]*>(.*?)</li>',html,flags=re.S|re.I)\nclean=[]\nfor li in lis:\n    t=re.sub(r'<[^>]+>',' ',li)\n    t=' '.join(t.split())\n    if len(t)>30 and t not in clean:\n        clean.append(t)\n    if len(clean)>=12:\n        break\nfor i,t in enumerate(clean[:12],1):\n    print(f'{i}. {t}')\nPY",
+            "set PYTHONIOENCODING=utf-8 && python - <<'PY'\nfrom urllib.request import urlopen, Request\nimport re\nurl='https://vitest.dev/guide/mocking'\nreq=Request(url,headers={'User-Agent':'Mozilla/5.0'})\nresp=urlopen(req,timeout=20)\nfinal=resp.geturl()\nhtml=resp.read().decode('utf-8','ignore')\nprint('FINAL_URL',final)\nlis=re.findall(r'<li[^>]*>(.*?)</li>',html,flags=re.S|re.I)\nclean=[]\nfor li in lis:\n    t=re.sub(r'<[^>]+>',' ',li)\n    t=' '.join(t.split())\n    if len(t)>40 and t not in clean:\n        clean.append(t)\n    if len(clean)>=20:\n        break\nfor i,t in enumerate(clean[:10],1):\n    print(f'{i}. {t}')\nPY",
+            "python - <<'PY'\nfrom urllib.request import urlopen, Request\nimport re,sys\nurl='https://vitest.dev/guide/mocking'\nreq=Request(url,headers={'User-Agent':'Mozilla/5.0'})\nresp=urlopen(req,timeout=20)\nfinal=resp.geturl()\nhtml=resp.read().decode('utf-8','ignore')\nprint('FINAL_URL',final)\nlis=re.findall(r'<li[^>]*>(.*?)</li>',html,flags=re.S|re.I)\nclean=[]\nfor li in lis:\n    t=re.sub(r'<[^>]+>',' ',li)\n    t=' '.join(t.split())\n    t=t.encode('ascii','ignore').decode('ascii')\n    if len(t)>40 and t not in clean:\n        clean.append(t)\n    if len(clean)>=20:\n        break\nfor i,t in enumerate(clean[:12],1):\n    print(f'{i}. {t}')\nPY",
+            "python - <<'PY'\nfrom urllib.request import urlopen, Request\nurl='https://vitest.dev/guide/mocking.md'\nreq=Request(url,headers={'User-Agent':'Mozilla/5.0'})\ntext=urlopen(req,timeout=20).read().decode('utf-8','ignore')\nprint(text[:2500])\nPY"
+          ],
+          "cdpPathDetected": true,
+          "extractToolsDetected": false,
+          "assistantAnswer": "URL final (Guide > Mocking):  \n**https://vitest.dev/guide/mocking**\n\n3 bullets da página:\n\n- Mocking no Vitest é feito via helper **`vi`** (`vi.fn`, `vi.spyOn`, `vi.mock`), para criar versões “falsas” de dependências internas/externas em testes.\n- A documentação reforça que você deve **limpar/restaurar mocks** entre testes (ex.: `mockReset`) para evitar vazamento de estado.\n- A página centraliza links para guias específicos de mocking: **Classes, Dates, File System, Functions, Globals, Modules, Requests e Timers**."
+        },
+        {
+          "taskId": "I2",
+          "prompt": "Abra npmjs do pacote vitest, vá para a seção de dependências e retorne 5 dependências.",
+          "elapsedSec": 31.95,
+          "exitCode": 0,
+          "toolCalls": [
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "read",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/start.js",
+            "bash -lc 'node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/start.js'",
+            "node C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/nav.js https://www.npmjs.com/package/vitest",
+            "npm view vitest dependencies --json"
+          ],
+          "cdpPathDetected": true,
+          "extractToolsDetected": false,
+          "assistantAnswer": "Encontrei as dependências do pacote **vitest** (seção de dependencies).  \nAqui vão **5** delas:\n\n1. `vite`\n2. `magic-string`\n3. `picomatch`\n4. `tinybench`\n5. `@vitest/runner`"
+        },
+        {
+          "taskId": "I3",
+          "prompt": "Abra o site vite.dev, navegue até o blog e encontre o post announcing vite 7, retornando título e URL final.",
+          "elapsedSec": 100.79,
+          "exitCode": 0,
+          "toolCalls": [
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "read",
+            "bash",
+            "read",
+            "bash",
+            "bash",
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "cd \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser\" && ls",
+            "cd \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser\" && npm install --prefix ./scripts",
+            "cd \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser\" && find . -maxdepth 3 -type f",
+            "cd \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts\" && ls -la",
+            "npm install ws --prefix \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts\"",
+            "cd \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser\" && node ./scripts/start.js",
+            "where chrome",
+            "where msedge",
+            "if exist \"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" (echo yes) else (echo no)",
+            "if exist \"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" (echo yes) else (echo no)",
+            "if exist \"C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe\" (echo yes) else (echo no)",
+            "test -f \"/c/Program Files/Google/Chrome/Application/chrome.exe\" && echo yes || echo no",
+            "test -f \"/c/Program Files (x86)/Google/Chrome/Application/chrome.exe\" && echo yes || echo no",
+            "test -f \"/c/Program Files/Microsoft/Edge/Application/msedge.exe\" && echo yes || echo no",
+            "\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --remote-debugging-port=9222 --user-data-dir=\"/c/Users/aretw/.cache/scraping\" --no-first-run --disable-search-engine-choice-screen about:blank >/tmp/chrome-cdp.log 2>&1 & sleep 2; curl -s http://localhost:9222/json/version",
+            "cd \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser\" && node ./scripts/nav.js https://vite.dev",
+            "cd \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser\" && node ./scripts/eval.js 'JSON.stringify({title: document.title, links: Array.from(document.querySelectorAll(\"a\")).map(a=>({text:a.textContent.trim(),href:a.href})).filter(l=>/blog/i.test(l.text)||/\\/blog/.test(l.href)).slice(0,10)})'",
+            "cd \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser\" && node ./scripts/nav.js https://vite.dev/blog && node ./scripts/eval.js 'JSON.stringify(Array.from(document.querySelectorAll(\"a\")).map(a=>({text:a.textContent.trim(),href:a.href})).filter(l=>/vite\\s*7|announcing vite 7/i.test(l.text)||/announcing-vite-7|vite-7/.test(l.href)).slice(0,20))'",
+            "cd \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser\" && node ./scripts/eval.js 'JSON.stringify(Array.from(document.querySelectorAll(\"a\")).map(a=>({text:a.textContent.replace(/\\s+/g,\" \").trim(),href:a.href})).filter(l=>l.href.includes(\"/blog/\")||l.text).slice(0,120))'",
+            "cd \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser\" && node ./scripts/nav.js https://vite.dev/blog/announcing-vite7 && node ./scripts/eval.js 'JSON.stringify({title:document.querySelector(\"h1\")?.textContent?.trim() || document.title, url: location.href, docTitle: document.title})'"
+          ],
+          "cdpPathDetected": true,
+          "extractToolsDetected": false,
+          "assistantAnswer": "Encontrei o post no blog da Vite:\n\n- **Título:** Vite 7.0 is out! | Vite  \n- **URL final:** https://vite.dev/blog/announcing-vite7"
+        },
+        {
+          "taskId": "I4",
+          "prompt": "Navegue pela documentação do TypeScript para a seção de tsconfig e resuma em 3 bullets a página final visitada com URL.",
+          "elapsedSec": 48.7,
+          "exitCode": 0,
+          "toolCalls": [
+            "read",
+            "bash",
+            "bash",
+            "bash",
+            "bash",
+            "bash"
+          ],
+          "toolCallsUnique": [
+            "bash",
+            "read"
+          ],
+          "bashCommands": [
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/start.js\"",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/nav.js\" https://www.typescriptlang.org/docs/handbook/tsconfig-json.html",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/nav.js\" https://www.typescriptlang.org/tsconfig/",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'JSON.stringify({url: location.href, title: document.title, h1: document.querySelector(\"h1\")?.textContent?.trim(), intro: Array.from(document.querySelectorAll(\"main p\")).slice(0,5).map(p=>p.textContent.trim()).filter(Boolean), sectionHeads: Array.from(document.querySelectorAll(\"main h2, main h3\")).slice(0,12).map(h=>h.textContent.trim())})'",
+            "node \"C:/Users/aretw/Documents/GitHub/agents-lab/packages/web-skills/skills/web-browser/scripts/eval.js\" 'JSON.stringify(Array.from(document.querySelectorAll(\"a[href^=\\\"#\\\"]\")).map(a=>a.textContent.trim()).filter(t=>t && !t.startsWith(\"#\")).slice(0,40))'"
+          ],
+          "cdpPathDetected": true,
+          "extractToolsDetected": false,
+          "assistantAnswer": "Página final visitada: **https://www.typescriptlang.org/tsconfig/**\n\n- É a **referência central do `tsconfig`** no TypeScript, explicando que o arquivo define a raiz e o comportamento de compilação do projeto.\n- A página organiza os **campos raiz** do config (como `files`, `extends`, `include`, `exclude` e `references`) e quando usar cada um.\n- Traz um índice extenso de **`compilerOptions`** (ex.: `strict`, `module`, `moduleResolution`, `paths`, `strictNullChecks`), com documentação individual por opção e seus efeitos no type-checking/build."
+        }
+      ],
+      "metrics": {
+        "taskCount": 4,
+        "successRate": 1.0,
+        "avgElapsedSec": 71.21,
+        "cdpPathRate": 1.0,
+        "fallbackRate": 0.0
+      }
+    }
+  ]
+}

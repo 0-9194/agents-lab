@@ -8,12 +8,22 @@
  * Também verifica que cada colisão conhecida tem um filter patch que
  * suprime o pacote perdedor, fechando o loop entre documentação e correção.
  */
-import { describe, it, expect } from "vitest";
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import * as path from "node:path";
+import { describe, expect, it } from "vitest";
 
 const PKG = path.resolve(__dirname, "../../");
 const REPO_ROOT = path.resolve(PKG, "../../");
+
+function resolveThirdPartyDir(pkgName: string): string | null {
+  const rootPath = path.join(REPO_ROOT, "node_modules", pkgName);
+  if (existsSync(rootPath)) return rootPath;
+
+  const localPath = path.join(PKG, "node_modules", pkgName);
+  if (existsSync(localPath)) return localPath;
+
+  return null;
+}
 
 // Ler FILTER_PATCHES do installer para validação
 const installerContent = readFileSync(path.join(PKG, "install.mjs"), "utf8");
@@ -23,7 +33,9 @@ const patchBlockRe =
   /\{[^{}]*source:\s*["']npm:([^"']+)["'][^{}]*skills:\s*(\[[^\]]*\])[^{}]*\}/gs;
 for (const m of installerContent.matchAll(patchBlockRe)) {
   const src = m[1];
-  const excluded = [...m[2].matchAll(/["']!skills\/([^"']+)["']/g)].map((x) => x[1]);
+  const excluded = [...m[2].matchAll(/["']!skills\/([^"']+)["']/g)].map(
+    (x) => x[1],
+  );
   patchedSkillSources.set(src, excluded);
 }
 
@@ -31,12 +43,20 @@ for (const m of installerContent.matchAll(patchBlockRe)) {
 const KNOWN_COLLISIONS: Record<string, string> = {
   // mitsupi=git-cache mantido; pi-web-access/librarian suprimido pois a funcionalidade
   // foi assimilada como @aretw0/web-skills/source-research
-  librarian:     "mitsupi",
-  commit:        "@aretw0/git-skills",
-  github:        "@aretw0/git-skills",
+  librarian: "mitsupi",
+  commit: "@aretw0/git-skills",
+  github: "@aretw0/git-skills",
   "web-browser": "@aretw0/web-skills",
-  "git-workflow":"@aretw0/git-skills",
+  "git-workflow": "@aretw0/git-skills",
 };
+
+const THIRD_PARTY = [
+  "mitsupi",
+  "pi-lens",
+  "pi-web-access",
+  "@ifi/oh-pi-skills",
+  "@davidorex/pi-project-workflows",
+];
 
 const SCAN_DIRS = [
   // first-party
@@ -44,12 +64,10 @@ const SCAN_DIRS = [
   path.join(REPO_ROOT, "packages/web-skills"),
   path.join(REPO_ROOT, "packages/pi-skills"),
   path.join(REPO_ROOT, "packages/lab-skills"),
-  // third-party (devDependencies)
-  path.join(PKG, "node_modules/mitsupi"),
-  path.join(PKG, "node_modules/pi-lens"),
-  path.join(PKG, "node_modules/pi-web-access"),
-  path.join(PKG, "node_modules/@ifi/oh-pi-skills"),
-  path.join(PKG, "node_modules/@davidorex/pi-project-workflows"),
+  // third-party (root node_modules first, fallback to local package node_modules)
+  ...THIRD_PARTY.map(resolveThirdPartyDir).filter(
+    (p): p is string => p !== null,
+  ),
 ];
 
 function extractSkillName(skillMdPath: string): string | null {
@@ -67,8 +85,12 @@ function collectSkills(pkgDir: string): Map<string, string> {
   if (!existsSync(pkgDir)) return skills;
   let pkgJson: any;
   try {
-    pkgJson = JSON.parse(readFileSync(path.join(pkgDir, "package.json"), "utf8"));
-  } catch { return skills; }
+    pkgJson = JSON.parse(
+      readFileSync(path.join(pkgDir, "package.json"), "utf8"),
+    );
+  } catch {
+    return skills;
+  }
 
   for (const skillDir of pkgJson.pi?.skills ?? []) {
     const resolved = path.join(pkgDir, skillDir);
@@ -99,14 +121,18 @@ const collisions = [...skillMap.entries()].filter(([, e]) => e.length > 1);
 
 describe("skill collisions", () => {
   it("nenhuma colisão inesperada de skill name", () => {
-    const unexpected = collisions.filter(([name]) => !(name in KNOWN_COLLISIONS));
+    const unexpected = collisions.filter(
+      ([name]) => !(name in KNOWN_COLLISIONS),
+    );
     if (unexpected.length === 0) return;
     const msg = unexpected
-      .map(([name, entries]) =>
-        `  Skill "${name}":\n` +
-        entries.map((e) => `    - ${e.path}`).join("\n") +
-        `\n  → Adicione a FILTER_PATCHES em install.mjs ou a KNOWN_COLLISIONS neste teste.`
-      ).join("\n");
+      .map(
+        ([name, entries]) =>
+          `  Skill "${name}":\n` +
+          entries.map((e) => `    - ${e.path}`).join("\n") +
+          `\n  → Adicione a FILTER_PATCHES em install.mjs ou a KNOWN_COLLISIONS neste teste.`,
+      )
+      .join("\n");
     expect.fail(`Novas colisões de skill detectadas:\n${msg}`);
   });
 
@@ -123,12 +149,14 @@ describe("skill collisions", () => {
         .filter((pkg) => !pkg.includes(winner));
       for (const loserPkg of losers) {
         // Extrair nome npm do caminho (último segmento do node_modules/...)
-        const npmName = loserPkg.replace(/.*node_modules[\/\\]/, "").replace(/\\/g, "/");
+        const npmName = loserPkg
+          .replace(/.*node_modules[\/\\]/, "")
+          .replace(/\\/g, "/");
         const excluded = patchedSkillSources.get(npmName) ?? [];
         if (!excluded.includes(skillName)) {
           missing.push(
             `Skill "${skillName}": pacote perdedor "${npmName}" não tem patch excluindo !skills/${skillName}` +
-            `\n  → Adicione em FILTER_PATCHES: { source: "npm:${npmName}", skills: ["!skills/${skillName}"] }`
+              `\n  → Adicione em FILTER_PATCHES: { source: "npm:${npmName}", skills: ["!skills/${skillName}"] }`,
           );
         }
       }
@@ -136,7 +164,7 @@ describe("skill collisions", () => {
     if (missing.length > 0) {
       expect.fail(
         `Colisões conhecidas sem filter patch (o conflito chega ao usuário):\n` +
-        missing.join("\n")
+          missing.join("\n"),
       );
     }
   });
@@ -148,7 +176,11 @@ describe("skill collisions", () => {
     });
     // Warn only — pacotes podem não estar instalados em alguns ambientes
     if (stale.length > 0) {
-      console.warn(`⚠️  Colisões conhecidas sem conflito real (remova de KNOWN_COLLISIONS): ${stale.join(", ")}`);
+      console.warn(
+        `⚠️  Colisões conhecidas sem conflito real (remova de KNOWN_COLLISIONS): ${stale.join(
+          ", ",
+        )}`,
+      );
     }
   });
 

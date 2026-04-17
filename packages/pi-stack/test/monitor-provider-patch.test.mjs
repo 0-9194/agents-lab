@@ -4,11 +4,11 @@
  * Run: node --test packages/pi-stack/test/monitor-provider-patch.test.mjs
  */
 
-import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, it } from "node:test";
 
 // We test the exported functions directly by re-implementing the pure logic.
 // The extension file is TypeScript, so we extract the testable parts here.
@@ -21,7 +21,8 @@ const CLASSIFIERS = [
   "work-quality-classifier",
 ];
 
-const COPILOT_MODEL = "github-copilot/claude-sonnet-4.6";
+const COPILOT_MODEL = "github-copilot/claude-haiku-4.5";
+const HEDGE_HISTORY_SETTING_PATH = ["piStack", "monitorProviderPatch", "hedgeConversationHistory"];
 
 function detectDefaultProvider(cwd) {
   const candidates = [
@@ -54,7 +55,7 @@ function generateAgentYaml(classifierName, model) {
     `role: sensor`,
     `description: ${descriptions[monitorName] ?? `Classifier for ${monitorName}`}`,
     `model: ${model}`,
-    `thinking: "on"`,
+    `thinking: "off"`,
     `output:`,
     `  format: json`,
     `  schema: ../schemas/verdict.schema.json`,
@@ -82,6 +83,83 @@ function ensureOverrides(cwd, model) {
   }
 
   return { created, skipped };
+}
+
+function detectBooleanSetting(cwd, path) {
+  const candidates = [
+    join(cwd, ".pi", "settings.json"),
+  ];
+  for (const settingsPath of candidates) {
+    if (!existsSync(settingsPath)) continue;
+    try {
+      const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
+      let cursor = settings;
+      for (const key of path) {
+        if (cursor == null || typeof cursor !== "object") { cursor = undefined; break; }
+        cursor = cursor[key];
+      }
+      if (typeof cursor === "boolean") return cursor;
+    } catch {
+      // skip
+    }
+  }
+  return undefined;
+}
+
+function ensureHedgeMonitorContext(cwd, includeConversationHistory) {
+  const monitorPath = join(cwd, ".pi", "monitors", "hedge.monitor.json");
+  if (!existsSync(monitorPath)) return false;
+
+  let monitor;
+  try {
+    monitor = JSON.parse(readFileSync(monitorPath, "utf8"));
+  } catch {
+    return false;
+  }
+
+  let changed = false;
+
+  // Legacy shape compatibility
+  const hasTopLevelHistory = "conversation_history" in monitor;
+  if (!includeConversationHistory && hasTopLevelHistory) {
+    delete monitor["conversation_history"];
+    changed = true;
+  } else if (includeConversationHistory && !hasTopLevelHistory) {
+    monitor["conversation_history"] = [];
+    changed = true;
+  }
+
+  // Current davidorex shape: classify.context array
+  const classify = monitor.classify;
+  if (classify && typeof classify === "object" && Array.isArray(classify.context)) {
+    const hasContextHistory = classify.context.includes("conversation_history");
+    if (!includeConversationHistory && hasContextHistory) {
+      classify.context = classify.context.filter((item) => item !== "conversation_history");
+      changed = true;
+    } else if (includeConversationHistory && !hasContextHistory) {
+      classify.context = [...classify.context, "conversation_history"];
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    writeFileSync(monitorPath, JSON.stringify(monitor, null, 2) + "\n", "utf8");
+  }
+
+  return changed;
+}
+
+function simulateSessionStart(cwd) {
+  const includeHistory = detectBooleanSetting(cwd, HEDGE_HISTORY_SETTING_PATH) ?? false;
+  const hedgeChanged = ensureHedgeMonitorContext(cwd, includeHistory);
+
+  const provider = detectDefaultProvider(cwd);
+  if (provider !== "github-copilot") {
+    return { provider, includeHistory, hedgeChanged, created: [] };
+  }
+
+  const { created } = ensureOverrides(cwd, COPILOT_MODEL);
+  return { provider, includeHistory, hedgeChanged, created };
 }
 
 // --- Tests ---
@@ -145,7 +223,7 @@ describe("generateAgentYaml", () => {
     assert.ok(yaml.includes("name: hedge-classifier"));
     assert.ok(yaml.includes(`model: ${COPILOT_MODEL}`));
     assert.ok(yaml.includes("template: hedge/classify.md"));
-    assert.ok(yaml.includes('thinking: "on"'));
+    assert.ok(yaml.includes('thinking: "off"'));
   });
 
   it("generates correct YAML for commit-hygiene-classifier", () => {
@@ -155,8 +233,8 @@ describe("generateAgentYaml", () => {
   });
 
   it("uses provided model without modification", () => {
-    const yaml = generateAgentYaml("hedge-classifier", "anthropic/claude-sonnet-4-5");
-    assert.ok(yaml.includes("model: anthropic/claude-sonnet-4-5"));
+    const yaml = generateAgentYaml("hedge-classifier", "anthropic/claude-haiku-4-5");
+    assert.ok(yaml.includes("model: anthropic/claude-haiku-4-5"));
     assert.ok(!yaml.includes("github-copilot"));
   });
 });
@@ -266,5 +344,187 @@ describe("integration: full flow", () => {
     const provider = detectDefaultProvider(tmpDir);
     assert.equal(provider, undefined);
     // Extension would return early here
+  });
+
+  it("session_start first hatch (pi-stack + davidorex): removes conversation_history from hedge context and creates overrides", () => {
+    const piDir = join(tmpDir, ".pi");
+    const monitorsDir = join(piDir, "monitors");
+    mkdirSync(monitorsDir, { recursive: true });
+
+    writeFileSync(join(piDir, "settings.json"), JSON.stringify({
+      defaultProvider: "github-copilot",
+    }, null, 2) + "\n", "utf8");
+
+    const monitorPath = join(monitorsDir, "hedge.monitor.json");
+    writeFileSync(monitorPath, JSON.stringify({
+      name: "hedge",
+      classify: {
+        context: ["user_text", "assistant_text", "conversation_history"],
+        agent: "hedge-classifier",
+      },
+    }, null, 2) + "\n", "utf8");
+
+    const result = simulateSessionStart(tmpDir);
+
+    assert.equal(result.provider, "github-copilot");
+    assert.equal(result.includeHistory, false);
+    assert.ok(result.hedgeChanged, "hedge monitor should be patched on first hatch");
+    assert.equal(result.created.length, 5, "should create all classifier overrides");
+
+    const writtenMonitor = JSON.parse(readFileSync(monitorPath, "utf8"));
+    assert.deepEqual(writtenMonitor.classify.context, ["user_text", "assistant_text"]);
+  });
+
+  it("session_start first hatch with anthropic: removes conversation_history from hedge context and does not create overrides", () => {
+    const piDir = join(tmpDir, ".pi");
+    const monitorsDir = join(piDir, "monitors");
+    mkdirSync(monitorsDir, { recursive: true });
+
+    writeFileSync(join(piDir, "settings.json"), JSON.stringify({
+      defaultProvider: "anthropic",
+    }, null, 2) + "\n", "utf8");
+
+    const monitorPath = join(monitorsDir, "hedge.monitor.json");
+    writeFileSync(monitorPath, JSON.stringify({
+      name: "hedge",
+      classify: {
+        context: ["user_text", "assistant_text", "conversation_history"],
+        agent: "hedge-classifier",
+      },
+    }, null, 2) + "\n", "utf8");
+
+    const result = simulateSessionStart(tmpDir);
+
+    assert.equal(result.provider, "anthropic");
+    assert.equal(result.includeHistory, false);
+    assert.ok(result.hedgeChanged, "hedge monitor should still be patched");
+    assert.equal(result.created.length, 0, "should not create provider-specific overrides");
+
+    const writtenMonitor = JSON.parse(readFileSync(monitorPath, "utf8"));
+    assert.deepEqual(writtenMonitor.classify.context, ["user_text", "assistant_text"]);
+
+    for (const classifier of CLASSIFIERS) {
+      const filePath = join(tmpDir, ".pi", "agents", `${classifier}.agent.yaml`);
+      assert.ok(!existsSync(filePath), `${classifier} should not be created for anthropic`);
+    }
+  });
+
+  it("reads hedgeConversationHistory from piStack.monitorProviderPatch", () => {
+    const piDir = join(tmpDir, ".pi");
+    const monitorsDir = join(piDir, "monitors");
+    mkdirSync(monitorsDir, { recursive: true });
+
+    writeFileSync(join(piDir, "settings.json"), JSON.stringify({
+      defaultProvider: "anthropic",
+      piStack: {
+        monitorProviderPatch: {
+          hedgeConversationHistory: true,
+        },
+      },
+    }, null, 2) + "\n", "utf8");
+
+    const monitorPath = join(monitorsDir, "hedge.monitor.json");
+    writeFileSync(monitorPath, JSON.stringify({
+      name: "hedge",
+      classify: {
+        context: ["user_text", "assistant_text"],
+        agent: "hedge-classifier",
+      },
+    }, null, 2) + "\n", "utf8");
+
+    const result = simulateSessionStart(tmpDir);
+
+    assert.equal(result.includeHistory, true);
+    assert.ok(result.hedgeChanged, "should add conversation_history when opt-in is enabled");
+
+    const writtenMonitor = JSON.parse(readFileSync(monitorPath, "utf8"));
+    assert.deepEqual(writtenMonitor.classify.context, ["user_text", "assistant_text", "conversation_history"]);
+  });
+});
+
+describe("ensureHedgeMonitorContext", () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "mpp-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("removes conversation_history by default", () => {
+    const monitorsDir = join(tmpDir, ".pi", "monitors");
+    mkdirSync(monitorsDir, { recursive: true });
+    const monitorPath = join(monitorsDir, "hedge.monitor.json");
+    writeFileSync(monitorPath, JSON.stringify({
+      last_verdict: "ok",
+      conversation_history: [{ role: "user", content: "hello" }],
+    }, null, 2) + "\n", "utf8");
+
+    const changed = ensureHedgeMonitorContext(tmpDir, false);
+
+    assert.ok(changed, "should report change");
+    const written = JSON.parse(readFileSync(monitorPath, "utf8"));
+    assert.ok(!("conversation_history" in written), "conversation_history should be removed");
+    assert.equal(written.last_verdict, "ok");
+  });
+
+  it("adds conversation_history when explicitly enabled", () => {
+    const monitorsDir = join(tmpDir, ".pi", "monitors");
+    mkdirSync(monitorsDir, { recursive: true });
+    const monitorPath = join(monitorsDir, "hedge.monitor.json");
+    writeFileSync(monitorPath, JSON.stringify({
+      last_verdict: "ok",
+    }, null, 2) + "\n", "utf8");
+
+    const changed = ensureHedgeMonitorContext(tmpDir, true);
+
+    assert.ok(changed, "should report change");
+    const written = JSON.parse(readFileSync(monitorPath, "utf8"));
+    assert.ok("conversation_history" in written, "conversation_history should be added");
+  });
+
+  it("first hatch: removes conversation_history from classify.context generated by davidorex", () => {
+    const monitorsDir = join(tmpDir, ".pi", "monitors");
+    mkdirSync(monitorsDir, { recursive: true });
+    const monitorPath = join(monitorsDir, "hedge.monitor.json");
+    writeFileSync(monitorPath, JSON.stringify({
+      name: "hedge",
+      classify: {
+        context: ["user_text", "assistant_text", "conversation_history"],
+        agent: "hedge-classifier",
+      },
+    }, null, 2) + "\n", "utf8");
+
+    const changed = ensureHedgeMonitorContext(tmpDir, false);
+
+    assert.ok(changed, "should report change");
+    const written = JSON.parse(readFileSync(monitorPath, "utf8"));
+    assert.deepEqual(written.classify.context, ["user_text", "assistant_text"]);
+  });
+
+  it("first hatch opt-in: keeps/adds conversation_history in classify.context when enabled", () => {
+    const monitorsDir = join(tmpDir, ".pi", "monitors");
+    mkdirSync(monitorsDir, { recursive: true });
+    const monitorPath = join(monitorsDir, "hedge.monitor.json");
+    writeFileSync(monitorPath, JSON.stringify({
+      name: "hedge",
+      classify: {
+        context: ["user_text", "assistant_text"],
+        agent: "hedge-classifier",
+      },
+    }, null, 2) + "\n", "utf8");
+
+    const changed = ensureHedgeMonitorContext(tmpDir, true);
+
+    assert.ok(changed, "should report change");
+    const written = JSON.parse(readFileSync(monitorPath, "utf8"));
+    assert.deepEqual(written.classify.context, ["user_text", "assistant_text", "conversation_history"]);
+  });
+
+  it("does nothing when monitor file is missing", () => {
+    const changed = ensureHedgeMonitorContext(tmpDir, false);
+    assert.ok(!changed, "should report no change");
   });
 });

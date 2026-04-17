@@ -121,11 +121,26 @@ npm run pi:local
 # Verificar configuração atual
 npm run pi:status
 
+# Checar paridade user-like vs laboratório (consumo/quota/superfícies)
+npm run pi:parity
+npm run pi:parity:project
+
 # Voltar para pacotes publicados no npm
 npm run pi:published
+
+# Overlay opcional para pilot de colony (/monitors, /remote, /colony)
+# (escopo user por padrão, sem sujar .pi/settings.json do repositório)
+npm run pi:pilot:on
+npm run pi:pilot:status
+npm run pi:pilot:off
+
+# Se quiser alterar o settings do projeto explicitamente
+npm run pi:pilot:on:project
+npm run pi:pilot:off:project
 ```
 
 O `.pi/settings.json` do projeto já aponta para os pacotes locais automaticamente.
+Para cenários de pilot, use o overlay opcional acima (explícito e reversível).
 
 ### Testando Extensões
 
@@ -145,6 +160,8 @@ A skill `test-pi-extension` (em `@aretw0/pi-skills`) documenta como criar testes
 
 - [pi-mono — repositório oficial](https://github.com/badlogic/pi-mono)
 - [Guias deste laboratório](./docs/guides/)
+  - [Web Session Gateway](./docs/guides/web-session-gateway.md)
+  - [Colony Runtime Recovery](./docs/guides/colony-runtime-recovery.md)
 - [Pesquisas e análises](./docs/research/)
 
 ### Contribuindo

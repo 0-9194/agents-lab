@@ -1,0 +1,154 @@
+{
+  "runId": "run-2026-04-13-r1",
+  "arms": [
+    {
+      "id": "A",
+      "name": "monitors-on",
+      "tasks": [
+        {
+          "taskId": "C1",
+          "prompt": "Use ant_colony to create a file named RESULT.txt with the exact text 'hello colony' in the repository root, then report completion.",
+          "elapsedSec": 378.11,
+          "exitCode": 0,
+          "timedOut": false,
+          "toolCalls": [
+            "ant_colony",
+            "read",
+            "bash",
+            "ant_colony",
+            "bash",
+            "read",
+            "bash",
+            "ant_colony",
+            "bash",
+            "read"
+          ],
+          "toolCallsUnique": [
+            "ant_colony",
+            "bash",
+            "read"
+          ],
+          "antColonyCalled": true,
+          "expectedFiles": [
+            "RESULT.txt"
+          ],
+          "expectedFilesCreated": true,
+          "monitorSteerCount": 0,
+          "monitorPendingCount": 0,
+          "assistantAnswer": "",
+          "workspace": "C:\\Users\\aretw\\AppData\\Local\\Temp\\colony-ab-bjb18wvb"
+        },
+        {
+          "taskId": "C2",
+          "prompt": "Use ant_colony to create CHECKLIST.md with exactly three markdown checklist items for validating a tiny project, then report completion.",
+          "elapsedSec": 246.34,
+          "exitCode": 0,
+          "timedOut": false,
+          "toolCalls": [
+            "ant_colony",
+            "read",
+            "ant_colony",
+            "read",
+            "ant_colony",
+            "write",
+            "read"
+          ],
+          "toolCallsUnique": [
+            "ant_colony",
+            "read",
+            "write"
+          ],
+          "antColonyCalled": true,
+          "expectedFiles": [
+            "CHECKLIST.md"
+          ],
+          "expectedFilesCreated": true,
+          "monitorSteerCount": 0,
+          "monitorPendingCount": 0,
+          "assistantAnswer": "",
+          "workspace": "C:\\Users\\aretw\\AppData\\Local\\Temp\\colony-ab-wpcntbki"
+        }
+      ],
+      "metrics": {
+        "taskCount": 2,
+        "successRate": 1.0,
+        "avgElapsedSec": 312.23,
+        "timeoutRate": 0.0,
+        "antColonyCallRate": 1.0,
+        "expectedFilesRate": 1.0,
+        "monitorSignalRate": 0.0,
+        "avgMonitorSteerCount": 0.0
+      }
+    },
+    {
+      "id": "B",
+      "name": "monitors-off",
+      "tasks": [
+        {
+          "taskId": "C1",
+          "prompt": "Use ant_colony to create a file named RESULT.txt with the exact text 'hello colony' in the repository root, then report completion.",
+          "elapsedSec": 137.11,
+          "exitCode": 0,
+          "timedOut": false,
+          "toolCalls": [
+            "ant_colony",
+            "ant_colony"
+          ],
+          "toolCallsUnique": [
+            "ant_colony"
+          ],
+          "antColonyCalled": true,
+          "expectedFiles": [
+            "RESULT.txt"
+          ],
+          "expectedFilesCreated": true,
+          "monitorSteerCount": 0,
+          "monitorPendingCount": 0,
+          "assistantAnswer": "Completed ✅\n\nI used `ant_colony` (with `maxAnts=1`) and created:\n\n- `RESULT.txt` at the repository root\n\nwith the exact content:\n\n`hello colony`",
+          "workspace": "C:\\Users\\aretw\\AppData\\Local\\Temp\\colony-ab-47dsjcbh"
+        },
+        {
+          "taskId": "C2",
+          "prompt": "Use ant_colony to create CHECKLIST.md with exactly three markdown checklist items for validating a tiny project, then report completion.",
+          "elapsedSec": 184.74,
+          "exitCode": 0,
+          "timedOut": false,
+          "toolCalls": [
+            "ant_colony",
+            "read",
+            "ant_colony",
+            "read"
+          ],
+          "toolCallsUnique": [
+            "ant_colony",
+            "read"
+          ],
+          "antColonyCalled": true,
+          "expectedFiles": [
+            "CHECKLIST.md"
+          ],
+          "expectedFilesCreated": true,
+          "monitorSteerCount": 0,
+          "monitorPendingCount": 0,
+          "assistantAnswer": "Completed ✅\n\n`CHECKLIST.md` has been created with exactly three markdown checklist items at:\n\n- `CHECKLIST.md`",
+          "workspace": "C:\\Users\\aretw\\AppData\\Local\\Temp\\colony-ab-ozasbtxt"
+        }
+      ],
+      "metrics": {
+        "taskCount": 2,
+        "successRate": 1.0,
+        "avgElapsedSec": 160.93,
+        "timeoutRate": 0.0,
+        "antColonyCallRate": 1.0,
+        "expectedFilesRate": 1.0,
+        "monitorSignalRate": 0.0,
+        "avgMonitorSteerCount": 0.0
+      }
+    }
+  ],
+  "notes": {
+    "sandbox": "Each task runs in an isolated temporary git repo",
+    "antColonyExtension": "C:\\Users\\aretw\\Documents\\GitHub\\agents-lab\\node_modules\\@ifi\\oh-pi-ant-colony\\extensions\\ant-colony\\index.ts",
+    "monitorsExtension": "C:\\Users\\aretw\\Documents\\GitHub\\agents-lab\\node_modules\\@davidorex\\pi-project-workflows\\monitors-extension.ts"
+  }
+}

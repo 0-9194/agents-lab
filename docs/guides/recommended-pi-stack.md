@@ -61,6 +61,67 @@ Curados e incluídos no meta-pacote enquanto equivalentes first-party não estã
 
 ---
 
+## Superfícies de visibilidade de consumo/quota (stack completa)
+
+Quando a stack está completa (user-like), já existem múltiplas superfícies:
+
+- `/usage`, `/usage-refresh`, `/usage-toggle` (`@ifi/oh-pi-extensions`)
+- `/session-breakdown`, `/context` (`mitsupi`)
+- `/quota-visibility` (`@aretw0/pi-stack`, first-party)
+
+Use o mapa consolidado em [`consumption-visibility-surfaces.md`](./consumption-visibility-surfaces.md).
+
+Para validar paridade sem confundir ambiente local com user-like:
+
+```bash
+npm run pi:parity
+npm run pi:parity:project
+```
+
+## Governança de soberania no CI (para contribuidores)
+
+Ao contribuir no agents-lab, a stack usa dois checks complementares:
+
+- **Fail/pass obrigatório**
+  - `npm run audit:sovereignty`
+  - `npm run audit:sovereignty:diff`
+- **Relatório operacional**
+  - job `Sovereignty Report`
+  - artifact `stack-sovereignty-audit`
+  - comentário no PR com marcador `<!-- stack-sovereignty-report -->`
+
+Guia detalhado: [`stack-sovereignty-user-guide.md`](./stack-sovereignty-user-guide.md)
+
+## Baseline operacional de projeto
+
+Para usuários do `@aretw0/pi-stack`, a baseline de governança pode ser aplicada direto pelo comando distribuído na stack:
+
+```text
+/colony-pilot baseline show default
+/colony-pilot baseline apply default
+
+# profile mais estrito (fase 2)
+/colony-pilot baseline show phase2
+/colony-pilot baseline apply phase2
+```
+
+Isso grava/mescla `./.pi/settings.json` do workspace com defaults de:
+- preflight hard-gate da colony
+- web session gateway local determinístico (`127.0.0.1:3100`)
+- guardrail de conflito de porta com sugestão de porta alternativa para testes
+
+## Operações de swarm (ponto de entrada canônico)
+
+Para executar colônias/swarms com segurança, o manual canônico de referência é:
+
+**[swarm-cleanroom-protocol.md](./swarm-cleanroom-protocol.md)** — pré-run, execução, pós-run, promoção de candidates e reconciliação de conflitos.
+
+Leitura complementar obrigatória antes da primeira run autônoma:
+- [agent-driver-charter.md](./agent-driver-charter.md) — critérios de priorização e limites de autonomia
+- [budget-governance.md](./budget-governance.md) — budget envelope e governança de custo
+
+---
+
 ## Filosofia de Curadoria
 
 A stack evolui em dois sentidos:

@@ -1,0 +1,289 @@
+{
+  "generatedAt": "2026-04-13",
+  "packages": [
+    {
+      "name": "@aretw0/web-skills",
+      "path": "packages/web-skills",
+      "skills": [
+        {
+          "name": "source-research",
+          "path": "skills/source-research/SKILL.md"
+        },
+        {
+          "name": "web-browser",
+          "path": "skills/web-browser/SKILL.md"
+        }
+      ],
+      "tools": [],
+      "commands": []
+    },
+    {
+      "name": "mitsupi",
+      "path": "node_modules/mitsupi",
+      "skills": [
+        {
+          "name": "anachb",
+          "path": "skills/anachb/SKILL.md"
+        },
+        {
+          "name": "apple-mail",
+          "path": "skills/apple-mail/SKILL.md"
+        },
+        {
+          "name": "commit",
+          "path": "skills/commit/SKILL.md"
+        },
+        {
+          "name": "frontend-design",
+          "path": "skills/frontend-design/SKILL.md"
+        },
+        {
+          "name": "ghidra",
+          "path": "skills/ghidra/SKILL.md"
+        },
+        {
+          "name": "github",
+          "path": "skills/github/SKILL.md"
+        },
+        {
+          "name": "google-workspace",
+          "path": "skills/google-workspace/SKILL.md"
+        },
+        {
+          "name": "librarian",
+          "path": "skills/librarian/SKILL.md"
+        },
+        {
+          "name": "mermaid",
+          "path": "skills/mermaid/SKILL.md"
+        },
+        {
+          "name": "native-web-search",
+          "path": "skills/native-web-search/SKILL.md"
+        },
+        {
+          "name": "oebb-scotty",
+          "path": "skills/oebb-scotty/SKILL.md"
+        },
+        {
+          "name": "openscad",
+          "path": "skills/openscad/SKILL.md"
+        },
+        {
+          "name": "pi-share",
+          "path": "skills/pi-share/SKILL.md"
+        },
+        {
+          "name": "sentry",
+          "path": "skills/sentry/SKILL.md"
+        },
+        {
+          "name": "summarize",
+          "path": "skills/summarize/SKILL.md"
+        },
+        {
+          "name": "tmux",
+          "path": "skills/tmux/SKILL.md"
+        },
+        {
+          "name": "update-changelog",
+          "path": "skills/update-changelog/SKILL.md"
+        },
+        {
+          "name": "uv",
+          "path": "skills/uv/SKILL.md"
+        },
+        {
+          "name": "web-browser",
+          "path": "skills/web-browser/SKILL.md"
+        }
+      ],
+      "tools": [
+        {
+          "name": "send_to_session",
+          "path": "pi-extensions/control.ts"
+        },
+        {
+          "name": "list_sessions",
+          "path": "pi-extensions/control.ts"
+        },
+        {
+          "name": "signal_loop_success",
+          "path": "pi-extensions/loop.ts"
+        },
+        {
+          "name": "edit",
+          "path": "pi-extensions/multi-edit.ts"
+        },
+        {
+          "name": "todo",
+          "path": "pi-extensions/todos.ts"
+        }
+      ],
+      "commands": [
+        {
+          "name": "answer",
+          "path": "pi-extensions/answer.ts"
+        },
+        {
+          "name": "context",
+          "path": "pi-extensions/context.ts"
+        },
+        {
+          "name": "control-sessions",
+          "path": "pi-extensions/control.ts"
+        },
+        {
+          "name": "files",
+          "path": "pi-extensions/files.ts"
+        },
+        {
+          "name": "loop",
+          "path": "pi-extensions/loop.ts"
+        },
+        {
+          "name": "mode",
+          "path": "pi-extensions/prompt-editor.ts"
+        },
+        {
+          "name": "review",
+          "path": "pi-extensions/review.ts"
+        },
+        {
+          "name": "end-review",
+          "path": "pi-extensions/review.ts"
+        },
+        {
+          "name": "session-breakdown",
+          "path": "pi-extensions/session-breakdown.ts"
+        },
+        {
+          "name": "todos",
+          "path": "pi-extensions/todos.ts"
+        }
+      ]
+    },
+    {
+      "name": "pi-web-access",
+      "path": "node_modules/pi-web-access",
+      "skills": [
+        {
+          "name": "librarian",
+          "path": "skills/librarian/SKILL.md"
+        }
+      ],
+      "tools": [
+        {
+          "name": "web_search",
+          "path": "index.ts"
+        },
+        {
+          "name": "code_search",
+          "path": "index.ts"
+        },
+        {
+          "name": "fetch_content",
+          "path": "index.ts"
+        },
+        {
+          "name": "get_search_content",
+          "path": "index.ts"
+        }
+      ],
+      "commands": [
+        {
+          "name": "websearch",
+          "path": "index.ts"
+        },
+        {
+          "name": "curator",
+          "path": "index.ts"
+        },
+        {
+          "name": "google-account",
+          "path": "index.ts"
+        },
+        {
+          "name": "search",
+          "path": "index.ts"
+        }
+      ]
+    },
+    {
+      "name": "@ifi/oh-pi-skills",
+      "path": "node_modules/@ifi/oh-pi-skills",
+      "skills": [
+        {
+          "name": "btw",
+          "path": "skills/btw/SKILL.md"
+        },
+        {
+          "name": "claymorphism",
+          "path": "skills/claymorphism/SKILL.md"
+        },
+        {
+          "name": "context7",
+          "path": "skills/context7/SKILL.md"
+        },
+        {
+          "name": "debug-helper",
+          "path": "skills/debug-helper/SKILL.md"
+        },
+        {
+          "name": "flutter-serverpod-mvp",
+          "path": "skills/flutter-serverpod-mvp/SKILL.md"
+        },
+        {
+          "name": "git-workflow",
+          "path": "skills/git-workflow/SKILL.md"
+        },
+        {
+          "name": "glassmorphism",
+          "path": "skills/glassmorphism/SKILL.md"
+        },
+        {
+          "name": "grill-me",
+          "path": "skills/grill-me/SKILL.md"
+        },
+        {
+          "name": "improve-codebase-architecture",
+          "path": "skills/improve-codebase-architecture/SKILL.md"
+        },
+        {
+          "name": "liquid-glass",
+          "path": "skills/liquid-glass/SKILL.md"
+        },
+        {
+          "name": "neubrutalism",
+          "path": "skills/neubrutalism/SKILL.md"
+        },
+        {
+          "name": "quick-setup",
+          "path": "skills/quick-setup/SKILL.md"
+        },
+        {
+          "name": "request-refactor-plan",
+          "path": "skills/request-refactor-plan/SKILL.md"
+        },
+        {
+          "name": "rust-workspace-bootstrap",
+          "path": "skills/rust-workspace-bootstrap/SKILL.md"
+        },
+        {
+          "name": "web-fetch",
+          "path": "skills/web-fetch/SKILL.md"
+        },
+        {
+          "name": "web-search",
+          "path": "skills/web-search/SKILL.md"
+        },
+        {
+          "name": "write-a-skill",
+          "path": "skills/write-a-skill/SKILL.md"
+        }
+      ],
+      "tools": [],
+      "commands": []
+    }
+  ]
+}

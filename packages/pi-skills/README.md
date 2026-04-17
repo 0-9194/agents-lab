@@ -8,7 +8,8 @@
 |---|---|
 | `terminal-setup` | Diagnóstico e configuração de terminal — Kitty protocol, keybindings, shell path |
 | `create-pi-skill` | Como criar uma skill para pi — estrutura, frontmatter, empacotamento |
-| `create-pi-extension` | Como criar uma extensão TypeScript — tools, commands, eventos, UI |
+| `create-pi-extension` | Como criar uma extensão TypeScript — tools, commands, eventos, UI (inclui ponte para web) |
+| `create-pi-web-extension` | Como criar/extender extensão web first-party com contrato determinístico e testes (smoke + e2e) |
 | `create-pi-theme` | Como criar um tema visual para o TUI |
 | `create-pi-prompt` | Como criar prompt templates — argumentos, empacotamento |
 

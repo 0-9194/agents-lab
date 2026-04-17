@@ -1,7 +1,7 @@
 {
   "name": "@aretw0/pi-stack",
-  "version": "0.3.7",
-  "description": "Meta-pacote que instala a stack curada de extens\u00f5es pi do agents-lab \u2014 cada pacote individualmente",
+  "version": "0.7.0",
+  "description": "Meta-pacote que instala a stack curada de extensões pi do agents-lab — cada pacote individualmente",
   "type": "module",
   "license": "MIT",
   "keywords": [
@@ -26,7 +26,21 @@
     "extensions": [
       "./extensions/monitor-provider-patch.ts",
       "./extensions/environment-doctor.ts",
-      "./extensions/read-guard.ts"
+      "./extensions/claude-code-adapter.ts",
+      "./extensions/guardrails-core.ts",
+      "./extensions/scheduler-governance.ts",
+      "./extensions/stack-sovereignty.ts",
+      "./extensions/colony-pilot.ts",
+      "./extensions/web-session-gateway.ts",
+      "./extensions/quota-visibility.ts",
+      "./extensions/provider-readiness.ts",
+      "./extensions/session-analytics.ts",
+      "./extensions/handoff-advisor.ts",
+      "./extensions/quota-alerts.ts",
+      "./extensions/safe-boot.ts",
+      "./extensions/governance-profiles.ts",
+      "./extensions/quota-panel.ts",
+      "./extensions/custom-footer.ts"
     ],
     "themes": [
       "./themes"

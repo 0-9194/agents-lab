@@ -10,7 +10,7 @@ Guias práticos para trabalhar com o ecossistema de agentes deste laboratório.
 |------|-----------|
 | [recommended-pi-stack.md](./recommended-pi-stack.md) | Stack curada `@aretw0/pi-stack` — o que inclui, como instalar, filosofia |
 | [terminal-setup.md](./terminal-setup.md) | Configuração de terminal por plataforma — Windows Terminal, Ghostty, WezTerm, VS Code |
-| [monitor-overrides.md](./monitor-overrides.md) | Fix para monitors com github-copilot — diagnóstico e overrides |
+| [monitor-overrides.md](./monitor-overrides.md) | Configuração provider-aware dos monitors (Copilot/Codex), diagnóstico e sincronização de overrides |
 | [testing-isolation.md](./testing-isolation.md) | Testando extensões e temas em isolamento — flags `--no-*`, `PI_CODING_AGENT_DIR` |
 | [pi-platform-compatibility.md](./pi-platform-compatibility.md) | Compatibilidade de plataforma (Windows/Linux/macOS) |
 
@@ -19,6 +19,30 @@ Guias práticos para trabalhar com o ecossistema de agentes deste laboratório.
 | Guia | Descrição |
 |------|-----------|
 | [publishing.md](./publishing.md) | Workflow de release — changesets, versionamento lockstep, publish via tag |
+
+### Otimização e Operação
+
+| Guia | Descrição |
+|------|-----------|
+| [token-efficiency.md](./token-efficiency.md) | Diretivas de eficiência de tokens (T1–T11), segurança (S1–S3) e calibração de monitores |
+| [consumption-visibility-surfaces.md](./consumption-visibility-surfaces.md) | Mapa das superfícies reais de consumo/quota na stack completa (usage, session-breakdown, quota-visibility) |
+| [budget-governance.md](./budget-governance.md) | Budget envelope por execução, governança de colônia com `maxCost`, paridade e isolamento |
+| [quota-visibility.md](./quota-visibility.md) | Como auditar consumo/cota local, projetar burn semanal e exportar evidência para contestação |
+| [web-session-gateway.md](./web-session-gateway.md) | Gateway web first-party para observabilidade local da sessão (health/state/prompt) |
+| [colony-runtime-recovery.md](./colony-runtime-recovery.md) | Como localizar artefatos de colony (state/worktree/branch) e recuperar contexto após parada |
+| [colony-provider-model-governance.md](./colony-provider-model-governance.md) | Governança de provider/model para colony e multi-agentes (usuário + dev) |
+| [swarm-cleanroom-protocol.md](./swarm-cleanroom-protocol.md) | Protocolo cleanroom para runs de swarm (pre-run, execução, promoção, reconciliação) |
+| [session-triage.md](./session-triage.md) | Triage do histórico recente de sessões/branches para consolidar pendências no board canônico |
+| [scheduler-governance.md](./scheduler-governance.md) | Governança forte de ownership/lease do scheduler para evitar conflito entre sessões |
+| [stack-sovereignty-user-guide.md](./stack-sovereignty-user-guide.md) | Guia operacional da soberania da stack (owners, defaults seguros, convivência) |
+| [extension-acceptance-checklist.md](./extension-acceptance-checklist.md) | Checklist para aceitar nova extensão sem aumentar fragmentação |
+| [ci-governance.md](./ci-governance.md) | Troubleshooting dos gates de soberania no CI (annotations, registry, criticality, owner) |
+
+### Embedding e Integração
+
+| Guia | Descrição |
+|------|-----------|
+| [pi-embedding-cli.md](./pi-embedding-cli.md) | Como integrar pi em projetos CLI externos — config embedding, extension bundle, subprocess bridge |
 
 ### Migração e Filosofia
 

@@ -1,8 +1,8 @@
 name: commit-hygiene-classifier
 role: sensor
 description: Classifies whether agent committed changes with proper hygiene
-model: github-copilot/claude-sonnet-4.6
-thinking: "on"
+model: openai-codex/gpt-5.4-mini
+thinking: "off"
 output:
   format: json
   schema: ../schemas/verdict.schema.json

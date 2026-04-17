@@ -1,0 +1,141 @@
+{
+  "decisions": [
+    {
+      "id": "DEC-BUD-001",
+      "decision": "Separar ambiente de laboratório e ambiente user-like, usando checagem explícita de paridade para evitar falso gap funcional.",
+      "rationale": "O laboratório frequentemente roda subset de pacotes por isolamento. Sem checagem, conclusões sobre consumo/quota ficam enviesadas.",
+      "status": "decided",
+      "context": "Iniciativa de visibilidade de consumo e governança de custos."
+    },
+    {
+      "id": "DEC-BUD-002",
+      "decision": "Tratar observabilidade de custo como composição de superfícies: /usage (live provider), /session-breakdown (histórico) e /quota-visibility (auditoria exportável).",
+      "rationale": "Cada superfície cobre uma dimensão diferente de verdade operacional. Combinação reduz cegueira e melhora contestação com fornecedores.",
+      "status": "decided",
+      "context": "Definição de stack de observabilidade para custo/quota."
+    },
+    {
+      "id": "DEC-BUD-003",
+      "decision": "Adotar budget policy para ant_colony no colony-pilot com baseline configurada para exigir/injetar maxCost e aplicar hard cap.",
+      "rationale": "Swarm sem limite explícito é risco operacional e financeiro. Policy configurável permite controle progressivo sem lock-in imediato.",
+      "status": "decided",
+      "context": "Controle de custo para execuções de colônia/swarms."
+    },
+    {
+      "id": "DEC-BUD-004",
+      "decision": "Não fechar automaticamente tasks estratégicas de budget sem revisão humana explícita.",
+      "rationale": "Evita falso positivo de conclusão e mantém governança com accountability para mudanças que impactam custo.",
+      "status": "decided",
+      "context": "Pedido explícito do usuário para confirmar tasks criadas/fechadas."
+    },
+    {
+      "id": "DEC-BUD-005",
+      "decision": "Considerar bridge entre runtime da colônia e .project/tasks como evolução incremental, começando por pesquisa e protótipo opt-in.",
+      "rationale": "A colônia mantém task system próprio no runtime; integração direta com .project requer cuidado para não acoplar indevidamente extensões distintas.",
+      "status": "tentative",
+      "context": "Planejamento de integração futura entre oh-pi-ant-colony e pi-project."
+    },
+    {
+      "id": "DEC-BUD-006",
+      "decision": "Adotar .project/tasks como relógio oficial de trabalho macro e tratar estado de swarm como execução transitória sincronizada nesse board.",
+      "rationale": "Evita múltiplos sistemas concorrentes de tracking e preserva contexto coletivo entre agentes e sessões, mantendo humano no centro das decisões de fechamento.",
+      "status": "decided",
+      "context": "Diretriz de governança pedida pelo usuário para centralização de status e contexto."
+    },
+    {
+      "id": "DEC-BUD-007",
+      "decision": "Manter `.project/tasks` como clock oficial local no curto prazo, mas definir o modelo de task/evento como backend-agnostic para sincronização futura com GitHub/Gitea/SQLite e outras superfícies humanas.",
+      "rationale": "Consolida governança e aprendizado no laboratório agora, sem bloquear evolução para trackers práticos do dia a dia dos usuários e do próprio time.",
+      "status": "decided",
+      "context": "Diretriz de endgame: coordenação avançada com liberdade de backend e sem lock-in operacional."
+    },
+    {
+      "id": "DEC-BUD-008",
+      "decision": "Adotar governança hard-first para colônias: requisitos de entrega e evidência devem ser verificáveis por configuração, sem depender de instruções textuais no goal.",
+      "rationale": "Goals são soft e não garantem comportamento determinístico. Controles hard reduzem lacunas entre 'reportado' e 'materializado' no branch principal.",
+      "status": "decided",
+      "context": "Após c1/c2 com reports ricos e baixa materialização automática no main."
+    },
+    {
+      "id": "DEC-BUD-009",
+      "decision": "Separar semântica de coordenação (clock, eventos, gates) do mecanismo de execução (local swarm, CI runner, PR workflow), adotando adapters por contexto.",
+      "rationale": "Garante controle total ao usuário independentemente de onde o pi roda ou como a execução é disparada, evitando acoplamento ao runtime local.",
+      "status": "decided",
+      "context": "Diretriz para suportar GitHub Actions/issues/PR e futuras interfaces (ex.: companion PWA com SQLite)."
+    },
+    {
+      "id": "DEC-BUD-010",
+      "decision": "Operar em modo de direção autônoma supervisionada: agentes escolhem e executam trabalho a partir do backlog/charter macro; humano atua como aprovador final e guardião dos limites de governança.",
+      "rationale": "Remove gargalo de micro-direcionamento humano sem perder soberania, rastreabilidade e controle de risco.",
+      "status": "decided",
+      "context": "Objetivo explícito do usuário de maximizar potencial do agents-lab e preparar migração de operação para Refarm."
+    },
+    {
+      "id": "DEC-BUD-011",
+      "decision": "Tratar análise de histórico conversacional como capability provider-agnostic (event model canônico + adapters), começando por sessões locais do pi e evoluindo para canais externos (Telegram, WhatsApp, Matrix, Signal, etc.).",
+      "rationale": "O caos operacional vem de múltiplas threads/plataformas; a organização não pode depender de um runtime único. Um contrato canônico evita lock-in e permite triagem consistente independentemente da origem.",
+      "status": "decided",
+      "context": "Diretriz explícita do usuário para cultivar ferramentas de ordem operacional cross-platform."
+    },
+    {
+      "id": "DEC-BUD-012",
+      "decision": "Suportar budget compartilhado por provider com caps absolutos ou percentuais (warn/block), para operar cota emprestada de forma auditável e com limites explícitos.",
+      "rationale": "Colaboração com colegas exige controle previsível de consumo por provider; sem cap por provider, acordos de cota ociosa ficam frágeis e geram risco operacional/relacional.",
+      "status": "decided",
+      "context": "Pedido explícito do usuário para travar uso por porcentagem acordada com terceiros."
+    },
+    {
+      "id": "DEC-BUD-013",
+      "decision": "Adotar governança de budget em duas camadas: (1) enforcement global no control-plane para bloquear uso quando provider/account entrar em BLOCK, e (2) policy de roteamento para delegar trabalho entre providers por custo/confiabilidade sem perder trilha auditável.",
+      "rationale": "Controle apenas por swarm é insuficiente para operação real com múltiplos providers e contas emprestadas. Separar enforcement de roteamento permite segurança forte agora e otimização contínua depois.",
+      "status": "decided",
+      "context": "Escalonamento do agents-lab para malabarismo de custo multi-provider e multi-conta."
+    },
+    {
+      "id": "DEC-BUD-014",
+      "decision": "Manter capacidades críticas como extensões/tools first-party (não apenas bash/skills), e usar skills para operação guiada, migração e resolução de conflito em ambientes com stack heterogênea.",
+      "rationale": "Tools têm contratos estáveis, observabilidade e podem ser validadas automaticamente; bash puro e skills sozinhas não oferecem o mesmo nível de governança/runtime gating. Skills continuam essenciais para educação e remediação em campo.",
+      "status": "decided",
+      "context": "Trade-off solicitado pelo usuário entre tools vs bash/skills para usuários finais."
+    },
+    {
+      "id": "DEC-BUD-015",
+      "decision": "Iniciar rodízio de providers em duas etapas: (1) advisory determinístico com política explícita de custo/confiabilidade e (2) executor opt-in de roteamento, mantendo override humano e trilha auditável.",
+      "rationale": "Evita auto-switch opaco e permite amadurecer heurísticas antes de automatizar execução multi-provider em produção.",
+      "status": "decided",
+      "context": "Pedido do usuário para começar imediatamente o malabarismo de providers com segurança."
+    },
+    {
+      "decision": "Dogfooding Operacional e Curadoria Extrema: O agents-lab deve depender exclusivamente das mesmas ferramentas, fluxos e recursos (Swarm, Claude Code, adapters) que o usuário final. Ferramentas não utilizadas internamente devem ser curadas (polidas, adotadas ou removidas). O Swarm deve ser o construtor primário do próprio ecossistema para forçar a melhoria contínua da UX.",
+      "date": "2026-04-16",
+      "status": "decided",
+      "id": "DEC-BUD-016",
+      "rationale": "Se não sentimos a dor da UX ao operar o Swarm para construir nossos próprios produtos, não conseguiremos curar a ferramenta para os nossos usuários. Dependência força excelência.",
+      "context": "O time de desenvolvimento lançou extensões e recursos no pi-stack que não são usados no dia a dia do próprio agents-lab, resultando em falta de curadoria, desconexão de UX e acúmulo de complexidade não testada na prática."
+    },
+    {
+      "date": "2026-04-16",
+      "rationale": "Confiar apenas em telemetria local cria um falso senso de segurança (ou pânico) e mina a confiança na soberania de custos. A verdade do custo está no provedor.",
+      "decision": "A governança de custos não pode depender apenas de telemetry local (custo inferido). É mandatório integrar com fontes externas de billing (APIs, dashboards) para ter uma visão real e evitar surpresas. O custo local passa a ser uma estimativa de 'pressão', não a verdade absoluta.",
+      "id": "DEC-BUD-017",
+      "context": "O usuário confirmou que o budget de $40 do GitHub Copilot não mostra gastos (está $0), apesar do telemetry local registrar milhões de tokens, indicando uma desconexão entre custo real e observabilidade via logs de sessão.",
+      "status": "decided"
+    },
+    {
+      "id": "DEC-BUD-018",
+      "date": "2026-04-16",
+      "status": "decided",
+      "context": "oh-pi-extensions/custom-footer.ts controlava o footer compacto mas não expunha provider/model ref nem budget status na linha compacta. Modificar o pacote npm não é versionável. patch-package é frágil com updates upstream.",
+      "decision": "Quando uma extensão upstream controla superfície de UI ou comportamento crítico que precisamos customizar, o padrão correto é: silenciar com filter patch + criar equivalente first-party em packages/pi-stack/extensions/. Isso dá controle total, é versionável e testável com smoke tests de registro.",
+      "rationale": "Fork first-party é a única forma de ter garantia de comportamento sem dependência de lançamentos upstream. O filter patch (install.mjs + .pi/settings.json) garante que tanto o lab quanto usuários recebem o filtro automaticamente."
+    },
+    {
+      "id": "DEC-BUD-019",
+      "date": "2026-04-16",
+      "status": "decided",
+      "context": "Claude Code usa hooks de pre-write que detectam padrões inseguros e informam o agente sem bloquear automaticamente. O agente lê o sinal, avalia com contexto, e decide. O mesmo hook disparou false positive em texto de documentação no próprio tasks.json.",
+      "decision": "Guardrails no pi-stack devem ser informativos por padrão, não bloqueantes. Hard blocks ficam reservados para violações inequívocas (budget exceeded, auth missing). Para riscos de código e padrões suspeitos, o modelo correto é sinalizar (setStatus, notify) e deixar o runtime decidir.",
+      "rationale": "Bloqueios cegos geram false positives em código legítimo e criam fricção desnecessária. O agente com contexto completo toma decisões melhores do que pattern-match estático sem contexto."
+    }
+  ]
+}

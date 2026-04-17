@@ -7,6 +7,28 @@ description: "Interact with web pages via browser automation: navigate, click, f
 
 Browser automation via Chrome DevTools Protocol (CDP). All scripts live in `./scripts/` relative to this skill.
 
+## When to Prefer This Skill
+
+Use `web-browser` for **interactive** web tasks:
+- open/navigate pages and tabs
+- click buttons/links
+- fill forms and login flows
+- inspect dynamic UI state rendered in-browser
+
+For non-interactive tasks (searching links, extracting page text, fetching docs), prefer `web_search` / `fetch_content` instead.
+
+## Scoped Hard Trigger Policy
+
+Enforce **browser-first (hard-by-scope)** when BOTH conditions are present:
+
+1. Prompt has interactive intent (`open`, `navigate`, `click`, `fill`, `login`, `submit`, `tab`, `form`, `button`), and
+2. Target is a sensitive/challenge-prone domain (e.g. `npmjs.com`) or the user reports Cloudflare/bot blocking.
+
+When this trigger fires:
+- Start with CDP flow (`start.js` → `nav.js` → interaction/eval scripts).
+- Do **not** start from `curl`/`wget`/`python requests`/`r.jina.ai` or generic shell scraping.
+- Only fallback after explicit CDP failure evidence (at least 2 failed attempts), and report the fallback reason.
+
 > **Requires:** `npm install` inside `./scripts/` before first use (installs `ws` for WebSocket/CDP).
 > ```bash
 > npm install --prefix ./scripts

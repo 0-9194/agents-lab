@@ -19,13 +19,20 @@ function detectTerminal(env) {
   if (env.TERM_PROGRAM === "vscode") return "vscode";
   if (env.KITTY_WINDOW_ID) return "kitty";
   if (env.TERM_PROGRAM === "iTerm.app") return "iterm2";
+  if (env.GNOME_TERMINAL_SCREEN || env.GNOME_TERMINAL_SERVICE || env.TERM_PROGRAM === "gnome-terminal") {
+    return "gnome-terminal-server";
+  }
   return "unknown";
 }
 
 function detectShell(platform, env) {
   if (platform !== "win32") return "native-bash";
-  if (env.WSL_DISTRO_NAME !== undefined || env.WSLENV !== undefined || (env.PATH ?? "").includes("/mnt/c/")) return "wsl";
+  const shellPath = String(env.SHELL ?? env.ComSpec ?? "").toLowerCase();
+  const psModule = String(env.PSModulePath ?? "").toLowerCase();
+  if (env.WSL_DISTRO_NAME !== undefined || env.WSL_INTEROP !== undefined || (env.PATH ?? "").includes("/mnt/c/")) return "wsl";
   if (env.MSYSTEM || env.MINGW_PREFIX) return "git-bash";
+  if (shellPath.includes("powershell") || psModule.includes("powershell")) return "powershell";
+  if (shellPath.includes("cmd.exe") || shellPath.endsWith("\\cmd")) return "cmd";
   return "unknown";
 }
 
@@ -79,6 +86,10 @@ describe("detectTerminal", () => {
     assert.equal(detectTerminal({ TERM_PROGRAM: "iTerm.app" }), "iterm2");
   });
 
+  it("detects GNOME Terminal server via env", () => {
+    assert.equal(detectTerminal({ GNOME_TERMINAL_SERVICE: ":1.2" }), "gnome-terminal-server");
+  });
+
   it("returns unknown for unrecognized terminal", () => {
     assert.equal(detectTerminal({}), "unknown");
   });
@@ -98,8 +109,8 @@ describe("detectShell", () => {
     assert.equal(detectShell("win32", { WSL_DISTRO_NAME: "Ubuntu" }), "wsl");
   });
 
-  it("detects WSL via WSLENV", () => {
-    assert.equal(detectShell("win32", { WSLENV: "USERPROFILE" }), "wsl");
+  it("detects WSL via WSL_INTEROP", () => {
+    assert.equal(detectShell("win32", { WSL_INTEROP: "1" }), "wsl");
   });
 
   it("detects WSL via /mnt/c/ in PATH", () => {
@@ -114,10 +125,18 @@ describe("detectShell", () => {
     assert.equal(detectShell("win32", { MINGW_PREFIX: "/mingw64" }), "git-bash");
   });
 
+  it("detects PowerShell via ComSpec/PSModulePath", () => {
+    assert.equal(detectShell("win32", { ComSpec: "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe" }), "powershell");
+    assert.equal(detectShell("win32", { PSModulePath: "C:/Users/x/Documents/WindowsPowerShell/Modules" }), "powershell");
+  });
+
+  it("detects cmd via ComSpec", () => {
+    assert.equal(detectShell("win32", { ComSpec: "C:/Windows/System32/cmd.exe" }), "cmd");
+  });
+
   it("returns unknown for bare Windows", () => {
     assert.equal(detectShell("win32", {}), "unknown");
   });
-
   it("WSL takes priority over Git Bash on Windows", () => {
     assert.equal(detectShell("win32", { WSL_DISTRO_NAME: "Ubuntu", MSYSTEM: "MINGW64" }), "wsl");
   });

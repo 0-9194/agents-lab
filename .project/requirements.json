@@ -1,0 +1,389 @@
+{
+  "requirements": [
+    {
+      "id": "REQ-BUD-001",
+      "description": "A iniciativa de custo deve validar paridade entre ambiente de laboratório e ambiente user-like antes de concluir ausência/presença de funcionalidades.",
+      "type": "constraint",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe comando/script reproduzível para relatório de paridade por escopo.",
+        "Documentação oficial orienta uso da checagem de paridade em estudos de consumo."
+      ]
+    },
+    {
+      "id": "REQ-BUD-002",
+      "description": "Execuções de swarm/colônia em contexto de laboratório devem operar com budget envelope explícito (maxCost) ou política equivalente de injeção/cap.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Política de budget para ant_colony existe e é configurável.",
+        "Baseline do projeto inclui defaults de budget policy para colônia."
+      ]
+    },
+    {
+      "id": "REQ-BUD-003",
+      "description": "Visibilidade de consumo deve combinar superfícies live de provider e auditoria local independente.",
+      "type": "integration",
+      "status": "accepted",
+      "priority": "must",
+      "source": "analysis",
+      "acceptance_criteria": [
+        "Playbook combina /usage, /session-breakdown e /quota-visibility.",
+        "Export de evidência local permanece disponível para contestação com fornecedor."
+      ]
+    },
+    {
+      "id": "REQ-BUD-004",
+      "description": "A gestão de tasks estratégicas de budget deve manter human-in-the-loop para fechamento e mudanças estruturais.",
+      "type": "constraint",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Tasks deste fluxo não são fechadas automaticamente.",
+        "Existe etapa explícita de revisão com o usuário antes de fechar tasks criadas."
+      ]
+    },
+    {
+      "id": "REQ-BUD-005",
+      "description": "A arquitetura deve mapear limite atual entre runtime da colônia e .project/tasks, com plano de bridge progressiva.",
+      "type": "non-functional",
+      "status": "proposed",
+      "priority": "should",
+      "source": "analysis",
+      "acceptance_criteria": [
+        "Limite atual documentado em guia/decision.",
+        "Backlog contém tasks para bridge start/progress/end sem acoplamento frágil."
+      ]
+    },
+    {
+      "id": "REQ-BUD-006",
+      "description": "O rastreamento oficial de trabalho deve convergir para um único board estável (.project/tasks), com colônia/swarms publicando progresso como eventos sincronizados em vez de manter estado final apenas em sessões efêmeras.",
+      "type": "integration",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe política explícita de single-source-of-truth para tasks macro em .project/tasks.",
+        "Bridge colony→project atualiza lifecycle (start/progress/end) sem fechamento automático.",
+        "Representações TUI/WEB refletem esse board consolidado."
+      ]
+    },
+    {
+      "id": "REQ-BUD-007",
+      "description": "A arquitetura de coordenação deve ser tracker-agnostic: o relógio oficial precisa poder sincronizar com backends alternativos (ex.: GitHub Issues/Projects, Gitea, SQLite/local app) sem acoplamento rígido a um único provedor.",
+      "type": "integration",
+      "status": "accepted",
+      "priority": "should",
+      "source": "human",
+      "acceptance_criteria": [
+        "Modelo canônico de estado de task independe do backend de persistência.",
+        "Existe estratégia de adapter para export/import/sync entre .project e trackers externos.",
+        "Semântica de governança (budget envelope, no auto-close, revisão humana) é preservada em qualquer backend."
+      ]
+    },
+    {
+      "id": "REQ-BUD-008",
+      "description": "Execuções de colônia devem expor controles hard de entrega (delivery mode) com política configurável: bloquear conclusão sem evidência mínima de aplicação/materialização no branch-alvo.",
+      "type": "constraint",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe modo explícito de entrega (report-only | patch-artifact | apply-to-branch).",
+        "Política pode exigir inventário de arquivos alterados e comandos de validação antes de marcar execução como entregue.",
+        "Quando política hard falha, execução vira 'candidate/recovery required' com artefato preservado."
+      ]
+    },
+    {
+      "id": "REQ-BUD-009",
+      "description": "O fluxo de coordenação deve ser runner-agnostic e interface-agnostic: o mesmo contrato de trabalho precisa operar em TUI/Web/local e também em automações (ex.: GitHub Actions/CI) com rastreio por issues/PR quando aplicável.",
+      "type": "integration",
+      "status": "accepted",
+      "priority": "should",
+      "source": "human",
+      "acceptance_criteria": [
+        "Eventos de execução e estados de task podem ser emitidos/consumidos fora da sessão interativa local.",
+        "Existe mapeamento explícito entre board canônico e superfícies de issue/PR para CI runners.",
+        "Gates de governança (budget, evidência, revisão humana) preservados em qualquer runner/interface."
+      ]
+    },
+    {
+      "id": "REQ-BUD-010",
+      "description": "A direção macro deve ser executável por agentes de forma autônoma: o sistema precisa permitir priorização e execução contínua do backlog sem dependência de instruções repetidas do humano, preservando gates de segurança e revisão final.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe charter operacional com north-star e critérios de priorização consumíveis por agentes.",
+        "Colônias podem selecionar próxima tarefa elegível do backlog dentro de budget e políticas hard.",
+        "Revisão humana permanece gate final para fechamento estratégico."
+      ]
+    },
+    {
+      "id": "REQ-BUD-011",
+      "description": "A capability de triagem de histórico deve evoluir para ingestão multi-fonte (pi local + canais externos) via contrato canônico de evento/conversa, preservando governança e rastreabilidade.",
+      "type": "integration",
+      "status": "accepted",
+      "priority": "should",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe esquema canônico de evento de conversa (mensagem, thread, branch, status, origem).",
+        "Adapters de ingestão podem ser plugados por provider sem alterar regras de governança do board.",
+        "Triagem mantém split operacional reproduzível (unlock-now vs later) independentemente da plataforma de origem."
+      ]
+    },
+    {
+      "id": "REQ-BUD-012",
+      "description": "A governança de consumo deve suportar budget semanal por provider com cap absoluto e/ou percentual da quota global, incluindo estados operacionais de alerta e bloqueio.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Configuração permite definir limites por provider (tokens/custo) e/ou percentuais da quota global.",
+        "Relatório de quota expõe estado por provider (OK/WARN/BLOCK) com projeção 7d.",
+        "Evidência exportável inclui avaliação de budget por provider para auditoria."
+      ]
+    },
+    {
+      "id": "REQ-BUD-013",
+      "description": "A governança de budget deve suportar unidade de consumo por provider (tokens/cost/requests), incluindo Copilot por premium requests mensais com política de share fixa ou share sobre saldo remanescente.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Configuração permite unidade `requests` com caps/shares semanais e mensais.",
+        "Cálculo expõe semântica `remaining` de forma auditável (ex.: 50% do saldo disponível no snapshot).",
+        "Estados WARN/BLOCK consideram projeção do período para requests, não apenas tokens/custo."
+      ]
+    },
+    {
+      "id": "REQ-BUD-014",
+      "description": "O sistema deve evoluir para segregação de budget por identidade de conta dentro do mesmo provider (ex.: múltiplas contas GitHub Copilot), com chave canônica account-aware para auditoria e enforcement.",
+      "type": "integration",
+      "status": "accepted",
+      "priority": "should",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe modelo canônico de identidade de conta (`provider/account`) para eventos de uso.",
+        "Orçamento e bloqueio podem ser aplicados por conta sem quebrar compatibilidade com provider-only.",
+        "Documentação explicita limitações e fallback quando a origem não fornece identidade de conta."
+      ]
+    },
+    {
+      "id": "REQ-BUD-015",
+      "description": "A experiência padrão deve ter perfil seguro de boot/recovery para evitar lockout do usuário, incluindo fallback de inicialização, checklist de conflito de extensões e caminho de recuperação sem depender de comandos potencialmente bloqueados.",
+      "type": "constraint",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe perfil mínimo estável de extensões ativas (safe-core) e comando/documentação para alternar.",
+        "Existe snapshot de inicialização/configuração para rollback rápido.",
+        "Fluxo de recovery mantém pelo menos um canal de ajuda operacional acessível mesmo sob bloqueios de budget/guardrails."
+      ]
+    },
+    {
+      "id": "REQ-BUD-016",
+      "description": "O sistema deve suportar rodízio de providers com política configurável de custo/confiabilidade/capacidade e execução opt-in, incluindo suporte a runtimes externos via adapter (ex.: Claude Code CLI).",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe modo advisory determinístico com justificativa auditável por decisão.",
+        "Existe modo execute opt-in com guardrails, sem auto-switch silencioso.",
+        "Adapters externos podem ser registrados como targets de roteamento sem quebrar governança existente."
+      ]
+    },
+    {
+      "id": "REQ-BUD-017",
+      "description": "Fluxos de autenticação para adapters externos devem ser first-class e recovery-safe, preferindo login oficial do provider; automação browser (puppeteer/CDP) só em modo local opt-in e sem armazenamento de credenciais sensíveis.",
+      "type": "constraint",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Auth adapter expõe status/login/logout de forma equivalente a provider login UX.",
+        "Não há persistência de senha/token em texto no repo ou logs.",
+        "Existe fallback manual quando automação de browser falhar."
+      ]
+    },
+    {
+      "type": "functional",
+      "references": [
+        "DEC-BUD-015"
+      ],
+      "status": "accepted",
+      "title": "Soberania de Custos no Claude Code Adapter",
+      "priority": "must",
+      "description": "A adoção do Claude Code CLI deve operar como um sub-agente/provider integrado, obedecendo às mesmas cotas (requests/month), governança e bloqueios que os LLMs via API, blindando o desenvolvedor da complexidade de gerir múltiplas instâncias de billing isoladas.",
+      "id": "REQ-BUD-018"
+    },
+    {
+      "type": "functional",
+      "acceptance_criteria": [
+        "Projetos externos usando pi-stack devem ter o mesmo visual (tema agents-lab) e ferramentas (Swarm, Claude Code) configurados por padrão.",
+        "Não deve haver configuração manual extra para o usuário final ter a mesma experiência tátil do laboratório interno."
+      ],
+      "id": "REQ-BUD-019",
+      "title": "Dogfooding e Paridade de Experiência (UX/Visual/Swarm)",
+      "priority": "must",
+      "description": "O pacote @aretw0/pi-stack deve garantir 100% de paridade de Dogfooding: a experiência visual (TUI, temas) e operacional (Swarm, Claude Code) de um usuário final em um projeto externo deve ser idêntica à do ambiente de desenvolvimento interno.",
+      "source": "human",
+      "status": "accepted"
+    },
+    {
+      "id": "REQ-BUD-020",
+      "description": "O control plane deve recomendar troca de provider/model em tempo real com base em 3 sinais combinados: budget (WARN/BLOCK), readiness (ping/auth/model-ref válido) e degradação runtime (erros 400/401/429/5xx), evitando guessing manual.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe comando/tool que retorna recomendação explícita de próximo provider/model para o control plane.",
+        "Recomendação explica o motivo (budget, readiness ou erro runtime) e a ação sugerida (manter, trocar, bloquear).",
+        "Quando o provider atual degrada por 429 repetido, a recomendação muda para fallback saudável sem auto-switch silencioso."
+      ]
+    },
+    {
+      "id": "REQ-BUD-021",
+      "description": "Quando um provider entrar em risco de exaustão (ex.: limite semanal próximo, WARN/HARD por projeção ou erros 429 recorrentes), o control plane deve alertar proativamente e sugerir o próximo provider/model com opção explícita de consentimento para usar overage/créditos pagos.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Antes de exaurir cap principal, o usuário recebe alerta com ETA e impacto.",
+        "O alerta oferece opções claras: manter, trocar provider/model, ou autorizar uso de créditos/overage.",
+        "A decisão fica auditada (timestamp, provider origem/destino, motivo)."
+      ]
+    },
+    {
+      "id": "REQ-BUD-022",
+      "description": "A governança de quotas deve suportar perfis de configuração ('conservative', 'balanced', 'throughput') para reduzir carga cognitiva de micro-budgets sem perder controle auditável.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "should",
+      "source": "human",
+      "acceptance_criteria": [
+        "Existe comando para aplicar perfil de budget/routing com preview do delta.",
+        "Cada perfil define thresholds consistentes (warn/hard), fallback order e política de overage.",
+        "Perfil ativo é visível no /doctor hatch e no /quota-visibility route."
+      ]
+    },
+    {
+      "acceptance_criteria": [
+        "Existe um adapter ou comando que busca o custo real de um provider via API de billing ou fonte externa.",
+        "O dashboard do /quota-visibility mostra custo 'observado' (local) e 'faturado' (externo), quando disponível.",
+        "A política de bloqueio pode ser configurada para usar o custo faturado como fonte primária de verdade."
+      ],
+      "source": "human",
+      "priority": "must",
+      "status": "accepted",
+      "description": "O sistema de budget deve suportar ingestão de dados de billing de fontes externas (API do provider, CSV de fatura) para reconciliar o custo observado localmente com o custo real faturado.",
+      "id": "REQ-BUD-023",
+      "type": "integration"
+    },
+    {
+      "description": "A ferramenta ant_colony deve permitir a especificação do modo de entrega como um parâmetro no momento do lançamento, evitando a necessidade de editar a configuração global para tarefas que exigem criação de branch.",
+      "acceptance_criteria": [
+        "É possível lançar uma colônia com um modo de entrega que sobrepõe a configuração global (ex: /ant_colony goal=... deliveryMode='apply-to-branch').",
+        "A política global de segurança não é alterada por uma execução com override.",
+        "O log de execução da colônia registra explicitamente que um override de política foi usado."
+      ],
+      "source": "human",
+      "id": "REQ-BUD-024",
+      "priority": "must",
+      "type": "functional",
+      "status": "accepted"
+    },
+    {
+      "id": "REQ-BUD-025",
+      "description": "A UX do control plane deve explicitar provider/model ativo e semântica das barras de quota (usado vs restante), incluindo distinção entre quota guarda-chuva por conta e disponibilidade por modelo.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "Rodapé/overlay mostra modelRef completo (provider/model) ativo no control plane.",
+        "Indicadores de quota deixam explícito se a barra representa usado ou restante.",
+        "Quando quota é por conta (ex.: Google subscription) e não por modelo, a UI informa essa limitação para evitar falsa interpretação."
+      ]
+    },
+    {
+      "id": "REQ-BUD-026",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "should",
+      "source": "human",
+      "description": "Security signal hooks para extensões pi-stack: check estático que detecta padrões de injeção de shell em extensões do projeto, emitindo sinal informativo (não hard block). Inspirado no hook de pre-write do Claude Code.",
+      "acceptance_criteria": [
+        "hatch-doctor ou guardrails-core detecta interpolação de shell insegura em extensões.",
+        "Emite warning via setStatus ou notify — não bloqueia o boot.",
+        "Código seguro (pi.exec com args[]) não dispara o warning.",
+        "False positives em strings literais e comentários são filtrados."
+      ]
+    },
+    {
+      "id": "REQ-BUD-027",
+      "type": "non-functional",
+      "status": "accepted",
+      "priority": "should",
+      "source": "human",
+      "description": "Catálogo de extensões first-party vs third-party com política de fork: documentar quais extensões upstream são candidatas a fork (custom-footer já foi), critério de decisão, e manter sincronização entre FILTER_PATCHES em install.mjs e o documento.",
+      "acceptance_criteria": [
+        "Documento lista extensões silenciadas com razão e equivalente first-party.",
+        "FILTER_PATCHES em install.mjs está sincronizado com o documento.",
+        "Processo de decisão documentado: quando forkar vs quando contribuir upstream."
+      ]
+    },
+    {
+      "id": "REQ-BUD-028",
+      "description": "TUI control plane deve ser consolidada como escopo fechado: nenhuma informação deve se repetir entre pi built-in status bar, extension statuses e custom footer.",
+      "type": "constraint",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "model/provider aparece em exatamente um lugar visível (pi built-in compact bar — não via setStatus nem footer).",
+        "budget health (✓provider:pct%) aparece somente no footer LINE 2 via quota-budgets status.",
+        "env-doctor status aparece somente quando há issues (already implemented), não em execução normal.",
+        "Nenhum widget de rate-limit automático (usage-tracker) ativo no estado padrão — info disponível apenas via /usage command."
+      ]
+    },
+    {
+      "id": "REQ-BUD-029",
+      "description": "Tema agents-lab deve ser consolidado first-party: todas as cores e estilos usados pelo custom-footer e extensions devem ser definidos no tema, não dependidos de upstream oh-pi-extensions.",
+      "type": "functional",
+      "status": "proposed",
+      "priority": "should",
+      "source": "human",
+      "acceptance_criteria": [
+        "themes/agents-lab.json define todas as cores usadas por custom-footer.ts.",
+        "Nenhuma dependência de tema do @ifi/oh-pi-themes ou @ifi/oh-pi-extensions para estilos visuais do control plane.",
+        "Reiniciar pi com apenas packages/pi-stack carregado produz output visualmente consistente."
+      ]
+    },
+    {
+      "id": "REQ-BUD-030",
+      "description": "Quota display deve refletir apenas janelas ativas de uso — providers com plano 'unlimited' não devem exibir barra de progresso permanente que aparenta uso máximo.",
+      "type": "functional",
+      "status": "accepted",
+      "priority": "must",
+      "source": "human",
+      "acceptance_criteria": [
+        "usage-tracker.ts de @ifi/oh-pi-extensions está silenciado via filter patch (implementado).",
+        "Quota display via quota-budgets status mostra apenas providers configurados em providerBudgets.",
+        "Providers sem quota configurada não aparecem no footer budget status."
+      ]
+    }
+  ]
+}

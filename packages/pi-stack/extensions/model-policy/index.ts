@@ -1,14 +1,14 @@
 /**
- * model-policy extension — entry point (esqueleto Fase 0)
+ * model-policy extension — entry point (v1.0 — MVP completo)
  *
- * Orquestra todos os módulos da extensão.
- * Os módulos marcados com TODO serão implementados nas fases seguintes.
+ * Orquestra todos os módulos da extensão model-policy.
+ * Fases 0-5 implementadas.
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 // ── Módulos P0 (Fase 1) ──────────────────────────────────────────────────────
-import { loadConfig, getResolvedPolicy, formatPolicyReport } from "./config.js";
+import { loadConfig, getResolvedPolicy, formatPolicyReport, writeProjectPolicy, invalidateConfig } from "./config.js";
 import { loadPricingTable, formatPricingTable } from "./pricing.js";
 import { injectAntColonyOverrides, injectSubagentOverrides, applyExperimentSplit, hashGoal } from "./injector.js";
 
@@ -208,7 +208,6 @@ export default function modelPolicy(pi: ExtensionAPI) {
 
       switch (sub) {
         case "benchmark":
-          // TODO (Fase 5): benchmark-recorder query + export
           const exportFlag = rest.find(a => a === "--csv" || a === "--json-flat" || a === "--vega-lite" || a === "--html");
           if (exportFlag) {
             const fmt = exportFlag.slice(2) as "csv" | "json-flat" | "vega-lite" | "html";
@@ -224,7 +223,6 @@ export default function modelPolicy(pi: ExtensionAPI) {
           }
           break;
         case "dashboard":
-          // TODO (Fase 5): dashboard consolidado
           const bAll = loadBenchmarks({ maxRecords: 50, projectCwd: ctx.cwd });
           if (bAll.length === 0) {
             ctx.ui.notify("Sem dados de benchmark ainda. Execute uma colony ou subagent primeiro.", "info");
@@ -233,11 +231,9 @@ export default function modelPolicy(pi: ExtensionAPI) {
           }
           break;
         case "pricing":
-          // TODO (Fase 1): mostrar tabela de preços carregada
           ctx.ui.notify(formatPricingTable(), "info");
           break;
         case "init":
-          // TODO (Fase 3): smart-budget suggestion
           const suggestion = generateSmartBudgetSuggestion();
           ctx.ui.notify(formatSmartBudgetSuggestion(suggestion), "info");
           const choices = ["Sim — criar .pi/model-policy.json com estas sugestoes", "Nao — apenas visualizar"];
@@ -248,17 +244,32 @@ export default function modelPolicy(pi: ExtensionAPI) {
           }
           break;
         case "set":
-          // TODO (Fase 5): editar chave no projeto
           if (rest.length < 2) {
-            ctx.ui.notify("Uso: /model-policy set <chave> <valor>\nEx: /model-policy set budgets.swarm.maxCostUsd 3.00", "warning");
+            ctx.ui.notify("Uso: /model-policy set <chave> <valor>\nEx: /model-policy set budgets.swarm.maxCostUsd 3.00\n     /model-policy set objectives.swarm:worker google/gemini-2.5-pro", "warning");
           } else {
             const [keyPath, ...valueParts] = rest;
-            const value = valueParts.join(" ");
-            ctx.ui.notify(`model-policy set ${keyPath ?? ""} = ${value} (nao implementado — use /model-policy edit)`, "info");
+            const rawValue = valueParts.join(" ");
+            if (!keyPath) { ctx.ui.notify("Chave inválida.", "warning"); break; }
+            // Parsear valor: tentar número, senão string
+            const parsedValue: unknown = !isNaN(Number(rawValue)) && rawValue !== "" ? Number(rawValue) : rawValue;
+            // Construir patch a partir do keyPath (ex: "budgets.swarm.maxCostUsd")
+            const parts = keyPath.split(".");
+            const patch: Record<string, unknown> = {};
+            let cur: Record<string, unknown> = patch;
+            for (let i = 0; i < parts.length - 1; i++) {
+              const p = parts[i] as string;
+              cur[p] = {};
+              cur = cur[p] as Record<string, unknown>;
+            }
+            const lastKey = parts[parts.length - 1] as string;
+            cur[lastKey] = parsedValue;
+            writeProjectPolicy(ctx.cwd, patch as Parameters<typeof writeProjectPolicy>[1]);
+            invalidateConfig();
+            loadConfig(ctx.cwd);
+            ctx.ui.notify(`✅ ${keyPath} = ${String(parsedValue)} (salvo em .pi/model-policy.json)`, "info");
           }
           break;
         case "test":
-          // TODO (Fase 5): simular injeção de modelos
           try {
             const pol = getResolvedPolicy();
             const lines = [
@@ -283,7 +294,6 @@ export default function modelPolicy(pi: ExtensionAPI) {
           }
           break;
         case "estimate":
-          // TODO (Fase 5): estimativa sem lançar colony
           const goalArg = rest.join(" ").trim();
           if (!goalArg) {
             ctx.ui.notify("Uso: /model-policy estimate <goal>", "warning");
@@ -305,7 +315,6 @@ export default function modelPolicy(pi: ExtensionAPI) {
           }
           break;
         case "edit":
-          // TODO (Fase 5): abrir model-policy.json no editor
           const scope = rest[0] ?? "project";
           const editPath = scope === "global"
             ? (await import("./config.js")).globalPolicyPath()
@@ -313,7 +322,6 @@ export default function modelPolicy(pi: ExtensionAPI) {
           ctx.ui.notify(`Caminho do model-policy.json (${scope}):\n${editPath}`, "info");
           break;
         case "experiment":
-          // TODO (Fase 5): A/B testing
           const expSub = rest[0] ?? "status";
           if (expSub === "status") {
             ctx.ui.notify(formatExperimentStatus(getExperimentStatus()), "info");
@@ -330,7 +338,6 @@ export default function modelPolicy(pi: ExtensionAPI) {
           break;
         default:
           // Sem subcomando: mostra policy atual
-          // TODO (Fase 1): mostrar policy resolvida com origins
           try {
             const policy = getResolvedPolicy();
             ctx.ui.notify(formatPolicyReport(policy), "info");

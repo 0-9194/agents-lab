@@ -13,10 +13,10 @@ import { loadPricingTable, formatPricingTable } from "./pricing.js";
 import { injectAntColonyOverrides, injectSubagentOverrides, applyExperimentSplit, hashGoal } from "./injector.js";
 
 // ── Módulos P1 (Fase 2-3) ────────────────────────────────────────────────────
-// TODO: import { registerBudgetGuard, colonyBudgets, pendingBudgets } from "./budget-guard.js";
-// TODO: import { registerBenchmarkRecorder } from "./benchmark-recorder.js";
-// TODO: import { generateHandoffDoc } from "./handoff-doc.js";
-// TODO: import { registerSmartBudget } from "./smart-budget.js";
+import { registerPendingBudget, tryRegisterLaunched, processUsageRecord, executeBudgetDecision, colonyBudgets } from "./budget-guard.js";
+import { recordColonyRun, recordSubagentRun, formatBenchmarkInline, formatBenchmarkSummary, loadBenchmarks } from "./benchmark-recorder.js";
+import { saveHandoffDoc } from "./handoff-doc.js";
+import { generateSmartBudgetSuggestion, formatSmartBudgetSuggestion, applySmartBudgetSuggestion, projectHasPolicy } from "./smart-budget.js";
 
 // ── Módulos P2 (Fase 4-5) ────────────────────────────────────────────────────
 // TODO: import { estimatePlan, estimateFromGoal } from "./cost-estimator.js";
@@ -36,6 +36,10 @@ export default function modelPolicy(pi: ExtensionAPI) {
     const policy = loadConfig(ctx.cwd);
     loadPricingTable(policy.pricing);
     ctx.ui.setStatus("model-policy", undefined);
+    // Se projeto não tem policy local, sugerir /model-policy init (silencioso)
+    if (!projectHasPolicy(ctx.cwd)) {
+      ctx.ui.setStatus("model-policy", "model-policy: sem policy local — use /model-policy init");
+    }
   });
 
   // ── Hook: tool_call ────────────────────────────────────────────────────────
@@ -62,8 +66,11 @@ export default function modelPolicy(pi: ExtensionAPI) {
         // Os valores injetados ficam registrados no benchmark (Fase 2)
       }
 
-      // TODO (Fase 2): budget-guard FASE 1 — registra pendingBudget
-      // TODO (Fase 2): pre-flight-planner — quality gate + goal enrichment
+      // Budget-guard FASE 1: registrar pending budget antes de lançar
+      if (goal) {
+        registerPendingBudget(goal, policy.budgets.swarm.maxCostUsd);
+      }
+      // TODO (Fase 5): pre-flight-planner — quality gate + goal enrichment
       return undefined;
     }
 
@@ -79,21 +86,94 @@ export default function modelPolicy(pi: ExtensionAPI) {
 
   // ── Hook: message_end ──────────────────────────────────────────────────────
   pi.on("message_end", (_event, _ctx) => {
-    // TODO (Fase 2): budget-guard FASE 2 — parseia COLONY_SIGNAL:LAUNCHED
-    //                vincula runtimeId ao pendingBudget
-    // TODO (Fase 2): budget-guard — parseia COLONY_SIGNAL terminal (done/failed/budget_exceeded)
-    //                aciona benchmark-recorder
+    // Budget-guard FASE 2: vincular runtimeId ao pendingBudget
+    const msgText = (() => {
+      const msg = (event as { message?: unknown }).message;
+      if (!msg || typeof msg !== "object") return "";
+      const content = (msg as { content?: unknown }).content;
+      if (typeof content === "string") return content;
+      if (Array.isArray(content)) {
+        return content.map((c: unknown) => {
+          if (typeof c === "string") return c;
+          if (c && typeof c === "object") return (c as { text?: string }).text ?? "";
+          return "";
+        }).join("\n");
+      }
+      return "";
+    })();
+
+    if (msgText.includes("[COLONY_SIGNAL:LAUNCHED]")) {
+      tryRegisterLaunched(msgText);
+    }
+
+    // Sinal terminal — acionar benchmark-recorder
+    const terminalSignals = ["[COLONY_SIGNAL:COMPLETE]", "[COLONY_SIGNAL:FAILED]", "[COLONY_SIGNAL:BUDGET_EXCEEDED]", "[COLONY_SIGNAL:ABORTED]"];
+    if (terminalSignals.some(s => msgText.includes(s))) {
+      // Extrair colonyId do texto: "[COLONY_SIGNAL:XXX] [<runtimeId>|<stableId>]"
+      const idMatch = /\[COLONY_SIGNAL:[A-Z_]+\]\s*\[([^\]|]+)/.exec(msgText);
+      const runtimeId = idMatch ? idMatch[1].trim() : null;
+      if (runtimeId) {
+        const budget = colonyBudgets.get(runtimeId);
+        if (budget) {
+          const outcome = msgText.includes("COMPLETE") ? "done"
+            : msgText.includes("BUDGET_EXCEEDED") ? "budget_exceeded"
+            : msgText.includes("ABORTED") ? "aborted"
+            : "failed";
+          recordColonyRun({
+            colonyId: budget.colonyId,
+            runtimeId,
+            goal: budget.goal,
+            outcome,
+            durationMs: Date.now() - budget.startedAt,
+            tokensByRole: new Map(),
+            budgetConfiguredUsd: budget.maxCostUsd,
+            budgetAlerts: budget.alerts,
+            reportedCostUsd: budget.reportedCostUsd,
+            syntheticCostUsd: budget.syntheticCostUsd,
+            estimatedCostUsd: null,
+            maxAnts: 4,
+            workspaceMode: "worktree",
+            sessionFile: "",
+            projectCwd: _ctx.cwd,
+            piVersion: "0.67.6",
+            experiment: null,
+            tasksTotal: budget.tasksTotal,
+            tasksDone: budget.tasksDone,
+            tasksFailed: 0,
+            subTasksSpawned: 0,
+            throughputHistory: [],
+          });
+        }
+      }
+    }
   });
 
   // ── Hook: tool_result ─────────────────────────────────────────────────────
-  pi.on("tool_result", async (_event, _ctx) => {
-    // TODO (Fase 2): benchmark-recorder — captura métricas de subagent (toolName === "subagent")
+  pi.on("tool_result", async (event, ctx) => {
+    if (event.toolName === "subagent") {
+      const details = event.details as { results?: Array<{ usage?: { input?: number; output?: number; cacheRead?: number; cacheWrite?: number; cost?: number }; durationMs?: number; agent?: string }> } | null;
+      const result = details?.results?.[0];
+      if (result?.usage) {
+        const u = result.usage;
+        recordSubagentRun({
+          runId: `subagent-${Date.now()}`,
+          goal: (event.input as { task?: string }).task?.slice(0, 200) ?? "",
+          model: (() => { try { return getResolvedPolicy().objectives["subagent:default"] ?? "unknown"; } catch { return "unknown"; } })(),
+          provider: "unknown",
+          outcome: event.isError ? "failed" : "done",
+          durationMs: result.durationMs ?? 0,
+          usage: { input: u.input ?? 0, output: u.output ?? 0, cacheRead: u.cacheRead ?? 0, cacheWrite: u.cacheWrite ?? 0, cost: u.cost ?? 0 },
+          sessionFile: "",
+          projectCwd: (ctx as { cwd: string }).cwd,
+          piVersion: "0.67.6",
+        });
+      }
+    }
   });
 
   // ── Event bus: usage:record ────────────────────────────────────────────────
   pi.events.on("usage:record", (_data: unknown) => {
-    // TODO (Fase 2): budget-guard FASE 3 — acumula custo sintético
-    //                checkThresholds → alertas 50/75/90/95
+    processUsageRecord(_data as Parameters<typeof processUsageRecord>[0], pi);
   });
 
   // ── Tool: model_policy_budget_decision ────────────────────────────────────
@@ -107,13 +187,8 @@ export default function modelPolicy(pi: ExtensionAPI) {
       colonyId: Type.String({ description: "Runtime ID da colony (ex: c1)" }),
       pctUsed: Type.Number({ description: "Percentual do budget consumido (ex: 90)" }),
     }),
-    async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
-      // TODO (Fase 2): implementar decisão interativa via ctx.ui.select()
-      ctx.ui.notify("model-policy: budget-guard não implementado ainda", "warning");
-      return {
-        content: [{ type: "text" as const, text: "Budget gate: não implementado (Fase 0)" }],
-        details: {},
-      };
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      return executeBudgetDecision(params, ctx);
     },
   });
 
@@ -128,7 +203,13 @@ export default function modelPolicy(pi: ExtensionAPI) {
       switch (sub) {
         case "benchmark":
           // TODO (Fase 5): benchmark-recorder query + export
-          ctx.ui.notify("model-policy benchmark: não implementado ainda", "info");
+          const bFilter = rest.find(a => a.startsWith("--role="))?.split("=")[1];
+          const bRecords = loadBenchmarks({ runType: "colony", maxRecords: 10 });
+          if (bRecords.length === 0) {
+            ctx.ui.notify("Nenhum benchmark registrado ainda. Execute uma colony primeiro.", "info");
+          } else {
+            ctx.ui.notify(formatBenchmarkSummary(bRecords), "info");
+          }
           break;
         case "dashboard":
           // TODO (Fase 5): dashboard consolidado
@@ -140,11 +221,24 @@ export default function modelPolicy(pi: ExtensionAPI) {
           break;
         case "init":
           // TODO (Fase 3): smart-budget suggestion
-          ctx.ui.notify("model-policy init: não implementado ainda", "info");
+          const suggestion = generateSmartBudgetSuggestion();
+          ctx.ui.notify(formatSmartBudgetSuggestion(suggestion), "info");
+          const choices = ["Sim — criar .pi/model-policy.json com estas sugestoes", "Nao — apenas visualizar"];
+          const choice = await ctx.ui.select("Aplicar sugestao de budget?", choices);
+          if (choice === choices[0]) {
+            applySmartBudgetSuggestion(ctx.cwd, suggestion);
+            ctx.ui.notify("model-policy.json criado em .pi/", "info");
+          }
           break;
         case "set":
           // TODO (Fase 5): editar chave no projeto
-          ctx.ui.notify(`model-policy set ${rest.join(" ")}: não implementado ainda`, "info");
+          if (rest.length < 2) {
+            ctx.ui.notify("Uso: /model-policy set <chave> <valor>\nEx: /model-policy set budgets.swarm.maxCostUsd 3.00", "warning");
+          } else {
+            const [keyPath, ...valueParts] = rest;
+            const value = valueParts.join(" ");
+            ctx.ui.notify(`model-policy set ${keyPath ?? ""} = ${value} (nao implementado — use /model-policy edit)`, "info");
+          }
           break;
         case "test":
           // TODO (Fase 5): simular injeção de modelos

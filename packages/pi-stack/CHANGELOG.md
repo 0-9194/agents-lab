@@ -1,5 +1,32 @@
 # @aretw0/pi-stack
 
+## 0.7.0
+
+### Minor Changes
+
+- Add `quota-panel.ts` extension — toggleable provider usage panel for the pi footer.
+
+  **New extension: `quota-panel`**
+
+  Expands the pi footer with 3 live sections when active:
+
+  - **Provider Budgets**: per-provider progress bars (`█▌░`), usage %, observed vs cap values, WARN `⚠` / BLOCK `✗` state icons
+  - **Rolling Windows**: recent vs historical max token windows, peak hours, suggested start times
+  - **Route Advisory**: balanced routing recommendation with per-provider pressure %
+
+  **Command: `/qp off|on|auto|snapshot`**
+
+  | Mode       | Behavior                                                    |
+  | ---------- | ----------------------------------------------------------- |
+  | `off`      | Always hidden (default)                                     |
+  | `on`       | Always visible in footer                                    |
+  | `auto`     | Opens on WARN/BLOCK, closes when all providers return to OK |
+  | `snapshot` | One-shot ephemeral notification, works in any mode          |
+
+  Data refreshes async on each `turn_start` with a 30s cache — no impact on render performance. Requires `providerBudgets` configured in `.pi/settings.json` (`piStack.quotaVisibility`).
+
+  **Footer integration**: `custom-footer.ts` injects panel lines automatically when `shouldShowPanel()` returns true. No visual change when panel is off.
+
 ## 0.6.0
 
 ### Minor Changes

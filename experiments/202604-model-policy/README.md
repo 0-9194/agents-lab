@@ -1,7 +1,7 @@
 # model-policy Extension — Experimento 202604
 
 **Data:** 2026-04-17
-**Status:** Em andamento — Fase 0 concluída
+**Status:** ✅ MVP Completo — Fases 0-6 concluídas (2026-04-17)
 **Engine:** Pi + `@ifi/oh-pi-ant-colony` + `@ifi/pi-extension-subagents`
 
 ## Objetivo
@@ -32,13 +32,13 @@ Ver `plan-v4.md` neste diretório para o plano completo (v4, 1288 linhas, 22 se�
 ### Estratégia A — Sequencial por camadas com subagents
 
 ```
-Fase 0  → Scaffold (types.ts, index.ts esqueleto, model-policy.json template)  ✅ COMPLETO
-Fase 1  → P0 Core: config.ts, pricing.ts, injector.ts                          🔄 próxima
-Fase 2  → P1 Paralelo: budget-guard.ts ∥ benchmark-recorder.ts
-Fase 3  → P1 Sequencial: handoff-doc.ts, smart-budget.ts
-Fase 4  → P2 Paralelo: cost-estimator.ts ∥ ab-testing.ts ∥ export.ts
-Fase 5  → P2 Sequencial: pre-flight-planner.ts, dashboard, command /model-policy
-Fase 6  → Integração + sync fork + documentação
+Fase 0  → Scaffold (types.ts, index.ts esqueleto, model-policy.json template)  ✅
+Fase 1  → P0 Core: config.ts, pricing.ts, injector.ts                          ✅
+Fase 2  → P1 Paralelo: budget-guard.ts ∥ benchmark-recorder.ts                 ✅
+Fase 3  → P1 Sequencial: handoff-doc.ts, smart-budget.ts                       ✅
+Fase 4  → P2 Paralelo: cost-estimator.ts ∥ ab-testing.ts ∥ export.ts           ✅
+Fase 5  → P2 Sequencial: pre-flight-planner.ts, dashboard, command /model-policy ✅
+Fase 6  → Integração + sync fork + documentação                                 ✅
 ```
 
 ## Estrutura de Arquivos
@@ -105,8 +105,40 @@ O split é por run (não por task), garantindo comparabilidade estatística.
 
 | Componente | Status |
 |---|---|
-| types.ts compila sem erros | ✅ |
-| index.ts esqueleto carrega | ✅ |
-| Extensão registrada no pi | ✅ |
-| model-policy.json template | ✅ |
-| Fase 1 (config/pricing/injector) | 🔄 próxima |
+| types.ts: 31 tipos + interfaces | ✅ |
+| config.ts: merge global→projeto | ✅ |
+| pricing.ts: custo sintético para subscription providers | ✅ |
+| injector.ts: injeção em ant_colony e subagent | ✅ |
+| budget-guard.ts: alertas 50/75/90/95% + gate de decisão | ✅ |
+| benchmark-recorder.ts: append .jsonl + rotação | ✅ |
+| handoff-doc.ts: documento de retomada de colony | ✅ |
+| smart-budget.ts: sugestão baseada em P90/P99 histórico | ✅ |
+| cost-estimator.ts: heurística + calibração histórica | ✅ |
+| ab-testing.ts: split por colony run + relatório comparativo | ✅ |
+| export.ts: CSV, JSON flat, Vega-Lite, HTML standalone | ✅ |
+| pre-flight-planner.ts: quality gate + goal enrichment | ✅ |
+| index.ts: todos os hooks e subcomandos funcionais | ✅ |
+| Compilação tsc --noEmit: zero erros | ✅ |
+| Extensão registrada no pi (settings.json) | ✅ |
+
+## Backlog (P3 — pós-MVP)
+
+Ver seção §21 do `plan-v4.md`:
+
+1. **Handoff Chain** — vincular colony runs retomadas em cadeia rastreável
+2. **Auto Demotion/Promotion** — sugerir troca de modelo ao detectar degradação
+3. **Budget Guard para Chains de Subagent** — monitorar custo acumulado de chains
+4. **Policy Inheritance entre Projetos** — suporte a `extends` no model-policy.json
+
+## Commits no fork
+
+| Commit | Descrição |
+|---|---|
+| `6d8c867` | Fase 0: scaffold (types.ts, index.ts, template) |
+| `2436481` | Fase 1: config.ts, pricing.ts, injector.ts |
+| `404693e` | Fase 2: budget-guard.ts, benchmark-recorder.ts |
+| `0bf003c` | Docs: validation-notes fase 0-2 |
+| `d78bcff` | Fase 3: handoff-doc.ts, smart-budget.ts |
+| `cbca332` | Fase 4: cost-estimator.ts, ab-testing.ts, export.ts |
+| `6f6d0f5` | Fase 5: pre-flight-planner.ts + command /model-policy |
+| `75136e1` | Fase 6: index.ts final — MVP completo |

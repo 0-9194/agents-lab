@@ -180,3 +180,34 @@ describe("quota-panel — buildPanelLines", () => {
     expect(lines.some((l) => l.includes("balanced →"))).toBe(true);
   });
 });
+
+import quotaPanelExtension from "../../extensions/quota-panel";
+
+function makeMockPi() {
+  return {
+    on: vi.fn(),
+    registerCommand: vi.fn(),
+  } as unknown as Parameters<typeof quotaPanelExtension>[0];
+}
+
+describe("quota-panel — registration smoke", () => {
+  it("não crasha ao ser carregada", () => {
+    expect(() => quotaPanelExtension(makeMockPi())).not.toThrow();
+  });
+
+  it("registra handler para turn_start", () => {
+    const pi = makeMockPi();
+    quotaPanelExtension(pi);
+    const events = (pi.on as ReturnType<typeof vi.fn>).mock.calls.map(([e]: [string]) => e);
+    expect(events).toContain("turn_start");
+  });
+
+  it("registra o comando /qp", () => {
+    const pi = makeMockPi();
+    quotaPanelExtension(pi);
+    const commands = (pi.registerCommand as ReturnType<typeof vi.fn>).mock.calls.map(
+      ([name]: [string]) => name,
+    );
+    expect(commands).toContain("qp");
+  });
+});

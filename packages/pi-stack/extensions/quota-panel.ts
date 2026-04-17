@@ -17,6 +17,10 @@ import {
   type ProviderWindowInsight,
   type QuotaStatus,
 } from "./quota-visibility";
+import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { analyzeQuota, parseProviderBudgets, parseProviderWindowHours } from "./quota-visibility";
 
 // ---------------------------------------------------------------------------
 // Panel mode state (module-level singleton)
@@ -149,4 +153,85 @@ export function buildPanelLines(status: QuotaStatus | null, width: number): stri
     lines.push(`  balanced → ${rec}  [ ${candidates} ]`);
   }
   return lines;
+}
+
+// ---------------------------------------------------------------------------
+// Internal: read settings for analyzeQuota
+// ---------------------------------------------------------------------------
+
+function readPanelSettings(cwd: string): {
+  providerBudgets: ReturnType<typeof parseProviderBudgets>;
+  providerWindowHours: ReturnType<typeof parseProviderWindowHours>;
+  days: number;
+} {
+  try {
+    const raw = JSON.parse(readFileSync(path.join(cwd, ".pi", "settings.json"), "utf8")) as Record<string, unknown>;
+    const qv = ((raw?.piStack as Record<string, unknown>)?.quotaVisibility ?? {}) as Record<string, unknown>;
+    const providerBudgets = parseProviderBudgets(qv.providerBudgets);
+    const providerWindowHours = parseProviderWindowHours(qv.providerWindowHours);
+    const defaultDays = safeNum(qv.defaultDays);
+    const dayOfMonth = new Date().getDate();
+    const days = Math.max(dayOfMonth, defaultDays > 0 ? defaultDays : 7);
+    return { providerBudgets, providerWindowHours, days };
+  } catch {
+    return { providerBudgets: {}, providerWindowHours: {}, days: 7 };
+  }
+}
+
+async function refreshCache(ctx: ExtensionContext): Promise<void> {
+  if (_refreshInFlight) return;
+  _refreshInFlight = true;
+  try {
+    const { providerBudgets, providerWindowHours, days } = readPanelSettings(ctx.cwd);
+    if (Object.keys(providerBudgets).length === 0) return;
+    const status = await analyzeQuota({ days, providerBudgets, providerWindowHours });
+    _cachedStatus = status;
+    if (_mode === "auto") {
+      const hasIssue = status.providerBudgets.some((b) => b.state !== "ok");
+      if (hasIssue) triggerAuto();
+      else resetAuto();
+    }
+  } catch {
+    // silent — panel is best-effort
+  } finally {
+    _refreshInFlight = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Extension factory
+// ---------------------------------------------------------------------------
+
+export default function quotaPanelExtension(pi: ExtensionAPI) {
+  pi.on("turn_start", async (_event, ctx) => {
+    await refreshCache(ctx);
+  });
+
+  pi.registerCommand("qp", {
+    description: "Provider usage panel. Usage: /qp off|on|auto|snapshot",
+    async handler(args, ctx) {
+      const cmd = (args ?? "").trim().toLowerCase();
+
+      if (cmd === "snapshot") {
+        const { providerBudgets, providerWindowHours, days } = readPanelSettings(ctx.cwd);
+        if (Object.keys(providerBudgets).length === 0) {
+          ctx.ui.notify("quota panel: nenhum providerBudgets configurado em .pi/settings.json", "warning");
+          return;
+        }
+        const status = await analyzeQuota({ days, providerBudgets, providerWindowHours });
+        const lines = buildPanelLines(status, 80);
+        ctx.ui.notify(lines.join("\n") || "quota panel: sem dados para exibir", "info");
+        return;
+      }
+
+      if (cmd === "off" || cmd === "on" || cmd === "auto") {
+        setMode(cmd as PanelMode);
+        ctx.ui.notify(`quota panel: modo '${cmd}' ativado`, "info");
+        if (cmd !== "off") await refreshCache(ctx);
+        return;
+      }
+
+      ctx.ui.notify("Usage: /qp off|on|auto|snapshot", "warning");
+    },
+  });
 }

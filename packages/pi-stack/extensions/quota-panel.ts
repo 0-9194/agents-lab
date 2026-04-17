@@ -171,6 +171,7 @@ function readPanelSettings(cwd: string): {
     const providerWindowHours = parseProviderWindowHours(qv.providerWindowHours);
     const defaultDays = safeNum(qv.defaultDays);
     const dayOfMonth = new Date().getDate();
+    // dayOfMonth ensures monthly budgets cover the full billing period so far.
     const days = Math.max(dayOfMonth, defaultDays > 0 ? defaultDays : 7);
     return { providerBudgets, providerWindowHours, days };
   } catch {
@@ -218,9 +219,13 @@ export default function quotaPanelExtension(pi: ExtensionAPI) {
           ctx.ui.notify("quota panel: nenhum providerBudgets configurado em .pi/settings.json", "warning");
           return;
         }
-        const status = await analyzeQuota({ days, providerBudgets, providerWindowHours });
-        const lines = buildPanelLines(status, 80);
-        ctx.ui.notify(lines.join("\n") || "quota panel: sem dados para exibir", "info");
+        try {
+          const status = await analyzeQuota({ days, providerBudgets, providerWindowHours });
+          const lines = buildPanelLines(status, 80);
+          ctx.ui.notify(lines.join("\n") || "quota panel: sem dados para exibir", "info");
+        } catch (err) {
+          ctx.ui.notify(`quota panel: erro ao ler dados — ${String(err)}`, "warning");
+        }
         return;
       }
 

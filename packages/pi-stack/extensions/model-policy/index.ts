@@ -19,10 +19,10 @@ import { saveHandoffDoc } from "./handoff-doc.js";
 import { generateSmartBudgetSuggestion, formatSmartBudgetSuggestion, applySmartBudgetSuggestion, projectHasPolicy } from "./smart-budget.js";
 
 // ── Módulos P2 (Fase 4-5) ────────────────────────────────────────────────────
-// TODO: import { estimatePlan, estimateFromGoal } from "./cost-estimator.js";
-// TODO: import { registerPreFlightPlanner } from "./pre-flight-planner.js";
-// TODO: import { registerABTesting, getABReport } from "./ab-testing.js";
-// TODO: import { exportBenchmarks } from "./export.js";
+import { estimatePlanFromTasks, estimateFromGoal, formatPlanEstimate } from "./cost-estimator.js";
+// pre-flight-planner.ts implementado na Fase 5
+import { getExperimentStatus, checkExperimentResult, formatABTestResult, formatExperimentStatus } from "./ab-testing.js";
+import { exportBenchmarks } from "./export.js";
 
 export default function modelPolicy(pi: ExtensionAPI) {
   // Mapa temporário: hash(goal) → goal text
@@ -203,17 +203,28 @@ export default function modelPolicy(pi: ExtensionAPI) {
       switch (sub) {
         case "benchmark":
           // TODO (Fase 5): benchmark-recorder query + export
-          const bFilter = rest.find(a => a.startsWith("--role="))?.split("=")[1];
-          const bRecords = loadBenchmarks({ runType: "colony", maxRecords: 10 });
-          if (bRecords.length === 0) {
-            ctx.ui.notify("Nenhum benchmark registrado ainda. Execute uma colony primeiro.", "info");
+          const exportFlag = rest.find(a => a === "--csv" || a === "--json-flat" || a === "--vega-lite" || a === "--html");
+          if (exportFlag) {
+            const fmt = exportFlag.slice(2) as "csv" | "json-flat" | "vega-lite" | "html";
+            const outPath = exportBenchmarks(fmt, { projectCwd: ctx.cwd });
+            ctx.ui.notify(`Exportado: ${outPath}`, "info");
           } else {
-            ctx.ui.notify(formatBenchmarkSummary(bRecords), "info");
+            const bRecords = loadBenchmarks({ runType: "colony", maxRecords: 10 });
+            if (bRecords.length === 0) {
+              ctx.ui.notify("Nenhum benchmark registrado ainda. Execute uma colony primeiro.", "info");
+            } else {
+              ctx.ui.notify(formatBenchmarkSummary(bRecords), "info");
+            }
           }
           break;
         case "dashboard":
           // TODO (Fase 5): dashboard consolidado
-          ctx.ui.notify("model-policy dashboard: não implementado ainda", "info");
+          const bAll = loadBenchmarks({ maxRecords: 50, projectCwd: ctx.cwd });
+          if (bAll.length === 0) {
+            ctx.ui.notify("Sem dados de benchmark ainda. Execute uma colony ou subagent primeiro.", "info");
+          } else {
+            ctx.ui.notify(formatBenchmarkSummary(bAll), "info");
+          }
           break;
         case "pricing":
           // TODO (Fase 1): mostrar tabela de preços carregada
@@ -254,7 +265,19 @@ export default function modelPolicy(pi: ExtensionAPI) {
           break;
         case "experiment":
           // TODO (Fase 5): A/B testing
-          ctx.ui.notify("model-policy experiment: não implementado ainda", "info");
+          const expSub = rest[0] ?? "status";
+          if (expSub === "status") {
+            ctx.ui.notify(formatExperimentStatus(getExperimentStatus()), "info");
+          } else if (expSub === "stop" && rest[1]) {
+            const result = checkExperimentResult(rest[1]);
+            if (result) {
+              ctx.ui.notify(formatABTestResult(result), "info");
+            } else {
+              ctx.ui.notify(`Experimento '${rest[1]}': amostras insuficientes ou não encontrado.`, "warning");
+            }
+          } else {
+            ctx.ui.notify("Uso: /model-policy experiment [status|stop <role>]", "info");
+          }
           break;
         default:
           // Sem subcomando: mostra policy atual

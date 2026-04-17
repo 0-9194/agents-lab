@@ -32,6 +32,7 @@ let _mode: PanelMode = "off";
 let _autoTriggered = false;
 let _cachedStatus: QuotaStatus | null = null;
 let _refreshInFlight = false;
+let _hasAttemptedRefresh = false;
 
 export function getMode(): PanelMode { return _mode; }
 
@@ -129,7 +130,11 @@ function panelDivider(label: string, width: number): string {
  * Returns ["  quota panel loading..."] when status is null.
  */
 export function buildPanelLines(status: QuotaStatus | null, width: number): string[] {
-  if (!status) return ["  quota panel loading..."];
+  if (!status) {
+    return [_hasAttemptedRefresh
+      ? "  quota panel: configure providerBudgets em .pi/settings.json"
+      : "  quota panel loading..."];
+  }
   const lines: string[] = [];
   if (status.providerBudgets.length > 0) {
     lines.push(panelDivider("Provider Budgets", width));
@@ -184,6 +189,7 @@ async function refreshCache(ctx: ExtensionContext): Promise<void> {
   _refreshInFlight = true;
   try {
     const { providerBudgets, providerWindowHours, days } = readPanelSettings(ctx.cwd);
+    _hasAttemptedRefresh = true;
     if (Object.keys(providerBudgets).length === 0) return;
     const status = await analyzeQuota({ days, providerBudgets, providerWindowHours });
     _cachedStatus = status;

@@ -236,6 +236,8 @@ A combinação **eficiência + evidência** evita tanto desperdício quanto disc
 
 O painel de visibilidade pode ser fixado no footer da TUI para monitoramento contínuo.
 
+> **Pré-requisito:** o painel só exibe dados se `providerBudgets` estiver configurado em `.pi/settings.json` (seção `piStack.quotaVisibility`). Sem essa configuração, o painel mostrará uma mensagem de aviso ao invés de dados. Use `/qp snapshot` para confirmar se a leitura está funcionando antes de ativar um modo persistente.
+
 ### Modos
 
 | Comando | Comportamento |

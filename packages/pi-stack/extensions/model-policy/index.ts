@@ -20,7 +20,7 @@ import { generateSmartBudgetSuggestion, formatSmartBudgetSuggestion, applySmartB
 
 // ── Módulos P2 (Fase 4-5) ────────────────────────────────────────────────────
 import { estimatePlanFromTasks, estimateFromGoal, formatPlanEstimate } from "./cost-estimator.js";
-// pre-flight-planner.ts implementado na Fase 5
+import { runPreFlight } from "./pre-flight-planner.js";
 import { getExperimentStatus, checkExperimentResult, formatABTestResult, formatExperimentStatus } from "./ab-testing.js";
 import { exportBenchmarks } from "./export.js";
 
@@ -70,7 +70,13 @@ export default function modelPolicy(pi: ExtensionAPI) {
       if (goal) {
         registerPendingBudget(goal, policy.budgets.swarm.maxCostUsd);
       }
-      // TODO (Fase 5): pre-flight-planner — quality gate + goal enrichment
+      // Pre-flight: quality gate + goal enrichment
+      const preFlightResult = await runPreFlight(
+        event.input as Record<string, unknown>,
+        _ctx,
+        pi
+      );
+      if (preFlightResult?.block) return preFlightResult;
       return undefined;
     }
 
@@ -253,15 +259,58 @@ export default function modelPolicy(pi: ExtensionAPI) {
           break;
         case "test":
           // TODO (Fase 5): simular injeção de modelos
-          ctx.ui.notify("model-policy test: não implementado ainda", "info");
+          try {
+            const pol = getResolvedPolicy();
+            const lines = [
+              "Simulação de injeção para ant_colony:",
+              "",
+              `  scoutModel          → ${pol.objectives["swarm:scout"] ?? "(default)"}`,
+              `  workerModel         → ${pol.objectives["swarm:worker"] ?? "(default)"}`,
+              `  soldierModel        → ${pol.objectives["swarm:soldier"] ?? "(default)"}`,
+              `  designWorkerModel   → ${pol.objectives["swarm:design"] ?? "(default)"}`,
+              `  backendWorkerModel  → ${pol.objectives["swarm:backend"] ?? "(default)"}`,
+              `  multimodalModel     → ${pol.objectives["swarm:multimodal"] ?? "(default)"}`,
+              `  reviewWorkerModel   → ${pol.objectives["swarm:review"] ?? "(default)"}`,
+              `  maxCost             → $${pol.budgets.swarm.maxCostUsd.toFixed(2)}`,
+              "",
+              "Simulação para subagent:",
+              `  model (default)     → ${pol.objectives["subagent:default"] ?? "(default)"}`,
+              `  model (complex)     → ${pol.objectives["subagent:complex"] ?? "(default)"}`,
+            ];
+            ctx.ui.notify(lines.join("\n"), "info");
+          } catch (e) {
+            ctx.ui.notify("model-policy test: policy não carregada", "warning");
+          }
           break;
         case "estimate":
           // TODO (Fase 5): estimativa sem lançar colony
-          ctx.ui.notify("model-policy estimate: não implementado ainda", "info");
+          const goalArg = rest.join(" ").trim();
+          if (!goalArg) {
+            ctx.ui.notify("Uso: /model-policy estimate <goal>", "warning");
+          } else {
+            try {
+              const pol = getResolvedPolicy();
+              const est = (await import("./cost-estimator.js")).estimateFromGoal(goalArg, pol);
+              const budgetUsd = pol.budgets.swarm.maxCostUsd;
+              const pct = budgetUsd > 0 ? (est.estimatedCostUsd / budgetUsd) * 100 : 0;
+              ctx.ui.notify(
+                `📊 Estimativa para goal:\n` +
+                `  Custo: $${est.rangeLow.toFixed(2)} – $${est.rangeHigh.toFixed(2)} (${pct.toFixed(0)}% do budget $${budgetUsd.toFixed(2)})\n` +
+                `  Confiança: ${est.confidence}\n  ${est.reasoning}`,
+                "info"
+              );
+            } catch {
+              ctx.ui.notify("model-policy estimate: erro ao calcular estimativa", "warning");
+            }
+          }
           break;
         case "edit":
           // TODO (Fase 5): abrir model-policy.json no editor
-          ctx.ui.notify("model-policy edit: não implementado ainda", "info");
+          const scope = rest[0] ?? "project";
+          const editPath = scope === "global"
+            ? (await import("./config.js")).globalPolicyPath()
+            : (await import("./config.js")).projectPolicyPath(ctx.cwd);
+          ctx.ui.notify(`Caminho do model-policy.json (${scope}):\n${editPath}`, "info");
           break;
         case "experiment":
           // TODO (Fase 5): A/B testing

@@ -130,6 +130,11 @@ function makeMinimalQuotaStatus(budgets: ProviderBudgetStatus[]): QuotaStatus {
 }
 
 describe("quota-panel — buildPanelLines", () => {
+  beforeEach(() => {
+    setMode("off");
+    resetAuto();
+  });
+
   it("retorna mensagem de loading quando status é null", () => {
     const lines = buildPanelLines(null, 80);
     expect(lines).toHaveLength(1);

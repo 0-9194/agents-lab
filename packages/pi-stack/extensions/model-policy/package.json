@@ -1,0 +1,17 @@
+{
+  "name": "@local/model-policy",
+  "version": "0.1.0",
+  "description": "Model policy extension for pi — model routing, budget guard, benchmarking",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "devDependencies": {
+    "@mariozechner/pi-coding-agent": "^0.67.6",
+    "@sinclair/typebox": "^0.34.49",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  }
+}

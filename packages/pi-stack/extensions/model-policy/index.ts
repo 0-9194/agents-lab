@@ -8,9 +8,9 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 // ── Módulos P0 (Fase 1) ──────────────────────────────────────────────────────
-// TODO: import { loadConfig, getResolvedPolicy } from "./config.js";
-// TODO: import { loadPricingTable, calculateSyntheticCost, getPricing } from "./pricing.js";
-// TODO: import { registerInjector } from "./injector.js";
+import { loadConfig, getResolvedPolicy, formatPolicyReport } from "./config.js";
+import { loadPricingTable, formatPricingTable } from "./pricing.js";
+import { injectAntColonyOverrides, injectSubagentOverrides, applyExperimentSplit, hashGoal } from "./injector.js";
 
 // ── Módulos P1 (Fase 2-3) ────────────────────────────────────────────────────
 // TODO: import { registerBudgetGuard, colonyBudgets, pendingBudgets } from "./budget-guard.js";
@@ -25,26 +25,52 @@ import { Type } from "@sinclair/typebox";
 // TODO: import { exportBenchmarks } from "./export.js";
 
 export default function modelPolicy(pi: ExtensionAPI) {
+  // Mapa temporário: hash(goal) → goal text
+  // Usado para correlacionar tool_call(ant_colony) com COLONY_SIGNAL:LAUNCHED
+  // Populado em tool_call, consumido em message_end (Fase 2: budget-guard)
+  const _pendingGoalHashes = new Map<string, string>();
+
   // ── Inicialização ──────────────────────────────────────────────────────────
   pi.on("session_start", async (_event, ctx) => {
-    // TODO (Fase 1): loadConfig(ctx.cwd) — merge global + projeto
-    // TODO (Fase 1): loadPricingTable() — parseia llm-pricing-guide.md
-    // TODO (Fase 1): se primeiro uso sem .pi/model-policy.json → smart-budget init
     ctx.ui.setStatus("model-policy", "model-policy: carregando...");
+    const policy = loadConfig(ctx.cwd);
+    loadPricingTable(policy.pricing);
     ctx.ui.setStatus("model-policy", undefined);
   });
 
   // ── Hook: tool_call ────────────────────────────────────────────────────────
   pi.on("tool_call", async (event, _ctx) => {
     if (event.toolName === "ant_colony") {
-      // TODO (Fase 1): registerInjector — injeta modelOverrides + maxCost
+      const policy = getResolvedPolicy();
+      const input = event.input as Record<string, unknown>;
+
+      // Injetar modelOverrides + maxCost
+      const colonyInput = input as Parameters<typeof injectAntColonyOverrides>[0];
+      const injectedFields = injectAntColonyOverrides(colonyInput, policy);
+
+      // Aplicar split A/B (após injeção base)
+      applyExperimentSplit(colonyInput, policy, (role, group, model) => {
+        injectedFields.push(`[A/B] ${role}:${group}=${model}`);
+      });
+
+      // Registrar goal hash para correlação com LAUNCHED signal (Fase 2: budget-guard)
+      const goal = typeof input.goal === "string" ? input.goal : "";
+      _pendingGoalHashes.set(hashGoal(goal), goal);
+
+      if (injectedFields.length > 0) {
+        // Não notificar na UI — silencioso para não interromper o fluxo
+        // Os valores injetados ficam registrados no benchmark (Fase 2)
+      }
+
       // TODO (Fase 2): budget-guard FASE 1 — registra pendingBudget
       // TODO (Fase 2): pre-flight-planner — quality gate + goal enrichment
       return undefined;
     }
 
     if (event.toolName === "subagent") {
-      // TODO (Fase 1): registerInjector — injeta model nos subagents
+      const policy = getResolvedPolicy();
+      const subInput = event.input as Parameters<typeof injectSubagentOverrides>[0];
+      injectSubagentOverrides(subInput, policy);
       return undefined;
     }
 
@@ -110,7 +136,7 @@ export default function modelPolicy(pi: ExtensionAPI) {
           break;
         case "pricing":
           // TODO (Fase 1): mostrar tabela de preços carregada
-          ctx.ui.notify("model-policy pricing: não implementado ainda", "info");
+          ctx.ui.notify(formatPricingTable(), "info");
           break;
         case "init":
           // TODO (Fase 3): smart-budget suggestion
@@ -139,11 +165,16 @@ export default function modelPolicy(pi: ExtensionAPI) {
         default:
           // Sem subcomando: mostra policy atual
           // TODO (Fase 1): mostrar policy resolvida com origins
-          ctx.ui.notify(
-            "model-policy v4 carregada (Fase 0 — scaffold)\n" +
-            "Subcomandos disponíveis: benchmark, dashboard, pricing, init, set, test, estimate, edit, experiment",
-            "info"
-          );
+          try {
+            const policy = getResolvedPolicy();
+            ctx.ui.notify(formatPolicyReport(policy), "info");
+          } catch {
+            ctx.ui.notify(
+              "model-policy: policy não carregada ainda (reinicie pi)\n" +
+              "Subcomandos: benchmark, dashboard, pricing, init, set, test, estimate, edit, experiment",
+              "warning"
+            );
+          }
       }
     },
   });
